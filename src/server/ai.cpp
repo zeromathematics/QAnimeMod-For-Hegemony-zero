@@ -310,6 +310,8 @@ const Card *TrustAI::askForSinglePeach(ServerPlayer *dying)
                 return card;
             if (card->isKindOf("Analeptic") && dying == self)
                 return card;
+            if (card->isKindOf("GuangyuCard"))
+                return card;
         }
     }
 

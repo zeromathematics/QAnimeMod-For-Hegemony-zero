@@ -85,6 +85,54 @@ public:
     }
 };
 
+HalfMaxHpCard::HalfMaxHpCard()
+{
+    target_fixed = true;
+    m_skillName = "halfmaxhp";
+}
+
+void HalfMaxHpCard::use(Room *room, ServerPlayer *player, QList<ServerPlayer *> &) const
+{
+    room->removePlayerMark(player, "@halfmaxhp");
+    player->drawCards(1, "halfmaxhp");
+}
+
+class HalfMaxHp : public ZeroCardViewAsSkill
+{
+public:
+    HalfMaxHp() : ZeroCardViewAsSkill("halfmaxhp")
+    {
+        frequency = Limited;
+        limit_mark = "@halfmaxhp";
+        attached_lord_skill = true;
+    }
+
+    virtual bool isEnabledAtPlay(const Player *player) const
+    {
+        return player->getMark("@halfmaxhp") > 0;
+    }
+
+    virtual const Card *viewAs() const
+    {
+        return new HalfMaxHpCard;
+    }
+};
+
+class HalfMaxHpMaxCards : public MaxCardsSkill
+{
+public:
+    HalfMaxHpMaxCards() : MaxCardsSkill("halfmaxhp-maxcards")
+    {
+    }
+
+    virtual int getExtra(const ServerPlayer *target, MaxCardsType::MaxCardsCount) const
+    {
+        if (target->hasFlag("HalfMaxHpEffect"))
+            return 2;
+        return 0;
+    }
+};
+
 StandardPackage::StandardPackage()
     : Package("standard")
 {
@@ -94,8 +142,9 @@ StandardPackage::StandardPackage()
     addQunGenerals();
 
     addMetaObject<AnimeShanaCard>();
+    addMetaObject<HalfMaxHpCard>();
 
-    skills << new GlobalFakeMoveSkill << new AnimeShana;
+    skills << new GlobalFakeMoveSkill << new AnimeShana << new HalfMaxHp << new HalfMaxHpMaxCards;
 
     patterns["."] = new ExpPattern(".|.|.|hand");
     patterns[".S"] = new ExpPattern(".|spade|.|hand");
@@ -121,7 +170,8 @@ StandardPackage::StandardPackage()
     patterns["jink"] = new ExpPattern("Jink");
     patterns["peach"] = new  ExpPattern("Peach");
     patterns["nullification"] = new ExpPattern("Nullification");
-    patterns["peach+analeptic"] = new ExpPattern("Peach,Analeptic");
+    patterns["peach+analeptic+guangyucard"] = new ExpPattern("Peach,Analeptic,GuangyuCard");
+    patterns["peach+guangyucard"] = new ExpPattern("Peach,GuangyuCard");
 }
 
 ADD_PACKAGE(Standard)

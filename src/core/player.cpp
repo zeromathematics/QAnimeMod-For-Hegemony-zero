@@ -491,11 +491,27 @@ bool Player::hasSkill(const QString &skill_name, bool include_lose) const
             return hasSkill(main_skill);
     }
 
-    if (!include_lose && !hasEquipSkill(skill_name) && !getAcquiredSkills().contains(skill_name) && ownSkill(skill_name) && !canShowGeneral(inHeadSkills(skill_name) ? "h" : "d"))
-        return false;
-    QStringList InvalidSkill = property("invalid_skill_has").toString().split("+");
-    if (InvalidSkill.contains(skill_name))
-        return false;
+    if (skill_name != "companion" && skill_name != "halfmaxhp" && skill_name != "firstshow"
+            && skill_name != "showhead" && skill_name != "showdeputy") {
+
+        if (!include_lose && !hasEquipSkill(skill_name) && !skill->isAttachedLordSkill()) {
+            if (!getAcquiredSkills().contains(skill_name) && ownSkill(skill_name)) {
+                if (inHeadSkills(skill_name) && !canShowGeneral("h")) return false;
+                if (inDeputySkills(skill_name) && !canShowGeneral("d")) return false;
+
+            }
+
+            if (skill->getFrequency() != Skill::Compulsory && skill->getFrequency() != Skill::Wake) {
+                if (getMark("skill_invalidity") > 0) return false;
+                if (getMark("skill_invalidity_head") > 0 && head_skills.value(skill_name, false)) return false;
+                if (getMark("skill_invalidity_deputy") > 0 && deputy_skills.value(skill_name, false)) return false;
+            }
+        }
+
+        QStringList InvalidSkill = property("invalid_skill_has").toString().split("+");
+        if (InvalidSkill.contains(skill_name))
+            return false;
+    }
 
     if (Sanguosha->ViewHas(this, skill_name, "skill")) return true;
 
@@ -1212,7 +1228,8 @@ int Player::getSlashCount() const
 {
     return history.value("Slash", 0)
         + history.value("ThunderSlash", 0)
-        + history.value("FireSlash", 0);
+        + history.value("FireSlash", 0)
+        + history.value("IceSlash", 0);
 }
 
 void Player::clearHistory(const QString &name)
@@ -1979,7 +1996,7 @@ bool Player::willBeFriendWith(const Player *player) const
     if (!player->hasShownOneGeneral())
         return false;
     if (!hasShownOneGeneral()) {
-        QString kingdom = getActualGeneral1()->getKingdom();
+        QString kingdom = getKingdom();
         int i = 1;
         bool has_lord = isAlive() && isLord();
 

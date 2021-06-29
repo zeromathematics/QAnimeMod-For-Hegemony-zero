@@ -50,7 +50,7 @@ FreeChooseDialog::FreeChooseDialog(QWidget *parent, ButtonGroupType type)
         if (general->isLord())
             continue;
 
-        if (general->getPackage() == "jiange-defense")
+        if (general->getPackage() == "jiange-defense" || general->getPackage() == "maria-battle")
             continue;
 
         map[general->getKingdom()] << general;

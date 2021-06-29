@@ -1704,6 +1704,35 @@ void ServerPlayer::gainAnExtraTurn()
     room->setTag("ExtraTurnList", QVariant::fromValue(extraTurnList));
 }
 
+void ServerPlayer::gainAnInstantExtraTurn()
+{
+    ServerPlayer *current = room->getCurrent();
+    try {
+        room->setCurrent(this);
+        room->getThread()->trigger(TurnStart, room, this);
+        room->setCurrent(current);
+    }
+    catch (TriggerEvent triggerEvent) {
+        if (triggerEvent == TurnBroken) {
+            if (getPhase() != Player::NotActive) {
+                const GameRule *game_rule = NULL;
+                if (room->getMode() == "04_1v3")
+                    game_rule = qobject_cast<const GameRule *>(Sanguosha->getTriggerSkill("hulaopass_mode"));
+                else
+                    game_rule = qobject_cast<const GameRule *>(Sanguosha->getTriggerSkill("game_rule"));
+                if (game_rule) {
+                    QVariant v;
+                    if (this->getPhase() == Player::Play)
+                        room->addPlayerHistory(this, ".");
+                }
+                changePhase(getPhase(), Player::NotActive);
+            }
+            room->setCurrent(current);
+        }
+        throw triggerEvent;
+    }
+}
+
 void ServerPlayer::copyFrom(ServerPlayer *sp)
 {
     ServerPlayer *b = this;
@@ -1850,7 +1879,7 @@ void ServerPlayer::showGeneral(bool head_general, bool trigger_event, bool sendL
                 }
             }
 
-            if ((!has_lord && i > (room->getPlayers().length() / 2)) || (has_lord && getLord(true)->isDead()))
+            if (((!has_lord && i > (room->getPlayers().length() / 2)) || (has_lord && getLord(true)->isDead()))&& room->getMode()!= "maria_battle")
                 role = "careerist";
 
             room->setPlayerProperty(this, "role", role);
@@ -1919,7 +1948,7 @@ void ServerPlayer::showGeneral(bool head_general, bool trigger_event, bool sendL
                 }
             }
 
-            if ((!has_lord && i > (room->getPlayers().length() / 2)) || (has_lord && getLord(true)->isDead()))
+            if (((!has_lord && i > (room->getPlayers().length() / 2)) || (has_lord && getLord(true)->isDead())) && room->getMode()!= "maria_battle")
                 role = "careerist";
 
             room->setPlayerProperty(this, "role", role);

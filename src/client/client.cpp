@@ -95,6 +95,8 @@ Client::Client(QObject *parent, const QString &filename)
     callbacks[S_COMMAND_GET_CARD] = &Client::getCards;
     callbacks[S_COMMAND_LOSE_CARD] = &Client::loseCards;
     callbacks[S_COMMAND_SET_PROPERTY] = &Client::updateProperty;
+    callbacks[S_COMMAND_CHANGE_BGM] = &Client::changeBGM;
+    callbacks[S_COMMAND_CHANGE_BG] = &Client::changeBG;
     callbacks[S_COMMAND_RESET_PILE] = &Client::resetPiles;
     callbacks[S_COMMAND_UPDATE_PILE] = &Client::setPileNumber;
     callbacks[S_COMMAND_CARD_FLAG] = &Client::setCardFlag;
@@ -503,6 +505,26 @@ void Client::updateProperty(const QVariant &arg)
     if (args[1] == "phase" && player->getPhase() == Player::Finish
         && player->hasFlag("shuangxiong_postpone") && player == Self && !Self->ownSkill("shuangxiong"))
         emit skill_detached("shuangxiong");
+
+}
+
+void Client::changeBGM(const QVariant &arg)
+{
+    JsonArray args = arg.value<JsonArray>();
+    if (args.size() != 1) return;
+
+    QString new_bgm = args[0].toString();
+    emit bgm_change(new_bgm);
+
+}
+
+void Client::changeBG(const QVariant &arg)
+{
+    JsonArray args = arg.value<JsonArray>();
+    if (args.size() != 1) return;
+
+    QString new_bg = args[0].toString();
+    emit bg_change(new_bg);
 
 }
 
@@ -1835,13 +1857,13 @@ void Client::askForSinglePeach(const QVariant &arg)
     QStringList pattern;
     if (dying == Self) {
         prompt_doc->setHtml(tr("You are dying, please provide %1 peach(es)(or analeptic) to save yourself").arg(peaches));
-        pattern << "peach" << "analeptic";
-        _m_roomState.setCurrentCardUsePattern("peach+analeptic");
+        pattern << "peach" << "analeptic" << "guangyucard";
+        _m_roomState.setCurrentCardUsePattern("peach+analeptic+guangyucard");
     } else {
         QString dying_general = getPlayerName(dying->objectName());
         prompt_doc->setHtml(tr("%1 is dying, please provide %2 peach(es) to save him").arg(dying_general).arg(peaches));
-        pattern << "peach";
-        _m_roomState.setCurrentCardUsePattern("peach");
+        pattern << "peach" << "guangyucard";
+        _m_roomState.setCurrentCardUsePattern("peach+guangyucard");
     }
     if (Self->hasFlag("Global_PreventPeach")) {
         bool has_skill = false;

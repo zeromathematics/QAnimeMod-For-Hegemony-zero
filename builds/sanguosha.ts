@@ -1512,6 +1512,11 @@
         <translation>火焰</translation>
     </message>
     <message>
+        <location filename="../src/ui/roomscene.cpp" line="3316"/>
+        <source>Ice</source>
+        <translation>冰冻</translation>
+    </message>
+    <message>
         <location filename="../src/ui/roomscene.cpp" line="3317"/>
         <source>Recover HP</source>
         <translation>体力回复</translation>

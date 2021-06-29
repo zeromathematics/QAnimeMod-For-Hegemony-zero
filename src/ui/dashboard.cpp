@@ -1484,7 +1484,7 @@ void Dashboard::updateHandPile(const QString &pile_name, bool add, QList<int> ca
 void Dashboard::updateMarkCard()
 {
     //CompanionCard
-    QStringList mark_names, mark_cards;
+    /*QStringList mark_names, mark_cards;
     mark_names << "@companion" << "@halfmaxhp" << "@firstshow" << "animeshana";
     mark_cards << "CompanionCard" << "HalfMaxHpCard" << "FirstShowCard";
     mark_cards << "AnimeShanaCard";
@@ -1512,7 +1512,7 @@ void Dashboard::updateMarkCard()
             card_item->setParentItem(this);
 
             m_markCards << card_item;
-            _addHandCard(card_item, true);
+            //_addHandCard(card_item, true);
 
             adjustCards();
             QList<CardItem *> card_items;
@@ -1520,7 +1520,7 @@ void Dashboard::updateMarkCard()
 
             _playMoveCardsAnimation(card_items, false);
             update();
-        } else {
+        } else{
             foreach (CardItem *card_item, m_handCards) {
                 if (card_item->getCard()->isKindOf(mark_card.toStdString().c_str())) {
                     if (card_item == selected) selected = NULL;
@@ -1534,11 +1534,10 @@ void Dashboard::updateMarkCard()
                     }
                 }
             }
-
             adjustCards();
             update();
         }
-    }
+    }*/
 }
 
 void Dashboard::retractAllSkillPileCards()

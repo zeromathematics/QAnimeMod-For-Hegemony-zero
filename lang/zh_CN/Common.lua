@@ -65,8 +65,12 @@ CommonTranslationTable = {
 	["deputy"] = "副将技，",
 	["array"] = "阵法技，",
 	["lord"] = "主角技，",
-	["linkage"] = "连携技",
+	["linkage"] = "连携技，",
 	["state"] = "状态技，",
+	["magicskill"] = "魔法技，",
+	["realskill"] = "现世技，",
+	["scienceskill"] = "科学技，",
+	["gameskill"] = "游戏技，",
 
 	["spade_char"] = "♠",
 	["club_char"] = "♣",

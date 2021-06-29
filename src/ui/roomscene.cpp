@@ -207,6 +207,10 @@ RoomScene::RoomScene(QMainWindow *main_window)
     connect(ClientInstance, &Client::move_cards_got, this, &RoomScene::getCards);
     connect(ClientInstance, &Client::nullification_asked, dashboard, &Dashboard::controlNullificationButton);
     connect(ClientInstance, &Client::start_in_xs, this, &RoomScene::startInXs);
+
+    connect(ClientInstance, SIGNAL(bgm_change(const QString)), SLOT(changeBGM(const QString)));
+    connect(ClientInstance, SIGNAL(bg_change(const QString)), SLOT(changeBG(const QString)));
+
     connect(ClientInstance, &Client::update_handcard_num, this, &RoomScene::updateHandcardNum);
 
     m_guanxingBox = new GuanxingBox;
@@ -3285,6 +3289,8 @@ void RoomScene::changeHp(const QString &who, int delta, DamageStruct::Nature nat
             doAnimation(S_ANIMATE_FIRE, QStringList() << who);
         else if (nature == DamageStruct::Thunder)
             doAnimation(S_ANIMATE_LIGHTNING, QStringList() << who);
+        else if (nature == DamageStruct::Ice)
+            doAnimation(S_ANIMATE_FREEZE, QStringList() << who);
     } else {
         QString type = "#Recover";
         QString from_general = ClientInstance->getPlayer(who)->objectName();
@@ -3573,6 +3579,7 @@ DamageMakerDialog::DamageMakerDialog(QWidget *parent)
     damage_nature->addItem(tr("Normal"), S_CHEAT_NORMAL_DAMAGE);
     damage_nature->addItem(tr("Thunder"), S_CHEAT_THUNDER_DAMAGE);
     damage_nature->addItem(tr("Fire"), S_CHEAT_FIRE_DAMAGE);
+    damage_nature->addItem(tr("Ice"), S_CHEAT_ICE_DAMAGE);
     damage_nature->addItem(tr("Recover HP"), S_CHEAT_HP_RECOVER);
     damage_nature->addItem(tr("Lose HP"), S_CHEAT_HP_LOSE);
     damage_nature->addItem(tr("Lose Max HP"), S_CHEAT_MAX_HP_LOSE);
@@ -3827,6 +3834,90 @@ void RoomScene::killPlayer(const QString &who)
     m_roomMutex.unlock();
 }
 
+void RoomScene::changeBGM(const QString bgm)
+{
+#ifdef AUDIO_SUPPORT
+            Audio::stopBGM();
+            Audio::playBGM("audio/system/" + bgm + ".ogg");
+            Audio::setBGMVolume(Config.BGMVolume);
+#endif
+}
+
+
+void RoomScene::adjustDefaultBgm()
+{
+
+   /* static QMap<QString, QString> kingdoms;
+    if (kingdoms.isEmpty()) {
+        kingdoms["wei"] = "science";
+        kingdoms["shu"] = "magic";
+        kingdoms["wu"] = "real";
+        kingdoms["qun"] = rand() % 3 == 0 ? "touhou" : (rand() % 2 == 0 ? "kancolle" : "diva");
+        kingdoms["science"] = "science";
+        kingdoms["magic"] = "magic";
+        kingdoms["real"] = "real";
+        kingdoms["touhou"] = "touhou";
+        kingdoms["kancolle"] = "kancolle";
+        kingdoms["diva"] = "diva";
+    }
+
+    if (Config.EnableBgMusic) {
+        // start playing background music
+        _m_bgMusicPath = Config.value("BackgroundMusic", "audio/system/background.ogg").toString();
+        if (_m_bgMusicPath == "audio/system/background.ogg"){
+            if (!ServerInfo.EnableHegemony){
+                _m_bgMusicPath = "audio/kingdom/" + (kingdoms.contains(getLordKingdom()) ? kingdoms[getLordKingdom()] : "") + ".ogg";
+            }
+
+            QFile *file = new QFile(_m_bgMusicPath);
+            if (!file->exists()){
+                _m_bgMusicPath = "audio/system/background.ogg";
+            }
+        }
+#ifdef AUDIO_SUPPORT
+        Audio::stopBGM();
+        Audio::playBGM(_m_bgMusicPath);
+        Audio::setBGMVolume(Config.BGMVolume);
+#endif
+        _m_bgEnabled = true;
+    }
+    else {
+        _m_bgEnabled = false;
+    }*/
+}
+
+void RoomScene::changeBG(const QString bg)
+{
+    if (bg == ""){
+        adjustDefaultBg();
+    }
+    else{
+        QPixmap pixmap = G_ROOM_SKIN.getPixmap("tableBg" + bg);
+        if (pixmap.width() == 1 || pixmap.height() == 1) {
+            // we treat this condition as error and do not use it
+        }
+        else {
+            m_tableBgPixmapOrig = pixmap;
+            m_tableBgPixmap = pixmap.scaled(m_tablew, m_tableh + _m_roomLayout->m_photoDashboardPadding, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+            m_tableBg->setPixmap(m_tableBgPixmap);
+        }
+    }
+
+}
+
+void RoomScene::adjustDefaultBg()
+{
+    /*QPixmap pixmap = G_ROOM_SKIN.getPixmap("tableBg" + kingdom);
+    if (pixmap.width() == 1 || pixmap.height() == 1) {
+        // we treat this condition as error and do not use it
+    }
+    else {
+        m_tableBgPixmapOrig = pixmap;
+        m_tableBgPixmap = pixmap.scaled(m_tablew, m_tableh + _m_roomLayout->m_photoDashboardPadding, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+        m_tableBg->setPixmap(m_tableBgPixmap);
+    }*/
+}
+
 void RoomScene::revivePlayer(const QString &who)
 {
     if (who == Self->objectName()) {
@@ -3961,7 +4052,6 @@ void RoomScene::viewDistance()
 
 void RoomScene::speak()
 {
-
     bool broadcast = true;
     QString text = chatEdit->text();
     if (text == ".StartBgMusic") {
@@ -4486,6 +4576,7 @@ void RoomScene::doAnimation(int name, const QStringList &args)
 
         map[S_ANIMATE_FIRE] = &RoomScene::doAppearingAnimation;
         map[S_ANIMATE_LIGHTNING] = &RoomScene::doAppearingAnimation;
+        map[S_ANIMATE_FREEZE] = &RoomScene::doAppearingAnimation;
 
         map[S_ANIMATE_LIGHTBOX] = &RoomScene::doLightboxAnimation;
         map[S_ANIMATE_INDICATE] = &RoomScene::doIndicate;
@@ -4499,6 +4590,7 @@ void RoomScene::doAnimation(int name, const QStringList &args)
 
         anim_name[S_ANIMATE_FIRE] = "fire";
         anim_name[S_ANIMATE_LIGHTNING] = "lightning";
+        anim_name[S_ANIMATE_FREEZE] = "freeze";
 
         anim_name[S_ANIMATE_LIGHTBOX] = "lightbox";
         anim_name[S_ANIMATE_HUASHEN] = "huashen";

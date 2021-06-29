@@ -484,19 +484,71 @@ void ChooseGeneralBox::adjustItems()
     if (selected.length() == 2) {
         foreach(GeneralCardItem *card, items)
             card->setFrozen(true);
-        confirm->setEnabled(Sanguosha->getGeneral(selected.first()->objectName())->getKingdom()
-            == Sanguosha->getGeneral(selected.last()->objectName())->getKingdom());
+        bool can = false;
+        if (Sanguosha->getGeneral(selected.first()->objectName())->getKingdom()
+                == Sanguosha->getGeneral(selected.last()->objectName())->getKingdom()){
+            can = true;
+        }
+        if (Sanguosha->getGeneral(selected.first()->objectName())->getKingdom().split("|")
+                .contains(Sanguosha->getGeneral(selected.last()->objectName())->getKingdom())){
+            can = true;
+        }
+        if (Sanguosha->getGeneral(selected.last()->objectName())->getKingdom().split("|")
+                .contains(Sanguosha->getGeneral(selected.first()->objectName())->getKingdom())){
+            can = true;
+        }
+        foreach(auto p, Sanguosha->getGeneral(selected.first()->objectName())->getKingdom().split("|")){
+            foreach(auto q, Sanguosha->getGeneral(selected.last()->objectName())->getKingdom().split("|")){
+                if (p == q){
+                    can = true;
+                }
+            }
+        }
+
+        confirm->setEnabled(can);
     } else if (selected.length() == 1) {
         selected.first()->hideCompanion();
         const General *seleted_general = Sanguosha->getGeneral(selected.first()->objectName());
         foreach (GeneralCardItem *card, items) {
             const General *general = Sanguosha->getGeneral(card->objectName());
+
+            QStringList kingdoms1;
+            QStringList kingdoms2;
+            if (seleted_general->getKingdom().contains("|")){
+                kingdoms1 = seleted_general->getKingdom().split("|");
+            }
+            if (general->getKingdom().contains("|")){
+                kingdoms2 = general->getKingdom().split("|");
+            }
+
             if (BanPair::isBanned(seleted_general->objectName(), general->objectName())
-                || (general->getKingdom() != seleted_general->getKingdom() || general->isLord())) {
+                || ( (kingdoms1.isEmpty()&&kingdoms2.isEmpty()&&seleted_general->getKingdom()!= general->getKingdom()) ||general->isLord())) {
                 if (!card->isFrozen())
                     card->setFrozen(true);
                 card->hideCompanion();
-            } else {
+
+
+            }else if((!kingdoms1.isEmpty()&& kingdoms2.isEmpty()&&!kingdoms1.contains(general->getKingdom()))||(!kingdoms2.isEmpty()&& kingdoms1.isEmpty()&&!kingdoms2.contains(seleted_general->getKingdom()))){
+                if (!card->isFrozen())
+                    card->setFrozen(true);
+                card->hideCompanion();
+
+            }else if(!kingdoms1.isEmpty() && !kingdoms2.isEmpty()){
+                bool common =false;
+                foreach(auto s , kingdoms1){
+                    foreach(auto t , kingdoms2){
+                        if (s == t){
+                            common = true;
+                        }
+                    }
+                }
+                if (!common){
+                    if (!card->isFrozen())
+                        card->setFrozen(true);
+                    card->hideCompanion();
+                }
+            }
+            else {
                 if (card->isFrozen())
                     card->setFrozen(false);
                 if (general->isCompanionWith(selected.first()->objectName())) {
@@ -536,15 +588,26 @@ void ChooseGeneralBox::_initializeItems()
     foreach (const General *general, generals) {
         int party = 0;
         bool has_lord = false;
+        bool double_kingdom_party = false;
         foreach (const General *other, generals) {
             if (other->getKingdom() == general->getKingdom()) {
                 party++;
                 if (other != general && other->isLord())
                     has_lord = true;
             }
+            if (general->getKingdom().split("|").contains(other->getKingdom())||other->getKingdom().split("|").contains(general->getKingdom())) {
+                double_kingdom_party = true;
+            }
+            foreach(auto s, general->getKingdom().split("|")){
+                foreach(auto t, other->getKingdom().split("|")){
+                    if (s == t){
+                        double_kingdom_party = true;
+                    }
+                }
+            }
         }
         GeneralCardItem *item = items.at(index);
-        if ((party < 2 || (selected.isEmpty() && has_lord && party == 2))) {
+        if ((party < 2 || (selected.isEmpty() && has_lord && party == 2)) && !double_kingdom_party) {
             if (!item->isFrozen())
                 item->setFrozen(true);
         } else if (item->isFrozen()) {

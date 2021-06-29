@@ -453,6 +453,12 @@ FireSlash::FireSlash(Suit suit, int number)
     setObjectName("fire_slash");
 }
 
+IceSlash::IceSlash(Suit suit, int number)
+    : NatureSlash(suit, number, DamageStruct::Ice)
+{
+    setObjectName("ice_slash");
+}
+
 Jink::Jink(Suit suit, int number) : BasicCard(suit, number)
 {
     setObjectName("jink");

@@ -3043,6 +3043,126 @@ void Room::transformHeadGeneral(ServerPlayer *player)
     player->showGeneral(true, true, true);
 }
 
+void Room::transformDeputyGeneralTo(ServerPlayer *player, QString general_name)
+{
+    QStringList names;
+    names << player->getActualGeneral1Name() << player->getActualGeneral2Name();
+    if (!player->canTransform()) return;
+
+    const General *general = Sanguosha->getGeneral(general_name);
+    if (!general){
+        return;
+    }
+
+    handleUsedGeneral("-" + player->getActualGeneral2Name());
+    handleUsedGeneral(general_name);
+
+    player->removeGeneral(false);
+    QVariant void_data;
+    QList<const TriggerSkill *> game_start;
+
+    foreach (const Skill *skill, Sanguosha->getGeneral(general_name)->getVisibleSkillList(true, false)) {
+        if (skill->inherits("TriggerSkill")) {
+            const TriggerSkill *tr = qobject_cast<const TriggerSkill *>(skill);
+            if (tr != NULL) {
+                if (tr->getTriggerEvents().contains(GameStart) && !tr->triggerable(GameStart, this, player, void_data).isEmpty())
+                    game_start << tr;
+            }
+        }
+        player->addSkill(skill->objectName(), false);
+    }
+
+    changePlayerGeneral2(player, "anjiang");
+    player->setActualGeneral2Name(general_name);
+    notifyProperty(player, player, "actual_general2");
+    notifyProperty(player, player, "general2", general_name);
+
+    names[1] = general_name;
+    setPlayerProperty(player, "general2_showed", false);
+
+    setTag(player->objectName(), names);
+
+    foreach (const Skill *skill, Sanguosha->getGeneral(general_name)->getSkillList(true, false)) {
+        if (skill->getFrequency() == Skill::Limited && !skill->getLimitMark().isEmpty()) {
+            player->setMark(skill->getLimitMark(), 1);
+            JsonArray arg;
+            arg << player->objectName();
+            arg << skill->getLimitMark();
+            arg << 1;
+            doNotify(player, S_COMMAND_SET_MARK, arg);
+        }
+    }
+
+    foreach (const TriggerSkill *skill, game_start) {
+        if (skill->cost(GameStart, this, player, void_data, player))
+            skill->effect(GameStart, this, player, void_data, player);
+    }
+
+    if (Sanguosha->getGeneral(names[0])->isCompanionWith(general_name))
+        setPlayerMark(player, "CompanionEffect", 1);
+    player->showGeneral(false, true, true);
+}
+
+void Room::transformHeadGeneralTo(ServerPlayer *player, QString general_name)
+{
+    QStringList names;
+    names << player->getActualGeneral1Name() << player->getActualGeneral2Name();
+    if (!player->getGeneral() || !player->hasShownGeneral1()) return;
+
+    const General *general = Sanguosha->getGeneral(general_name);
+    if (!general){
+        return;
+    }
+
+    handleUsedGeneral("-" + player->getActualGeneral1Name());
+    handleUsedGeneral(general_name);
+
+    player->removeGeneral(true);
+    QVariant void_data;
+    QList<const TriggerSkill *> game_start;
+
+    foreach (const Skill *skill, Sanguosha->getGeneral(general_name)->getVisibleSkillList(true, true)) {
+        if (skill->inherits("TriggerSkill")) {
+            const TriggerSkill *tr = qobject_cast<const TriggerSkill *>(skill);
+            if (tr != NULL) {
+                if (tr->getTriggerEvents().contains(GameStart) && !tr->triggerable(GameStart, this, player, void_data).isEmpty())
+                    game_start << tr;
+            }
+        }
+        player->addSkill(skill->objectName(),  true);
+    }
+
+    changePlayerGeneral(player, "anjiang");
+    player->setActualGeneral1Name(general_name);
+    notifyProperty(player, player, "actual_general1");
+    notifyProperty(player, player, "general1", general_name);
+
+    names[0] = general_name;
+    setPlayerProperty(player, "general1_showed", false);
+
+    setTag(player->objectName(), names);
+
+    foreach (const Skill *skill, Sanguosha->getGeneral(general_name)->getSkillList(true, true)) {
+        if (skill->getFrequency() == Skill::Limited && !skill->getLimitMark().isEmpty()) {
+            player->setMark(skill->getLimitMark(), 1);
+            JsonArray arg;
+            arg << player->objectName();
+            arg << skill->getLimitMark();
+            arg << 1;
+            doNotify(player, S_COMMAND_SET_MARK, arg);
+        }
+    }
+
+    foreach (const TriggerSkill *skill, game_start) {
+        if (skill->cost(GameStart, this, player, void_data, player))
+            skill->effect(GameStart, this, player, void_data, player);
+    }
+
+    if (Sanguosha->getGeneral(names[1])->isCompanionWith(general_name))
+        setPlayerMark(player, "CompanionEffect", 1);
+    player->showGeneral(true, true, true);
+}
+
 void Room::handleUsedGeneral(const QString &general)
 {
     bool remove = general.startsWith("-") ? true : false;
@@ -4198,6 +4318,7 @@ void Room::applyDamage(ServerPlayer *victim, const DamageStruct &damage)
     switch (damage.nature) {
         case DamageStruct::Fire: change_str.append("F"); break;
         case DamageStruct::Thunder: change_str.append("T"); break;
+        case DamageStruct::Ice: change_str.append("I"); break;
         default: break;
     }
 
@@ -4386,6 +4507,7 @@ void Room::sendDamageLog(const DamageStruct &data)
         case DamageStruct::Normal: log.arg2 = "normal_nature"; break;
         case DamageStruct::Fire: log.arg2 = "fire_nature"; break;
         case DamageStruct::Thunder: log.arg2 = "thunder_nature"; break;
+        case DamageStruct::Ice: log.arg2 = "ice_nature"; break;
     }
 
     sendLog(log);
@@ -6984,6 +7106,7 @@ void Room::makeDamage(const QString &source, const QString &target, QSanProtocol
         nature_map[S_CHEAT_NORMAL_DAMAGE] = DamageStruct::Normal;
         nature_map[S_CHEAT_THUNDER_DAMAGE] = DamageStruct::Thunder;
         nature_map[S_CHEAT_FIRE_DAMAGE] = DamageStruct::Fire;
+        nature_map[S_CHEAT_ICE_DAMAGE] = DamageStruct::Ice;
     }
 
     if (targetPlayer == NULL) return;
@@ -7214,6 +7337,77 @@ void Room::showAllCards(ServerPlayer *player, ServerPlayer *to)
 
         doBroadcastNotify(S_COMMAND_SHOW_ALL_CARDS, gongxinArgs);
     }
+}
+
+void Room::changeBGM(QString bgm)
+{
+    //use bgm="" to change to original bgm
+    JsonArray arg;
+    arg << bgm;
+    doBroadcastNotify(getAllPlayers(true), S_COMMAND_CHANGE_BGM, arg);
+}
+
+void Room::changeBG(QString bg)
+{
+    //use bg="" to change to original bg
+    JsonArray arg;
+    arg << bg;
+    doBroadcastNotify(getAllPlayers(true), S_COMMAND_CHANGE_BG, arg);
+}
+
+void Room::setAura(ServerPlayer* player, QString aura)
+{
+    if (hasAura(aura)){
+        return;
+    }
+
+    setTag("aura", QVariant::fromValue(aura));
+    setTag("aura_player", QVariant::fromValue(player));
+    //change BGM, background
+    changeBGM(aura);
+    changeBG(aura);
+    //play Animation
+
+    //set emotion
+    doAnimate(QSanProtocol::S_ANIMATE_LIGHTBOX, "lani=aura", QString("%1:%2").arg(3000).arg(0));
+}
+
+bool Room::hasAura(){
+    return getTag("aura").value<QString>().length() > 0;
+}
+
+bool Room::hasAura(QString aura){
+    return getTag("aura").value<QString>() == aura;
+
+}
+
+QString Room::getAura(){
+    return getTag("aura").value<QString>();
+}
+
+void Room::clearAura(){
+    //change BGM, background back
+    changeBGM("");
+    changeBG("");
+    //clear emotion
+    if (!hasAura()){
+        return;
+    }
+    removeTag("aura");
+    removeTag("aura_player");
+}
+
+bool Room::doAura(ServerPlayer* player, QString aura){
+    //return value means success or not
+    if (hasAura(aura)){
+        return false;
+    }
+    setAura(player, aura);
+    return true;
+}
+
+ServerPlayer* Room::getAuraPlayer(){
+    return getTag("aura_player").value<ServerPlayer *>();
 }
 
 void Room::retrial(const Card *card, ServerPlayer *player, JudgeStruct *judge, const QString &skill_name, bool exchange)

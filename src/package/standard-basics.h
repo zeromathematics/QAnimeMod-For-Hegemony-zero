@@ -72,6 +72,14 @@ public:
     Q_INVOKABLE FireSlash(Card::Suit suit, int number);
 };
 
+class IceSlash : public NatureSlash
+{
+    Q_OBJECT
+
+public:
+    Q_INVOKABLE IceSlash(Card::Suit suit, int number);
+};
+
 class Jink : public BasicCard
 {
     Q_OBJECT

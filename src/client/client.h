@@ -168,6 +168,10 @@ public:
     void setAvailableCards(const QVariant &pile);
     void setCardFlag(const QVariant &pattern_str);
     void updateCard(const QVariant &val);
+
+    void changeBGM(const QVariant &arg);
+    void changeBG(const QVariant &arg);
+
     void mirrorGuanxingStep(const QVariant &args);
     void mirrorMoveCardsStep(const QVariant &args);
     void setActualGeneral(const QVariant &args);
@@ -384,6 +388,9 @@ signals:
     void lineSpoken(const QString &line);
 
     void card_used();
+
+    void bgm_change(const QString &name);
+    void bg_change(const QString &name);
 
     void game_started();
     void game_over();

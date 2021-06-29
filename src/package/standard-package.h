@@ -64,4 +64,13 @@ public:
     virtual void use(Room *room, ServerPlayer *source, QList<ServerPlayer *> &targets) const;
 };
 
+class HalfMaxHpCard : public SkillCard
+{
+    Q_OBJECT
+
+public:
+    Q_INVOKABLE HalfMaxHpCard();
+    virtual void use(Room *room, ServerPlayer *source, QList<ServerPlayer *> &targets) const;
+};
+
 #endif

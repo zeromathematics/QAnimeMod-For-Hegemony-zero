@@ -69,11 +69,14 @@ namespace QSanProtocol
         S_CHEAT_HP_RECOVER,
         S_CHEAT_HP_LOSE,
         S_CHEAT_MAX_HP_LOSE,
-        S_CHEAT_MAX_HP_RESET
+        S_CHEAT_MAX_HP_RESET,
+        S_CHEAT_ICE_DAMAGE
     };
 
     enum CommandType
     {
+        S_COMMAND_CHANGE_BGM,
+        S_COMMAND_CHANGE_BG,
         S_COMMAND_UNKNOWN,
         S_COMMAND_CHOOSE_CARD,
         S_COMMAND_PLAY_CARD,
@@ -199,6 +202,7 @@ namespace QSanProtocol
         S_ANIMATE_NULLIFICATION,
         S_ANIMATE_FIRE,
         S_ANIMATE_LIGHTNING,
+        S_ANIMATE_FREEZE,
         S_ANIMATE_HUASHEN,
         S_ANIMATE_BATTLEARRAY,
     };

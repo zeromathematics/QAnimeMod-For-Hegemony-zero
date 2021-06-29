@@ -231,7 +231,7 @@ bool Card::CompareByType(const Card *a, const Card *b)
     else {
         static QStringList basic;
         if (basic.isEmpty())
-            basic << "slash" << "thunder_slash" << "fire_slash" << "jink" << "peach" << "analeptic";
+            basic << "slash" << "thunder_slash" << "fire_slash" << "jink" << "peach" << "analeptic" << "ice_slash" << "guangyucard";
         switch (a->getTypeId()) {
             case TypeBasic: {
                 foreach (const QString &object_name, basic) {

@@ -76,6 +76,12 @@ void RoleComboBox::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QW
     kingdoms.removeAll("science");
     kingdoms.removeAll("real");
     kingdoms.removeAll("game");
+    kingdoms.removeAll("real|game");
+    kingdoms.removeAll("magic|game");
+    kingdoms.removeAll("science|game");
+    kingdoms.removeAll("magic|science");
+    kingdoms.removeAll("magic|real");
+    kingdoms.removeAll("science|real");
     if (!expanding) {
         if (circle) {
             QPixmap pix;

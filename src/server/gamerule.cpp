@@ -172,7 +172,7 @@ GameRule::GameRule(QObject *parent)
         << AskForPeaches << AskForPeachesDone << BuryVictim
         << BeforeGameOverJudge << GameOverJudge
         << SlashHit << SlashEffected << SlashProceed
-        << ConfirmDamage << DamageDone << DamageComplete
+        << DamageCaused << ConfirmDamage << DamageDone << DamageComplete
         << StartJudge << FinishRetrial << FinishJudge
         << ChoiceMade << GeneralShown
         << BeforeCardsMove << CardsMoveOneTime;
@@ -264,6 +264,20 @@ void GameRule::onPhaseProceed(ServerPlayer *player) const
         break;
     }
     case Player::Discard: {
+        if (player->getHandcardNum() > player->getMaxCards() && player->getMark("@halfmaxhp") > 0) {
+            if (room->askForChoice(player, "halfmaxhp", "yes+no", QVariant()) == "yes") {
+                LogMessage log;
+                log.type = "#InvokeSkill";
+                log.from = player;
+                log.arg = "halfmaxhp";
+                room->sendLog(log);
+                room->broadcastSkillInvoke("halfmaxhp", player);
+                room->notifySkillInvoked(player, "halfmaxhp");
+                room->removePlayerMark(player, "@halfmaxhp");
+                room->handleAcquireDetachSkills(player, "-halfmaxhp!");
+                room->setPlayerFlag(player, "HalfMaxHpEffect");
+            }
+        }
         int discard_num = player->getHandcardNum() - player->getMaxCards(MaxCardsType::Normal);
         if (discard_num > 0)
             if (!room->askForDiscard(player, "gamerule", discard_num, discard_num))
@@ -293,8 +307,7 @@ bool GameRule::effect(TriggerEvent triggerEvent, Room *room, ServerPlayer *playe
                 room->doLightbox("$gamestart", 3500);
             foreach (ServerPlayer *player, room->getPlayers()) {
                 Q_ASSERT(player->getGeneral() != NULL);
-                /*
-                if (player->getGeneral()->getKingdom() == "god" && player->getGeneralName() != "anjiang") {
+                /*if (player->getGeneral()->getKingdom() == "god" && player->getGeneralName() != "anjiang") {
                 QString new_kingdom = room->askForKingdom(player);
                 room->setPlayerProperty(player, "kingdom", new_kingdom);
 
@@ -303,8 +316,22 @@ bool GameRule::effect(TriggerEvent triggerEvent, Room *room, ServerPlayer *playe
                 log.from = player;
                 log.arg = new_kingdom;
                 room->sendLog(log);
+                }*/
+                if (player->getActualGeneral1()->getKingdom().contains("|")) {
+                    if (!player->getActualGeneral2()->getKingdom().contains("|")){
+                        player->setKingdom(player->getActualGeneral2()->getKingdom());
+                    }
+                    else{
+                        QStringList list;
+                        foreach(auto s, player->getActualGeneral1()->getKingdom().split("|")){
+                            if ( player->getActualGeneral2()->getKingdom().split("|").contains(s)){
+                                list << s;
+                            }
+                        }
+                        QString choice = room->askForChoice(player, "Revolution_AskForKingdom", list.join("+"));
+                        player->setKingdom(choice);
+                    }
                 }
-                */
                 foreach (const Skill *skill, player->getVisibleSkillList()) {
                     if (skill->getFrequency() == Skill::Limited && !skill->getLimitMark().isEmpty() && (!skill->isLordSkill() || player->hasLordSkill(skill->objectName()))) {
                         JsonArray arg;
@@ -397,7 +424,7 @@ bool GameRule::effect(TriggerEvent triggerEvent, Room *room, ServerPlayer *playe
                     room->setPlayerMark(p, "drank", 0);
                 }
             }
-            if (room->getTag("ImperialOrderInvoke").toBool()) {
+            if (room->getTag("ImperialOrderInvoke").toBool() && player->askForSkillInvoke("imperial_order")) {
                 room->setTag("ImperialOrderInvoke", false);
                 LogMessage log;
                 log.type = "#ImperialOrderEffect";
@@ -411,6 +438,9 @@ bool GameRule::effect(TriggerEvent triggerEvent, Room *room, ServerPlayer *playe
                             room->cardEffect(io, NULL, p);
                     }
                 }
+            }
+            else if(room->getTag("ImperialOrderInvoke").toBool()){
+                room->setTag("ImperialOrderInvoke", false);
             }
         } else if (change.to == Player::Play) {
             room->addPlayerHistory(player, ".");
@@ -597,6 +627,24 @@ bool GameRule::effect(TriggerEvent triggerEvent, Room *room, ServerPlayer *playe
             room->killPlayer(player, dying.damage);
         }
 
+        break;
+    }       
+    case DamageCaused: {
+        DamageStruct damage = data.value<DamageStruct>();
+        if (damage.card && damage.card->isKindOf("IceSlash")
+            && !damage.to->isNude() && damage.by_user
+            && !damage.chain && !damage.transfer && player->askForSkillInvoke("IceSlash", data)) {
+            if (damage.from->canDiscard(damage.to, "he")) {
+                int card_id = room->askForCardChosen(player, damage.to, "he", "IceSlash", false, Card::MethodDiscard);
+                room->throwCard(Sanguosha->getCard(card_id), damage.to, damage.from);
+
+                if (damage.from->isAlive() && damage.to->isAlive() && damage.from->canDiscard(damage.to, "he")) {
+                    card_id = room->askForCardChosen(player, damage.to, "he", "IceSlash", false, Card::MethodDiscard);
+                    room->throwCard(Sanguosha->getCard(card_id), damage.to, damage.from);
+                }
+            }
+            return true;
+        }
         break;
     }
     case ConfirmDamage: {
@@ -869,6 +917,13 @@ bool GameRule::effect(TriggerEvent triggerEvent, Room *room, ServerPlayer *playe
             room->gameOver(winner); // if all hasShownGenreal, and they are all friend, game over.
             return true;
         }
+        if (player->isAlive() && player->hasShownAllGenerals()) {
+            if (player->getMark("HalfMaxHpLeft") > 0) {
+                room->removePlayerMark(player, "HalfMaxHpLeft");
+                room->addPlayerMark(player, "@halfmaxhp");
+                room->attachSkillToPlayer(player, "halfmaxhp");
+            }
+        }
         if (Config.RewardTheFirstShowingPlayer && room->getTag("TheFirstToShowRewarded").isNull() && room->getScenario() == NULL) {
             LogMessage log;
             log.type = "#FirstShowReward";
@@ -918,7 +973,7 @@ bool GameRule::effect(TriggerEvent triggerEvent, Room *room, ServerPlayer *playe
 
                 room->setEmotion(player, "companion");
             }
-            if (player->getMark("HalfMaxHpLeft") > 0) {
+            /*if (player->getMark("HalfMaxHpLeft") > 0) {
                 LogMessage log;
                 log.type = "#HalfMaxHpLeft";
                 log.from = player;
@@ -926,7 +981,7 @@ bool GameRule::effect(TriggerEvent triggerEvent, Room *room, ServerPlayer *playe
                 if (player->askForSkillInvoke("userdefine:halfmaxhp"))
                     player->drawCards(1);
                 room->removePlayerMark(player, "HalfMaxHpLeft");
-            }
+            }*/
         }
     }
     case BeforeCardsMove: {

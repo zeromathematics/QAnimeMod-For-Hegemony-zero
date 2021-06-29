@@ -335,6 +335,11 @@ private:
     QPixmap m_rolesBoxBackground;
     QGraphicsPixmapItem *m_rolesBox;
     QGraphicsTextItem *m_pileCardNumInfoTextBox;
+
+    QGraphicsPixmapItem *m_tableBg;
+    QPixmap m_tableBgPixmap;
+    QPixmap m_tableBgPixmapOrig;
+
     int m_tablew;
     int m_tableh;
 
@@ -417,6 +422,9 @@ private:
 
     QRectF _m_infoPlane;
 
+    bool _m_bgEnabled;
+    QString _m_bgMusicPath;
+
     QSet<HeroSkinContainer *> m_heroSkinContainers;
 
 private slots:
@@ -428,6 +436,10 @@ private slots:
     void updateSelectedTargets();
     void onSkillActivated();
     void startInXs();
+    void changeBGM(const QString bgm);
+    void changeBG(const QString bg);
+    void adjustDefaultBgm();
+    void adjustDefaultBg();
     void hideAvatars();
     void changeHp(const QString &who, int delta, DamageStruct::Nature nature, bool losthp);
     void changeMaxHp(const QString &who, int delta);

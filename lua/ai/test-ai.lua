@@ -1512,7 +1512,7 @@ nuequ_skill.getTurnUseCard=function(self,inclusive)
 	if self.player:hasUsed("NuequCard") or (not self:willShowForAttack() and not self:willShowForDefence()) then return end
 	if self.player:isNude() then return end
 	local targets = {}
-	local min = 100
+	--[[local min = 100
 	for _,p in sgs.list(self.room:getAlivePlayers()) do
 		if p:getHp() < min then
 			targets = {}
@@ -1522,7 +1522,7 @@ nuequ_skill.getTurnUseCard=function(self,inclusive)
 	end
 	if min == 0 then
 		if #targets == 1 and targets[1]:hasShownSkill("lingti") then return end
-	end
+	end]]
 	return sgs.Card_Parse("@NuequCard=.&nuequ")
 end
 
@@ -1531,16 +1531,21 @@ sgs.ai_skill_use_func.NuequCard = function(card,use,self)
 
 	local cards = sgs.QList2Table(self.player:getCards("h"))
 	self:sortByKeepValue(cards)
-
-	local dummyslash = sgs.Sanguosha:cloneCard("fire_slash", cards[1]:getSuit(), cards[1]:getNumber())
+	local card
+	for _,c in ipairs(cards) do
+	  if c:isKindOf("BasicCard") then
+	     card = c
+		 break
+	  end
+	end
+    
+	if not card then return end
+	local dummyslash = sgs.Sanguosha:cloneCard("fire_slash", card:getSuit(), card:getNumber())
 	local targets = {}
 	local min = 100
 	for _,p in sgs.list(self.room:getAlivePlayers()) do
-		if p:getHp() < min then
-			targets = {}
-			min = p:getHp()
-		end
-		if p:getHp() <= min then table.insert(targets, p) end
+		--if p:getHp() <= min then table.insert(targets, p) end
+		table.insert(targets, p)
 	end
 
 	for _, t in ipairs(targets) do
@@ -1549,13 +1554,13 @@ sgs.ai_skill_use_func.NuequCard = function(card,use,self)
 		end
 	end
 
-	if not target then
+	--[[if not target then
 		for _, t in ipairs(targets) do
 			if self:isFriend(t) and t:getHp() <= 1 and self:slashIsEffective(dummyslash, t) then
 				target = t
 			end
 		end
-	end
+	end]]
 
 	if not target then
 		for _, t in ipairs(targets) do
@@ -1573,20 +1578,20 @@ sgs.ai_skill_use_func.NuequCard = function(card,use,self)
 		end
 	end
 
-	if not target then
+	--[[if not target then
 		for _, t in ipairs(targets) do
 			if self:isFriend(t) and t:isWounded() and self:slashIsEffective(dummyslash, t) then
 				target = t
 			end
 		end
-	end
+	end]]
 
 	if not target then target = targets[1] end
 
 
 
-	if target and #cards > 0 then
-		use.card = sgs.Card_Parse("@NuequCard="..cards[1]:getEffectiveId().."&nuequ")
+	if target and card then
+		use.card = sgs.Card_Parse("@NuequCard="..card:getEffectiveId().."&nuequ")
 		 if use.to then use.to:append(target) end
 		return
 	end
@@ -1595,15 +1600,30 @@ end
 sgs.ai_use_value["NuequCard"] = 5
 sgs.ai_use_priority["NuequCard"]  = 0
 sgs.ai_card_intention.NuequCard = function(self, card, from, tos)
-	for _, to in ipairs(tos) do
+	--[[for _, to in ipairs(tos) do
 		if self:isFriend(to) then return -80 end
-	end
+	end]]
 	return 100
 end
 
 sgs.ai_skill_invoke["BurningLove"] = function(self, data)
 	local damage = data:toDamage()
-	return self:isFriend(damage.to)
+	return self:isEnemy(damage.to)
+end
+
+sgs.ai_skill_choice.BurningLove = function(self, choices, data)
+   local damage=data:toDamage()
+   if (damage.to:hasShownSkill("zhudao")) then return "nuequ_chain" end
+   if (damage.to:hasShownSkill("zhengchang")) then return "nuequ_discard" end
+   if (damage.to:hasShownSkill("tianhuo")) then return "nuequ_discard" end
+   if (damage.to:getEquips():length()>2 and damage.to:getHp()>2) then
+      return "nuequ_discard"
+   end
+   for _,p in sgs.qlist(self.room:getAlivePlayers()) do
+     if p:objectName()~= damage.to:objectName() and p:isFriendWith(damage.to) then
+	    return "nuequ_chain"
+	 end
+   end
 end
 
 --加贺
@@ -1612,7 +1632,7 @@ sgs.ai_skill_invoke.weishi = function(self, data)
 	local targets = {}
 	if self:isWeak() then return true end
 	for _,p in sgs.list(self.room:getOtherPlayers(self.player)) do
-		if #p:getPileNames() > 0 and self:isFriend(p) then
+		if (#p:getPileNames() > 0 or self.player:isFriendWith(p)) and self:isFriend(p) then
 			table.insert(targets, p)
 		end
 	end
@@ -1623,6 +1643,11 @@ sgs.ai_skill_invoke.weishi = function(self, data)
 end
 
 sgs.ai_skill_playerchosen.weishi = function(self, targets)
+    for _, target in sgs.qlist(targets) do
+	  if self:isFriend(target) and target:isWounded() then
+	    return target
+	  end
+	end
 	if #self.enemies > self.player:getPile("Kansaiki"):length() then return self.player end
 	-- todo, now return random fuck
 end
@@ -1650,16 +1675,28 @@ end
 
 sgs.ai_skill_use_func.HongzhaCard = function(card,use,self)
 	local targets = sgs.SPlayerList()
+	local n = 0
+	for _,p in sgs.qlist(self.room:getAlivePlayers()) do
+	   n = n+ p:getPile("Kansaiki"):length()
+	end
 	for _,enemy in ipairs(self.enemies) do
-		if targets:length() < self.player:getPile("Kansaiki"):length() and not enemy:hasArmorEffect("vine") and self:slashIsEffective(sgs.Sanguosha:cloneCard("slash", sgs.Card_NoSuit, 0), enemy) then
+		if targets:length() < n and not enemy:hasArmorEffect("vine") and self:slashIsEffective(sgs.Sanguosha:cloneCard("slash", sgs.Card_NoSuit, 0), enemy) then
 			targets:append(enemy)
 		end
 	end
 	local cards = sgs.QList2Table(self.player:getCards("he"))
 	self:sortByKeepValue(cards)
-
-	if targets:length() > 0 and #cards > 0 then
-		use.card = sgs.Card_Parse("@HongzhaCard="..cards[1]:getEffectiveId().."&hongzha")
+    local card
+	for _,c in ipairs(cards) do
+	  if c:isKindOf("BasicCard") then
+	     card = c
+		 break
+	  end
+	end
+    
+	if not card then return end
+	if targets:length() > 0 and card then
+		use.card = sgs.Card_Parse("@HongzhaCard="..card:getEffectiveId().."&hongzha")
 		 use.to = targets
 		return
 	end
@@ -2097,7 +2134,7 @@ end
 --夕立
 sgs.ai_skill_invoke.kuangquan = function(self, data)
   local damage = data:toDamage()
-  return self:willShowForAttack() and self:isEnemy(damage.to)
+  return self:willShowForAttack() and self:isEnemy(damage.to) and not damage.to:hasShownSkill("rennai")
 end
 
 --黑雪姬
@@ -2215,7 +2252,7 @@ end
 sgs.ai_use_value.LiaoliCard = 4
 sgs.ai_use_priority.LiaoliCard  = 5
 
---觉 搬运
+--觉
 sgs.ai_cardneed.xiangqi = function(to, card, self)
 	if not self:willSkipPlayPhase(to) then
 		return  (not to:getWeapon() and  getCardsNum("Weapon",to,self.player)<1 and card:isKindOf("Weapon"))
@@ -2225,11 +2262,19 @@ end
 
 sgs.ai_skill_invoke.xiangqi = function(self,data)
   if not self:willShowForAttack() and not self:willShowForDefence() then return false end
-  local damage = data:toDamage()
-  if  self:isEnemy(damage.from) and not self:isFriend(damage.to) then return true end
-  if  self:isEnemy(damage.to) and not self:isFriend(damage.from) and damage.from:getHandcardNum()>1 then return true end
-  if  self:isEnemy(damage.from) and damage.to == self.player then return true end
-  if  self:isEnemy(damage.from) and self:isFriend(damage.to) and damage.from:getHandcardNum()>1 then return true end
+  local prompt = data:toString():split(":")
+  local from
+  local to
+  for _,p in sgs.qlist(self.room:getAlivePlayers()) do
+    if p:objectName()==prompt[2] then from = p end
+	if p:objectName()==prompt[3] then to = p end
+  end
+  if  self:isEnemy(from) and not self:isFriend(to) then return true end
+  if  self:isEnemy(to) and not self:isFriend(from) and from:getHandcardNum()>1 then return true end
+  if  not self:isFriend(from) and to:objectName() == self.player:objectName() then return true end
+  if  not self:isFriend(from) and self:isFriend(to) and from:getHandcardNum()>1 then return true end
+  if  not self:isFriend(from) and self:isFriend(to) and to:getHp()>1 then return true end
+  if  self:isEnemy(to) and to:getHp() <= 1 and self:isFriend(from) and from:getHandcardNum()>4 and from:getHandcardNum()>from:getHp()+1 then return true end
 end
 
 sgs.ai_skill_invoke.duxin = function(self,data)
@@ -2415,6 +2460,13 @@ sgs.ai_skill_invoke.yezhan= function(self, data)
    if self:isEnemy(data:toDamage().to) then
      return self:willShowForAttack()
    end
+end
+
+sgs.ai_skill_playerchosen.yezhan = function(self, targets, max_num, min_num)
+	for _, target in sgs.qlist(targets) do
+		if self.player:isFriendWith(target) and target:hasShownAllGenerals() then return target end
+	end
+	return nil
 end
 
 --一方

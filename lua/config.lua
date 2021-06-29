@@ -22,7 +22,7 @@
 -- and it is a little different from config.ini
 
 config = {
-	kingdoms = { "wei" , "qun" , "shu" , "wu", "god", "science", "magic", "real", "game" },
+	kingdoms = { "wei" , "qun" , "shu" , "wu", "god", "science", "magic", "real", "game", "magic|science", "magic|real", "science|real", "real|game", "magic|game", "science|game"},
 	kingdom_colors = {
 		god = "#96943D",
 		wei = "#615E5D",
@@ -33,6 +33,7 @@ config = {
 		magic = "#F00C95",
 		game = "#0CF0EC",
 		real = "#F5ED07",
+		WOF = "#C0C0C0",
 	},
 
 	skill_colors = {
@@ -48,6 +49,10 @@ config = {
 		clubskill = "#C71585",
 		clubskilladd = "#C71585",
 		clubskilleffect = "#C71585",
+		magicskill = "#F00C95",
+		scienceskill = "#615E5D",
+		realskill = "#F5ED07",
+		gameskill = "#0CF0EC",		
 	},
 
 	-- Sci-fi style background
@@ -72,7 +77,8 @@ config = {
 		"Formation",
 		"Momentum",
 		--"JiangeDefense",
-		"Transformation"
+		"Transformation",
+		"MariaBattle"
 	},
 
 	easy_text = {

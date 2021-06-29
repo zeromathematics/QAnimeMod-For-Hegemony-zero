@@ -174,6 +174,10 @@ void Server::processClientRequest(ClientSocket *socket, const Packet &signup)
         for (int i = 0; i < 4; ++i)
             current->addRobotCommand(player, QVariant());
     }
+    if (current->getPlayers().length() == 1 && current->getScenario() && current->getScenario()->objectName() == "maria_battle") {
+        for (int i = 0; i < 5; ++i)
+            current->addRobotCommand(player, QVariant());
+    }
 }
 
 void Server::cleanup()

@@ -165,6 +165,7 @@ public:
     void addToPile(const QString &pile_name, QList<int> card_ids, bool open, QList<ServerPlayer *> open_players, CardMoveReason reason);
     void pileAdd(const QString &pile_name, QList<int> card_ids);
     void gainAnExtraTurn();
+    void gainAnInstantExtraTurn();
 
     void copyFrom(ServerPlayer *sp);
 

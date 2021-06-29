@@ -235,10 +235,32 @@ QString General::getSkillDescription(bool include_name, bool inToolTip, bool inc
         }
     }
 
-    if (include_name) {
+    if (include_name){
+
         QString color_str = Sanguosha->getKingdomColor(kingdom).name();
+        if (kingdom.contains("|")){
+            QStringList kingdoms = kingdom.split("|");
+            color_str = Sanguosha->getKingdomColor(kingdoms.at(rand()%kingdoms.length())).name();
+        }
         QString name = QString("<font color=%1><b>%2</b></font>     ").arg(color_str).arg(Sanguosha->translate(objectName()));
-        name.prepend(QString("<img src='image/kingdom/icon/%1.png'/>    ").arg(kingdom));
+        if (kingdom.contains("|")){
+            QStringList list;
+            foreach(auto v, kingdom.split("|")){
+                list.prepend(v);
+            }
+
+            for(int i=0; i < list.length(); i++){
+                if (i==0){
+                  name.prepend(QString("<img src='image/kingdom/icon/%1.png'/>    ").arg(list.at(i)));
+                }
+                else{
+                  name.prepend(QString("<img src='image/kingdom/icon/%1.png'/>").arg(list.at(i)));
+                }
+            }
+        }
+        else{
+            name.prepend(QString("<img src='image/kingdom/icon/%1.png'/>    ").arg(kingdom));
+        }
         int region = double_max_hp;
         int waken = 0;
         if (deputy_max_hp_adjusted_value != 0 || head_max_hp_adjusted_value != 0) {
@@ -275,6 +297,11 @@ QString General::getSkillDescription(bool include_name, bool inToolTip, bool inc
             name.append(QString("<font color=%1>%2</font>").arg(color_str).arg(getCompanions()));
         }
         name.append("<br/> <br/>");
+
+        //for lord
+        if (objectName()=="lord_SE_Eren"){
+            name.prepend("<img src='image/kingdom/lord/jiyuunotsubasa.png'/>" );
+        }
         description.prepend(name);
     }
 

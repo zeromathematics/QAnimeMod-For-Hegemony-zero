@@ -99,7 +99,7 @@ local t = {
 	["#SilverLion"] = "%from 的防具【<font color=\"yellow\"><b>王玉</b></font>】防止了 %arg 点伤害，减至 <font color=\"yellow\"><b>1</b></font> 点",
 
 	["Vine"] = "移动教会",
-	[":Vine"] = "装备牌·防具\n\n技能：锁定技，【南蛮入侵】、【万箭齐发】和普通【杀】对你无效；锁定技，每当你受到火焰伤害时，你令此伤害+1。",
+	[":Vine"] = "装备牌·防具\n\n技能：锁定技，【深海舰袭】、【无限剑制】和普通【杀】对你无效；锁定技，每当你受到火焰伤害时，你令此伤害+1。",
 	["#VineDamage"] = "%from 的防具【<font color=\"yellow\"><b>移动教会</b></font>】效果被触发，火焰伤害由 %arg 点增加至 %arg2 点",
 
 	["Horse"] = "坐骑",

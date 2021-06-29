@@ -31,6 +31,7 @@
 #include "banpair.h"
 #include "miniscenarios.h"
 #include "jiange-defense-scenario.h"
+#include "maria-battle-scenario.h"
 
 #include <lua.hpp>
 #include <QFile>
@@ -68,6 +69,7 @@ void Engine::_loadModScenarios()
 {
     //wait for a new scenario
     addScenario(new JiangeDefenseScenario());
+    addScenario(new MariaBattleScenario());
 }
 
 void Engine::addPackage(const QString &name)

@@ -125,7 +125,9 @@ SOURCES += \
     src/package/newtest.cpp \
     src/package/jiange-defense.cpp \
     src/ui/startscene.cpp \
-    src/package/revolution.cpp
+    src/package/revolution.cpp \
+    src/scenario/maria-battle-scenario.cpp \
+    src/package/maria-battle.cpp
 
 HEADERS += \
     src/client/aux-skills.h \
@@ -242,7 +244,9 @@ HEADERS += \
     src/ui/lightboxanimation.h \
     src/ui/pindianbox.h \
     src/package/newtest.h \
-    src/package/revolution.h
+    src/package/revolution.h \
+    src/scenario/maria-battle-scenario.h \
+    src/package/maria-battle.h
 
 FORMS += \
     src/dialog/cardoverview.ui \

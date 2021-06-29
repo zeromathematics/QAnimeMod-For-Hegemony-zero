@@ -153,6 +153,16 @@ public:
     static void cancelTarget(CardUseStruct &use, const QString &name);
     static void cancelTarget(CardUseStruct &use, ServerPlayer *player);
 
+    void changeBGM(QString bgm);
+    void changeBG(QString bg);
+    void setAura(ServerPlayer* player, QString aura);
+    bool hasAura();
+    bool hasAura(QString aura);
+    QString getAura();
+    ServerPlayer* getAuraPlayer();
+    void clearAura();
+    bool doAura(ServerPlayer* player, QString aura);
+
     // Ask a player to send a server request and returns the client response. Call is blocking until client
     // replies or server times out, whichever is earlier.
     // @param player
@@ -319,6 +329,8 @@ public:
                          const QString &kingdom = QString(), bool sendLog = true, const QString &show_flags = QString(), bool resetHp = false);
     void transformDeputyGeneral(ServerPlayer *player);
     void transformHeadGeneral(ServerPlayer *player);
+    void transformDeputyGeneralTo(ServerPlayer *player, QString general_name);
+    void transformHeadGeneralTo(ServerPlayer *player, QString general_name);
     void swapSeat(ServerPlayer *a, ServerPlayer *b);
     lua_State *getLuaState() const;
     void setFixedDistance(Player *from, const Player *to, int distance);

@@ -141,6 +141,7 @@ sgs.Slash_Natures = {
 	Slash = sgs.DamageStruct_Normal,
 	FireSlash = sgs.DamageStruct_Fire,
 	ThunderSlash = sgs.DamageStruct_Thunder,
+	IceSlash = sgs.DamageStruct_Ice,
 }
 sgs.robot = {}
 sgs.ai_guangxing = {}
@@ -189,15 +190,15 @@ function setInitialTables()
 	sgs.Friend_FemaleWounded = 6
 
 	sgs.general_value = {
-						["cacao"] = 3, ["simayi"] = 4, ["xiahoudun"] = 2, ["zhangliao"] = 2.5, ["xuchu"] = 2, ["guojia"] = 5, ["zhenji"] = 4, ["xiahouyuan"] = 2.5, ["zhanghe"] = 3, ["xuhuang"] = 3, ["caoren"] = 2.5, ["dianwei"] = 3.5,
-						["xunyu"] = 3.5, ["caopi"] = 4.5, ["yuejin"] = 2.5, ["dengai"] = 4, ["caohong"] = 2, ["lidian"] = 4, ["zangba"] = 2, ["xunyou"] = 3.5, ["bianhuanghou"] = 3,
+						--[[["Tomoya"] = 2.5, ["Keima"] = 4, ["Kanade"] = 3, ["Shizuo"] = 4, ["Yuuta"] = 3.5, ["Akarin"] = 3.5, ["Rikka"] = 3, ["Taiga"] = 4.5, ["Tukasa"] = 3.5, ["Hikigaya"] = 4, ["Yyui"] = 4.5, ["k1"] = 3,
+						["Koromo"] = 3.5, ["Kagami"] = 3.5, ["Yukino"] = 4, ["yuri"] = 4, 
 						["yuji"] = 4.5, ["hetaihou"] = 2.5, ["zhangren"] = 3, ["zhangjiao"] = 3, ["dongzhuo"] = 3, ["liguo"] = 3.5, ["zuoci"] = 4, ["yuanshao"] = 4, ["yanliangwenchou"] = 3.5, ["jiaxu"] = 4, ["lvbu"] = 3, ["huatuo"] = 3.5,
 						["diaochan"] = 3.5, ["kongrong"] = 3, ["caiwenji"] = 3, ["mateng"] = 4.5, ["jiling"] = 1.5, ["pangde"] = 2, ["panfeng"] = 1.5, ["zoushi"] = 1.5, ["tianfeng"] = 2.5, ["lord_zhangjiao"] = 5.5,
 						["jiangwei"] = 3, ["jiangwanfeiyi"] = 2.5, ["madai"] = 2.5, ["mifuren"] = 2, ["masu"] = 4.5, ["shamoke"] = 3.5, ["zhangfei"] = 3.5, ["guanyu"] = 3, ["liubei"] = 2, ["zhaoyun"] = 2.5, ["machao"] = 2.5,
 						["zhugeliang"] = 3.5, ["huangzhong"] = 2.5, ["pangtong"] = 3.8, ["wolong"] = 3, ["huangyueying"] = 4, ["weiyan"] = 2, ["liushan"] = 3, ["ganfuren"] = 1.5, ["menghuo"] = 2.5, ["zhurong"] = 3, ["lord_liubei"] = 5.5,
 						["xusheng"] = 2.5, ["jiangqin"] = 2.5, ["chenwudongxi"] = 1, ["sunce"] = 2.5, ["lingtong"] = 3.5, ["lvfan"] = 4.5, ["sunquan"] = 4, ["luxun"] = 3, ["sunshangxiang"] = 4.5, ["sunjian"] = 3, ["xiaoqiao"] = 3,
 						["taishici"] = 2.5, ["ganning"] = 2.5, ["daqiao"] = 3.5, ["huanggai"] = 3, ["lvmeng"] = 3, ["zhouyu"] = 3, ["lusu"] = 4, ["dingfeng"] = 2.5, ["zhoutai"] = 3, ["erzhang"] = 3, ["lord_sunquan"] = 5.5,
-						["sujiang"] = 0, ["sujiangf"] = 0,
+						["sujiang"] = 0, ["sujiangf"] = 0,]]
 	}
 	sgs.general_pair_value = {
 						["caocao+lidian"] = 9, ["yuejin+caoren"] = 6, ["zhenji+guojia"] = 12, ["zhenji+simayi"] = 10, ["guojia+dengai"] = 10, ["guojia+xiahoudun"] = 9, ["zhenji+zhanghe"] = 8, ["lidian+zhangliao"] = 5.5,
@@ -1190,6 +1191,7 @@ function SmartAI:assignKeep(start)
 		if needDamaged then
 			self.keepdata.ThunderSlash = 5.2
 			self.keepdata.FireSlash = 5.1
+			self.keepdata.IceSlash = 5.1
 			self.keepdata.Slash = 5
 			self.keepdata.Jink = 4.5
 		end
