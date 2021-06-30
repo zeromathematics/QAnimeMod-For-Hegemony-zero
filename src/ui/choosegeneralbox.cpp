@@ -45,7 +45,12 @@ GeneralCardItem::GeneralCardItem(const QString &generalName, const int skinId)
     Q_ASSERT(general);
 
     setOuterGlowEffectEnabled(true);
-    setOuterGlowColor(Sanguosha->getKingdomColor(general->getKingdom()));
+    QString kingdom = general->getKingdom();
+    QStringList kingdoms = kingdom.split("|");
+    if (kingdoms.length()>1){
+        kingdom = kingdoms.at(rand()%kingdoms.length());
+    }
+    setOuterGlowColor(Sanguosha->getKingdomColor(kingdom));
 #ifdef Q_OS_ANDROID
     moveRange = 1.0;
 #endif
@@ -57,7 +62,12 @@ void GeneralCardItem::changeGeneral(const QString &generalName)
 
     const General *general = Sanguosha->getGeneral(generalName);
     Q_ASSERT(general);
-    setOuterGlowColor(Sanguosha->getKingdomColor(general->getKingdom()));
+    QString kingdom = general->getKingdom();
+    QStringList kingdoms = kingdom.split("|");
+    if (kingdoms.length()>1){
+        kingdom = kingdoms.at(rand()%kingdoms.length());
+    }
+    setOuterGlowColor(Sanguosha->getKingdomColor(kingdom));
 }
 
 void GeneralCardItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
@@ -78,6 +88,10 @@ void GeneralCardItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *,
     if (!hasCompanion) return;
 
     QString kingdom = Sanguosha->getGeneral(objectName())->getKingdom();
+    QStringList kingdoms = kingdom.split("|");
+    if (kingdoms.length()>1){
+        kingdom = kingdoms.at(rand()%kingdoms.length());
+    }
     QPixmap icon = G_ROOM_SKIN.getPixmap(QSanRoomSkin::S_SKIN_KEY_GENERAL_CARD_ITEM_COMPANION_ICON, kingdom);
     painter->drawPixmap(boundingRect().center().x() - icon.width() / 2 + 3, boundingRect().bottom() - icon.height(), icon);
 

@@ -90,16 +90,25 @@ public:
         if (event == BeforeCardsMove){
             CardsMoveOneTimeStruct move = data.value<CardsMoveOneTimeStruct>();
             QList<QVariant> ql = room->getTag("keyList").toList();
+            QList<QVariant> q2 = room->getTag("xintiaoList").toList();
             foreach(auto p, room->getAlivePlayers()){
                foreach(auto c, p->getJudgingArea()){
                    if (c->isKindOf("Key")){
                        if (!VariantList2IntList(ql).contains(c->getEffectiveId())){
                            ql.append(QVariant::fromValue(c->getEffectiveId()));
                        }
+
+                       //for xintiao
+                       if (p->hasSkill("xintiao")){
+                           if (!VariantList2IntList(q2).contains(c->getEffectiveId())){
+                               q2.append(QVariant::fromValue(c->getEffectiveId()));
+                           }
+                       }
                    }
                }
             }
             room->setTag("keyList", ql);
+            room->setTag("xintiaoList", q2);
         }
         if (event == CardsMoveOneTime)
         {
@@ -5422,7 +5431,7 @@ public:
     virtual QStringList triggerable(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer * &) const
     {
         CardUseStruct use = data.value<CardUseStruct>();
-        if (event==TargetConfirming && TriggerSkill::triggerable(player) && use.card->getSuit()!=Card::NoSuit && use.card->getSuit()!=Card::NoSuitBlack && use.card->getSuit()!=Card::NoSuitRed && use.from!=player && player->getPile("bomb").length()>0){
+        if (use.from && event==TargetConfirming && TriggerSkill::triggerable(player) && use.card->getSuit()!=Card::NoSuit && use.card->getSuit()!=Card::NoSuitBlack && use.card->getSuit()!=Card::NoSuitRed && use.from!=player && player->getPile("bomb").length()>0){
             return QStringList(objectName());
         }
         if (event==EventPhaseStart && player->getPhase()==Player::Finish && TriggerSkill::triggerable(player) && player->getPile("bomb").length()<4){

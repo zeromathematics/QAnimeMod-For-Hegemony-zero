@@ -1072,3 +1072,81 @@ sgs.ai_skill_playerchosen.yinguo = function(self, targets)
 	if target then return target end
 	return targets:first()
 end
+
+local jiuzhu_skill={}
+jiuzhu_skill.name="jiuzhu"
+table.insert(sgs.ai_skills,jiuzhu_skill)
+jiuzhu_skill.getTurnUseCard=function(self,inclusive)
+	if self.player:hasUsed("JiuzhuCard") then return end
+	if #self.friends_noself < 1 then return end
+	return sgs.Card_Parse("@JiuzhuCard=.&jiuzhu")
+end
+
+sgs.ai_skill_use_func.JiuzhuCard = function(card,use,self)
+    local target1
+	local target2
+	for _,p in ipairs(self.friends_noself) do
+	   if p:getHp()<= self.player:getHp() and p:isWounded() then
+	     target1 = p
+	   end
+	end
+	for _,p in ipairs(self.friends_noself) do
+	   if target1 and p:getHp()<= self.player:getHp() and p:isWounded() and p:objectName()~=target1:objectName() then
+	     target2 = p
+	   end
+	end
+	if (self.player:getHp()==1 and (not self.player:hasSkill("shexin") or self.player:getMark("@shexin")==0) and self.player:getHandcardNum()>3) then
+	   return
+	end
+	if target1 then 
+	   use.card = sgs.Card_Parse("@JiuzhuCard=.&jiuzhu")
+	   if use.to then use.to:append(target1) end
+	end
+	if use.to and target2 then 
+	   use.to:append(target2)
+	end
+	return
+end
+
+sgs.ai_skill_invoke.shexin= function(self, data)
+   return true
+end
+
+sgs.ai_skill_use["@@shexin"] = function(self, prompt)
+	local targets = {}
+	local dest
+	local card
+	for _,p in ipairs(self.friends) do
+	  dest = p
+	end
+	local cards = sgs.QList2Table(self.player:getHandcards())
+	local equips=sgs.QList2Table(self.player:getEquips())
+	self:sortByUseValue(cards,true)
+	self:sortByUseValue(equips,true)
+	for _,acard in ipairs(cards) do
+		if  acard:getSuitString()=="heart" then
+			card =acard
+		end
+	end
+	for _,acard in ipairs(equips) do
+		if acard:getSuitString()=="heart"  then
+			card =acard
+		end
+	end
+	if dest and card then
+	  return ("@ShexinCard="..card:getEffectiveId().."&->" .. dest:objectName())
+	else
+	  return "."
+	end
+end
+
+sgs.ai_skill_invoke.xintiao= function(self, data)
+   return true
+end
+
+sgs.ai_skill_playerchosen.xintiao = function(self, targets, max_num, min_num)
+	for _, target in sgs.qlist(targets) do
+		if self:isFriend(target) then return target end
+	end
+	return nil
+end

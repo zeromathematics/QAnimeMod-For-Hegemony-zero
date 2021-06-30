@@ -372,8 +372,6 @@ bool General::isCompanionWith(const QString &name) const
 {
     const General *other = Sanguosha->getGeneral(name);
     Q_ASSERT(other);
-    if (kingdom != other->kingdom)
-        return false;
     return lord || other->lord || companions.contains(name)
         || other->companions.contains(objectName());
 }

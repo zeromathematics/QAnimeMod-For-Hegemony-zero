@@ -2949,7 +2949,29 @@ end
 
 sgs.ai_skill_invoke.xieti= function(self, data)
   local dest = data:toPlayer()
+  local room = self.room
   if dest then return not self:isFriend(dest) end
+  if not dest then
+    if self:isEnemy(self.player:getNextAlive()) or (self:isFriend(self.player:getNextAlive():getNextAlive()) and not self:isFriend(self.player:getNextAlive())) then
+	   room:setPlayerFlag(self.player, "xieti_right")
+	   return true
+	end
+	if self:isFriend(self.player:getLastAlive()) then
+	   room:setPlayerFlag(self.player, "xieti_left")
+	   return true
+	end
+  end
+end
+
+sgs.ai_skill_choice.xieti = function(self, choices, data)
+   if self.player:hasFlag("xieti_left") then
+     return "move_left"
+   else
+     return "move_right"
+   end
+   local room = self.room
+   room:setPlayerFlag(self.player, "-xieti_right")
+   room:setPlayerFlag(self.player, "-xieti_left")
 end
 
 --Asuna
