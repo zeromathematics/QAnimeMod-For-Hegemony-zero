@@ -1,5 +1,5 @@
 sgs.ai_skill_choice.transform = function(self, choices, data)
-    if math.random(1,2) == 1 then
+    if math.random(1,2) == 1 or self.player:getGeneral2Name()=="sujiang" or self.player:getGeneral2Name()=="sujiangf" then
 	 return "transform"
 	else
 	 return "cancel"
@@ -725,12 +725,14 @@ wangxiang_skill.getTurnUseCard = function(self,room,player,data)
 	local usevalue = 0
 	local keepvalue = 0	
 	local id
+	local card1
 	local cards = self.player:getHandcards()
 	cards = sgs.QList2Table(cards)
 	self:sortByKeepValue(cards)
 	for _,card in ipairs(cards) do
 		if card:isBlack() and card:isKindOf("BasicCard") then
 			id = tostring(card:getId())
+			card1 = card
 			usevalue=self:getUseValue(card)
 			keepvalue=self:getKeepValue(card)
 			break
@@ -738,14 +740,15 @@ wangxiang_skill.getTurnUseCard = function(self,room,player,data)
 	end
 	if not id then return end
 	local parsed_card = {}
-    table.insert(parsed_card, sgs.Card_Parse("drowning:wangxiang[to_be_decided:0]=" .. id .."&wangxiang"))				--水淹七军
-	table.insert(parsed_card, sgs.Card_Parse("threaten_emperor:wangxiang[to_be_decided:0]=" .. id .."&wangxiang"))		--挟天子以令诸侯
-	table.insert(parsed_card, sgs.Card_Parse("await_exhausted:wangxiang[to_be_decided:0]=" .. id .."&wangxiang"))			--以逸待劳
-	table.insert(parsed_card, sgs.Card_Parse("befriend_attacking:wangxiang[to_be_decided:0]=" .. id .."&wangxiang"))		--远交近攻
-	table.insert(parsed_card, sgs.Card_Parse("duel:wangxiang[to_be_decided:0]=" .. id .."&wangxiang"))				--决斗
-	table.insert(parsed_card, sgs.Card_Parse("dismantlement:wangxiang[to_be_decided:0]=" .. id .."&wangxiang"))		--过河拆桥
-	table.insert(parsed_card, sgs.Card_Parse("slash:wangxiang[to_be_decided:0]=" .. id .."&wangxiang"))				--顺手牵羊
-	table.insert(parsed_card, sgs.Card_Parse("ex_nihilo:wangxiang[to_be_decided:0]=" .. id .."&wangxiang"))			--无中生有
+    table.insert(parsed_card, sgs.Card_Parse("drowning:wangxiang[to_be_decided:"..card1:getNumberString().."]=" .. id .."&wangxiang"))				--水淹七军
+	table.insert(parsed_card, sgs.Card_Parse("threaten_emperor:wangxiang[to_be_decided:"..card1:getNumberString().."]=" .. id .."&wangxiang"))		--挟天子以令诸侯
+	table.insert(parsed_card, sgs.Card_Parse("await_exhausted:wangxiang[to_be_decided:"..card1:getNumberString().."]=" .. id .."&wangxiang"))			--以逸待劳
+	table.insert(parsed_card, sgs.Card_Parse("befriend_attacking:wangxiang[to_be_decided:"..card1:getNumberString().."]=" .. id .."&wangxiang"))		--远交近攻
+	table.insert(parsed_card, sgs.Card_Parse("duel:wangxiang[to_be_decided:"..card1:getNumberString().."]=" .. id .."&wangxiang"))				--决斗
+	table.insert(parsed_card, sgs.Card_Parse("dismantlement:wangxiang[to_be_decided:"..card1:getNumberString().."]=" .. id .."&wangxiang"))		--过河拆桥
+	table.insert(parsed_card, sgs.Card_Parse("slash:wangxiang[to_be_decided:"..card1:getNumberString().."]=" .. id .."&wangxiang"))				--顺手牵羊
+	table.insert(parsed_card, sgs.Card_Parse("ex_nihilo:wangxiang[to_be_decided:"..card1:getNumberString().."]=" .. id .."&wangxiang"))	--无中生有
+	
 	local value = 0
 	local tcard
 	for _, c in ipairs(parsed_card) do
@@ -2672,7 +2675,7 @@ zmqiji_skill.getTurnUseCard = function(self,room,player,data)
 	for i=1,998,1 do
 	   local c = sgs.Sanguosha:getCard(i-1)
 	   if c and (c:isKindOf("BasicCard") or c:isNDTrick()) then
-	      table.insert(parsed_card, sgs.Card_Parse(c:objectName()..":zmqiji[to_be_decided:0]=" .. id .."&zmqiji"))	
+	      table.insert(parsed_card, sgs.Card_Parse(c:objectName()..":zmqiji["..card:getSuitString()..":"..card:getNumberString().."]=" .. id .."&zmqiji"))	
 	   end
 	end
 	

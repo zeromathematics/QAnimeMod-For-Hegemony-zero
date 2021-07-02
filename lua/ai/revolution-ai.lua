@@ -1150,3 +1150,142 @@ sgs.ai_skill_playerchosen.xintiao = function(self, targets, max_num, min_num)
 	end
 	return nil
 end
+
+sgs.ai_skill_invoke.suipian= function(self, data)
+   return true
+end
+
+local lunhui_skill = {}
+lunhui_skill.name = "lunhui"
+table.insert(sgs.ai_skills, lunhui_skill)
+lunhui_skill.getTurnUseCard = function(self,room,player,data)
+	if self.player:hasUsed("ViewAsSkill_lunhuiCard") or self.player:getPile("Fragments"):length()==0 then return end
+	local id
+	local idn
+	local ids = self.player:getPile("Fragments")
+	for _,i in sgs.qlist(ids) do
+	    id = tostring(i)
+		idn = i
+		break
+    end
+	if not id then return end
+	local pattern = self.player:property("lunhui_card"):toString()
+    if pattern == "" then
+	  return
+	end
+	local card = sgs.Sanguosha:getCard(idn)
+	local str = sgs.Card_Parse(pattern..":lunhui["..card:getSuitString()..":"..card:getNumberString().."]="..id.."&lunhui")
+    local can
+	if self:getUseValue(str) > 0.2 then
+       can = true
+     end
+	if can and str and id then
+		return str
+	end
+end
+
+sgs.ai_skill_invoke.yandan= function(self, data)
+   return true
+end
+
+sgs.ai_skill_invoke.lunpo = function(self, data)
+	local use = data:toCardUse()
+	if use.from and self:isEnemy(use.from) then
+		if use.card:isKindOf("SingleTargetTrick") and use.to:length() > 0 and self:isFriend(use.to:at(0)) then
+			if use.card:isKindOf("Snatch") or use.card:isKindOf("Duel") then return true end
+			--if use.card:isKindOf("Dismantlement") and use.to:at(0):getEquips():length() > 0 then return true end
+			if use.card:isKindOf("DelayedTrick") and not use.card:isKindOf("KeyTrick") then return true end
+		end
+		if use.card:isKindOf("Slash") and self:isWeak(use.to:at(0)) and self:isFriend(use.to:at(0)) then return true end
+		if use.card:isKindOf("Jink") or use.card:isKindOf("Peach") then return true end
+		if use.card:isKindOf("AOE") or use.card:isKindOf("GlobalEffect") then
+			for _,p in ipairs(self.friends) do
+				if self:isWeak(p) then
+					return true
+				end
+			end
+		end
+	elseif not use.from then	
+       if #self.enemies == 0 then return false end
+	local min = 100
+	for _,p in sgs.list(self.room:getAlivePlayers()) do
+		if p:getHp() < min then min = p:getHp() end
+	end
+	local num = self.player:getPile("yandan"):length()
+	if min <= 2 then
+		local toFight = self:getPriorTarget()
+		if toFight:getHp() <= 1 then return true end
+		if toFight:hasSkills(sgs.masochism_skill) then return true end
+	end
+	return false
+    end
+	return false
+end
+
+sgs.ai_view_as.zizheng = function(card, player, card_place)
+    local list = player:getPile("yandan")
+	if list:length()<2 then return end
+	local card1
+	local card2
+	for _,i in sgs.qlist(list) do
+	   for _,j in sgs.qlist(list) do
+	      local c1 = sgs.Sanguosha:getCard(i)
+	      local c2 = sgs.Sanguosha:getCard(j)
+		  if i ~= j and (c1:getNumber()==c2:getNumber() or c1:getSuit()==c2:getSuit()) then
+		      card1 = c1
+			  card2 = c2
+			  break
+		  end
+	   end
+	end
+	if not card1 or not card2 then
+	   card1 = sgs.Sanguosha:getCard(list:at(0))
+	   card2 = sgs.Sanguosha:getCard(list:at(1))
+	end
+	
+	local id1 = card1:getEffectiveId()
+	local id2 = card2:getEffectiveId()
+	local str = ("heg_nullification:%s[%s:%s]=%d+%d&zizheng"):format("zizheng", "to_be_decided", "-", id1, id2)
+	return str
+end
+
+sgs.ai_skill_choice.zizheng= function(self, choices, data)
+	if self.player:getPile("yandan"):length()<=2 then
+	  return "zizheng_transform"
+	end
+end
+
+huanshi_skill={}
+huanshi_skill.name="huanshi"
+table.insert(sgs.ai_skills,huanshi_skill)
+huanshi_skill.getTurnUseCard=function(self,inclusive)
+	local source = self.player
+	if self.player:isKongcheng() then return end
+	if self.player:hasUsed("HuanshiCard") then return end
+	if #self.enemies == 0 then return end
+	return sgs.Card_Parse("@HuanshiCard=.&huanshi")
+end
+
+sgs.ai_skill_use_func.HuanshiCard = function(card,use,self)
+	local target
+	local source = self.player
+	local m = 998
+	
+	for _,enemy in ipairs(self.enemies) do
+	    if enemy:getHandcardNum()<m and enemy:getHandcardNum()>0  then
+		  target = enemy
+		  m = enemy:getHandcardNum()
+		end
+	end
+
+	if target then
+		use.card = sgs.Card_Parse("@HuanshiCard=.&huanshi")
+		if use.to then use.to:append(target) end
+		return
+	end
+end
+
+sgs.ai_skill_invoke.kuangzao= function(self, data)
+   local damage = data:toDamage()
+   return self:isEnemy(damage.to)
+end

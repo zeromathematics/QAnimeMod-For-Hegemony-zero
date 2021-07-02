@@ -886,6 +886,11 @@ bool ServerPlayer::doCommand(const QString &reason, int index, ServerPlayer *sou
                 room->obtainCard(source, getCards("he").first(), reason, false);
             } else {
                 QList<int> result = room->askForExchange(this, "command", 2, 2, "@command-give:"+source->objectName());
+                if (result.isEmpty()){
+                    QList<const Card*> list = this->getCards("he");
+                    result << list.at(0)->getEffectiveId();
+                    result << list.at(1)->getEffectiveId();
+                }
                 DummyCard dummy(result);
                 CardMoveReason reason(CardMoveReason::S_REASON_GIVE, objectName(), source->objectName(), "command", QString());
                 reason.m_playerId = source->objectName();

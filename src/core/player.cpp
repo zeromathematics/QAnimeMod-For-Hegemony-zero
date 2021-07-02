@@ -509,6 +509,12 @@ bool Player::hasSkill(const QString &skill_name, bool include_lose) const
         }
 
         QStringList InvalidSkill = property("invalid_skill_has").toString().split("+");
+        foreach(QString s, InvalidSkill){
+            if (s.split(":").first() == skill_name){
+                return false;
+            }
+        }
+
         if (InvalidSkill.contains(skill_name))
             return false;
     }

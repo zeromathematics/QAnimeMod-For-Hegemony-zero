@@ -221,7 +221,19 @@ void GeneralSelector::calculateDeputyValue(const ServerPlayer *player, const QSt
             const General *general2 = Sanguosha->getGeneral(second);
             Q_ASSERT(general1 && general2);
             QString kingdom = general1->getKingdom();
-            if (general2->getKingdom() != kingdom || general2->isLord()) continue;
+
+            QStringList kingdoms1 = kingdom.split("|");
+            QStringList kingdoms2 = general2->getKingdom().split("|");
+            bool common = false;
+            foreach(auto k, kingdoms1){
+                foreach(auto l, kingdoms2){
+                    if (k==l)
+                        common = true;
+                }
+            }
+
+
+            if (!common|| general2->isLord()) continue;
             const int general2_value = m_singleGeneralTable.value(second, 0);
             int v = m_singleGeneralTable.value(first, 0) + general2_value;
 

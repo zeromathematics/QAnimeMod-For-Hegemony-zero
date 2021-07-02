@@ -3042,7 +3042,7 @@ public:
     {
         if (pattern=="slash" || pattern=="jink"){
             JianjiePattern = pattern;
-            return true;
+            return player->hasSkill("jianjie");
         }
         return false;
     }
@@ -3204,7 +3204,7 @@ public:
 
     virtual bool isEnabledAtResponse(const Player *player, const QString &pattern) const
     {
-        return pattern == "slash";
+        return pattern == "slash" && player->hasSkill("cangshan");
     }
 };
 
@@ -4202,7 +4202,18 @@ public:
                 room->removePlayerDisableShow(p,objectName());
                 room->removePlayerMark(p,"@all_skill_invalidity",p->getMark("huansha"));
                 p->setMark("huansha",0);
-                p->setProperty("invalid_skill_has",QVariant());
+                QStringList InvalidSkill = p->property("invalid_skill_has").toString().split("+");
+                foreach(const Skill *skill, p->getActualGeneral1()->getSkillList()){
+                    if (InvalidSkill.contains(skill->objectName()+":huansha")){
+                     InvalidSkill.removeOne(skill->objectName()+":huansha");
+                    }
+                }
+                foreach(const Skill *skill, p->getActualGeneral2()->getSkillList()){
+                    if (InvalidSkill.contains(skill->objectName()+":huansha")){
+                     InvalidSkill.removeOne(skill->objectName()+":huansha");
+                    }
+                }
+                p->setProperty("invalid_skill_has",QVariant(InvalidSkill.join("+")));
             }
         }
         if (event==TargetConfirmed){
@@ -4263,7 +4274,9 @@ public:
                     if (general==p->getActualGeneral1Name()){
                         const General *g=Sanguosha->getGeneral(general);
                         foreach(const Skill *skill, g->getSkillList()){
-                            InvalidSkill<<skill->objectName();
+                            if (!InvalidSkill.contains(skill->objectName()+":huansha")){
+                             InvalidSkill<<skill->objectName()+":huansha";
+                            }
                         }
 
                         p->setProperty("invalid_skill_has",QVariant(InvalidSkill.join("+")));
@@ -4271,7 +4284,9 @@ public:
                     if (general==p->getActualGeneral2Name()){
                         const General *g=Sanguosha->getGeneral(general);
                         foreach(const Skill *skill, g->getSkillList()){
-                            InvalidSkill<<skill->objectName();
+                            if (!InvalidSkill.contains(skill->objectName()+":huansha")){
+                             InvalidSkill<<skill->objectName()+":huansha";
+                            }
                         }
                         p->setProperty("invalid_skill_has",QVariant(InvalidSkill.join("+")));
                     }
@@ -4479,7 +4494,7 @@ public:
 
     virtual bool isEnabledAtResponse(const Player *player, const QString &pattern) const
     {
-        return pattern == "slash";
+        return pattern == "slash" && player->hasSkill("paoji");
     }
 
     bool viewFilter(const QList<const Card *> &selected, const Card *to_select) const
@@ -7515,6 +7530,9 @@ public:
 
     virtual bool isEnabledAtResponse(const Player *player, const QString &pattern) const
     {
+        if (!player->hasSkill("laoyue")){
+            return false;
+        }
         if (player->getPhase() != Player::NotActive || player->hasFlag("Global_LaoyueFailed") || player->isRemoved()) return false;
         if (pattern == "slash")
             return Sanguosha->currentRoomState()->getCurrentCardUseReason() == CardUseStruct::CARD_USE_REASON_RESPONSE_USE;
@@ -7959,7 +7977,7 @@ public:
 
     virtual bool isEnabledAtResponse(const Player *player, const QString &pattern) const
     {
-        return pattern == "slash";
+        return pattern == "slash" && player->hasSkill("xieti");
     }
 };
 
