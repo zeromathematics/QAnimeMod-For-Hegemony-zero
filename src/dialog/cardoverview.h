@@ -47,6 +47,7 @@ private:
     Ui::CardOverview *ui;
 
     void addCard(int i, const Card *card);
+    void addSkillCard(int i, QString name);
 
 private slots:
     void on_femalePlayButton_clicked();

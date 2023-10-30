@@ -38,6 +38,16 @@ sgs.ai_use_value.FireSlash = 4.6
 sgs.ai_keep_value.FireSlash = 3.63
 sgs.ai_use_priority.FireSlash = 2.5
 
+function SmartAI:useCardIceSlash(...)
+	self:useCardSlash(...)
+end
+
+sgs.ai_card_intention.IceSlash = sgs.ai_card_intention.Slash
+
+sgs.ai_use_value.FireSlash = 4.6
+sgs.ai_keep_value.FireSlash = 3.63
+sgs.ai_use_priority.FireSlash = 2.5
+
 sgs.weapon_range.Fan = 4
 sgs.ai_use_priority.Fan = 2.655
 sgs.ai_use_priority.Vine = 0.95
@@ -323,6 +333,7 @@ function SmartAI:isGoodChainTarget_(damageStruct)
 	if card and card:isKindOf("Slash") then
 		nature = card:isKindOf("FireSlash") and sgs.DamageStruct_Fire
 					or card:isKindOf("ThunderSlash") and sgs.DamageStruct_Thunder
+					or card:isKindOf("IceSlash") and sgs.DamageStruct_Ice
 					or sgs.DamageStruct_Normal
 		damage = self:hasHeavySlashDamage(from, card, to, true)
 	elseif nature == sgs.DamageStruct_Fire then

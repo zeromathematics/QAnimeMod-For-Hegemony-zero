@@ -149,6 +149,19 @@ MainWindow::MainWindow(QWidget *parent)
     minButton(NULL), maxButton(NULL), normalButton(NULL), closeButton(NULL),
     versionInfomationReply(NULL), changeLogReply(NULL)
 {
+
+    int n = 0;
+    for (int i = 1; i < 1000; i++){
+        if (QFile::exists(QString("audio/system/main%1.ogg").arg(QString::number(i))) && QFile::exists(QString("image/backdrop/main%1.jpg").arg(QString::number(i)))){
+            n = n+1;
+        }
+    }
+    int x = rand()%n +1;
+    Config.setValue("BackgroundImage", QString("image/backdrop/main%1.jpg").arg(QString::number(x)));
+    Config.BackgroundImage = QString("image/backdrop/main%1.jpg").arg(QString::number(x));
+    Config.setValue("TableBgImage", QString("image/backdrop/main%1.jpg").arg(QString::number(x)));
+    Config.TableBgImage = QString("image/backdrop/main%1.jpg").arg(QString::number(x));
+
     ui->setupUi(this);
     setWindowTitle(tr("QSanguosha-Hegemony") + " " + Sanguosha->getVersion());
 #if defined(Q_OS_WIN) || (defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID))
@@ -178,6 +191,16 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionAcknowledgement_2, &QAction::triggered, this, &MainWindow::on_actionAcknowledgement_triggered);
 
     StartScene *start_scene = new StartScene(this);
+
+    //play title BGM
+    QDate date = QDate::currentDate();
+    bool shouldMourn = date.month() == 7 && date.day() >= 18 && date.day() <= 25;
+    if (Config.EnableBgMusic && !shouldMourn) {
+        QString bgm = QString("audio/system/main%1.ogg").arg(QString::number(x));
+        Audio::stopBGM();
+        Audio::playBGM(bgm);
+        Audio::setBGMVolume(Config.BGMVolume);
+    }
 
     QList<QAction *> actions;
     actions << ui->actionStart_Game
@@ -836,7 +859,15 @@ void MainWindow::startGameInAnotherInstance()
 void MainWindow::on_actionGeneral_Overview_triggered()
 {
     GeneralOverview *overview = GeneralOverview::getInstance(this);
-    overview->fillGenerals(Sanguosha->getGeneralList());
+    QList<const General *> generals = Sanguosha->getGeneralList();
+    QList<const General *> generals_copy = Sanguosha->getGeneralList();
+    foreach(auto g, generals_copy){
+        if (g->getPackage() == "selfavatar"){
+            generals.removeOne(g);
+            generals << g;
+        }
+    }
+    overview->fillGenerals(generals);
     overview->show();
 }
 

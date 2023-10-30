@@ -53,12 +53,12 @@ void RoleComboBox::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QW
       --------------------
       --------------------
       ||       ||       ||
-      ||  WEI  ||  QUN  ||
+      ||  SCIENCE  ||  REAL  ||
       ||       ||       ||
       --------------------
       --------------------
       ||       ||       ||
-      ||  SHU  ||   WU  ||
+      ||  MAGIC  ||   GAME  ||
       ||       ||       ||
       --------------------
       --------------------
@@ -71,7 +71,14 @@ void RoleComboBox::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QW
         return;
     }
     QStringList kingdoms = Sanguosha->getKingdoms();
-    kingdoms.removeAll("god");
+    QStringList kingdoms_copy = kingdoms;
+    QStringList basic_kingdom = {"real", "magic", "science", "game", "idol", "careerist"};
+    foreach (auto s, kingdoms_copy){
+        if (!basic_kingdom.contains(s))
+            kingdoms.removeAll(s);
+    }
+
+    /*kingdoms.removeAll("god");
     kingdoms.removeAll("magic");
     kingdoms.removeAll("science");
     kingdoms.removeAll("real");
@@ -82,6 +89,7 @@ void RoleComboBox::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QW
     kingdoms.removeAll("magic|science");
     kingdoms.removeAll("magic|real");
     kingdoms.removeAll("science|real");
+    kingdoms.removeAll("careerist");*/
     if (!expanding) {
         if (circle) {
             QPixmap pix;

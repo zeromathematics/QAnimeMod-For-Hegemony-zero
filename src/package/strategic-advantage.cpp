@@ -260,6 +260,11 @@ public:
         //view_as_skill = new BreastplateViewAsSkill;
     }
 
+    virtual int getPriority() const
+    {
+        return -3;
+    }
+
     virtual QStringList triggerable(TriggerEvent, Room *, ServerPlayer *player, QVariant &data, ServerPlayer* &) const
     {
         DamageStruct damage = data.value<DamageStruct>();
@@ -675,8 +680,12 @@ void BurningCamps::onUse(Room *room, const CardUseStruct &card_use) const
         } else
             new_use.to << splayer;
     }
-
-    TrickCard::onUse(room, new_use);
+    if (!card_use.to.isEmpty()){
+       TrickCard::onUse(room, card_use);
+    }
+    else {
+        TrickCard::onUse(room, new_use);
+    }
 }
 
 void BurningCamps::onEffect(const CardEffectStruct &effect) const
@@ -813,15 +822,15 @@ public:
 
     virtual QStringList triggerable(TriggerEvent triggerEvent, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer* &) const
     {
-        if (!player->hasFlag("LureTigerUser"))
-            return QStringList();
+        /*if (!player->hasFlag("LureTigerUser"))
+            return QStringList();*/
         if (triggerEvent == EventPhaseChanging) {
             PhaseChangeStruct change = data.value<PhaseChangeStruct>();
             if (change.to != Player::NotActive)
                 return QStringList();
         } else if (triggerEvent == Death) {
             DeathStruct death = data.value<DeathStruct>();
-            if (death.who != player)
+            if (death.who != player || player != room->getCurrent())
                 return QStringList();
         }
 
@@ -1112,7 +1121,7 @@ void AllianceFeast::use(Room *room, ServerPlayer *source, QList<ServerPlayer *> 
 
 void AllianceFeast::onEffect(const CardEffectStruct &effect) const
 {
-    Room *room = effect.to->getRoom();
+    /*Room *room = effect.to->getRoom();
     if (effect.to->getMark(objectName()) > 0) {
         effect.to->drawCards(effect.to->getMark(objectName()), objectName());
     } else {
@@ -1133,6 +1142,38 @@ void AllianceFeast::onEffect(const CardEffectStruct &effect) const
                 room->broadcastProperty(effect.to, "chained");
                 room->getThread()->trigger(ChainStateChanged, room, effect.to);
             }
+        }
+    }*/
+    Room *room = effect.to->getRoom();
+    if (effect.to->getMark(objectName()) > 0) {
+        int x = effect.to->getMark(objectName());
+        int y = qMin(x, effect.to->getLostHp());
+
+        if (y == 0) effect.to->drawCards(x, objectName());
+        else {
+            QStringList draw_num;
+            for (int i = 0; i <= y; draw_num << QString::number(i++)) {
+
+            }
+            int num = room->askForChoice(effect.to, "alliancefeast_draw", draw_num.join("+")).toInt();
+
+            if (x > num)
+                effect.to->drawCards(x - num, objectName());
+
+            if (num > 0) {
+                RecoverStruct rec;
+                rec.recover = num;
+                rec.who = effect.to;
+                room->recover(effect.to, rec);
+            }
+        }
+    } else {
+        effect.to->drawCards(1, objectName());
+        if (effect.to->isChained()) {
+            effect.to->setChained(false);
+            room->setEmotion(effect.to, "chain");
+            room->broadcastProperty(effect.to, "chained");
+            room->getThread()->trigger(ChainStateChanged, room, effect.to);
         }
     }
 }
@@ -1176,11 +1217,17 @@ bool ThreatenEmperor::isAvailable(const Player *player) const
         else
             invoke = big_kingdoms.contains(player->getKingdom());
     }
-    return invoke && !player->isProhibited(player, this) && TrickCard::isAvailable(player);
+    return (invoke || player->hasClub("sos")) && !player->isProhibited(player, this) && TrickCard::isAvailable(player);
 }
 
 void ThreatenEmperor::onEffect(const CardEffectStruct &effect) const
 {
+     //animemod new rule
+    if (effect.from->getRoom()->getCurrent()->getMark("NewThreatenEmperorExtraTurn")>0)
+        return;
+    if (effect.from->hasFlag("Point_ExtraTurn") && effect.from != effect.to)
+        return;
+
     if (effect.from->getPhase() == Player::Play)
         effect.from->setFlags("Global_PlayPhaseTerminated");
     effect.to->setMark("ThreatenEmperorExtraTurn", 1);
@@ -1223,7 +1270,7 @@ public:
     virtual bool cost(TriggerEvent, Room *room, ServerPlayer *, QVariant &data, ServerPlayer *ask_who) const
     {
         ask_who->removeMark("ThreatenEmperorExtraTurn");
-        return room->askForCard(ask_who, "..", "@threaten_emperor", data, objectName());
+        return room->askForCard(ask_who, ".", "@threaten_emperor", data, objectName());
     }
 
     virtual bool effect(TriggerEvent, Room *room, ServerPlayer *, QVariant &, ServerPlayer *ask_who) const
@@ -1290,8 +1337,12 @@ void ImperialOrder::onUse(Room *room, const CardUseStruct &card_use) const
 
     CardUseStruct use = card_use;
     use.to = targets;
-    Q_ASSERT(!use.to.isEmpty());
-    TrickCard::onUse(room, use);
+    if (!card_use.to.isEmpty()){
+        TrickCard::onUse(room, card_use);
+    }
+    else{
+       TrickCard::onUse(room, use);
+    }
 }
 
 void ImperialOrder::use(Room *room, ServerPlayer *source, QList<ServerPlayer *> &targets) const
@@ -1302,7 +1353,7 @@ void ImperialOrder::use(Room *room, ServerPlayer *source, QList<ServerPlayer *> 
 
 void ImperialOrder::onEffect(const CardEffectStruct &effect) const
 {
-    Room *room = effect.to->getRoom();
+    /*Room *room = effect.to->getRoom();
     if (room->askForCard(effect.to, "EquipCard", "@imperial_order-equip"))
         return;
     QStringList choices;
@@ -1316,6 +1367,38 @@ void ImperialOrder::onEffect(const CardEffectStruct &effect) const
         effect.to->askForGeneralShow();
         effect.to->drawCards(1, objectName());
     } else {
+        room->loseHp(effect.to);
+    }*/
+
+    Room *room = effect.to->getRoom();
+   // if (room->askForCard(effect.to, "EquipCard", "@imperial_order-equip"))
+   //     return;
+    QStringList choices;
+
+    if (!effect.to->hasShownGeneral1() && effect.to->disableShow(true).isEmpty())
+        choices << "show_head";
+    if (effect.to->getGeneral2() && !effect.to->hasShownGeneral2() && effect.to->disableShow(false).isEmpty())
+        choices << "show_deputy";
+
+    QList<int> to_discard = effect.to->forceToDiscard(1, "EquipCard", QString(), true);
+    if (!to_discard.isEmpty())
+        choices << "dis_equip";
+
+    choices << "losehp";
+
+    QString all_choices = "show_head+show_deputy+dis_equip+losehp";
+
+    QString choice = room->askForChoice(effect.to, objectName(), choices.join("+"), QVariant());
+    if (choice.contains("show")) {
+        effect.to->showGeneral(choice == "show_head");
+        effect.to->drawCards(1, objectName());
+    } else if (choice == "dis_equip"){
+        if (!room->askForCard(effect.to, "EquipCard!", "@imperial_order-equip")) {
+            const Card *card = Sanguosha->getCard(to_discard.first());
+            CardMoveReason reason(CardMoveReason::S_REASON_THROW, effect.to->objectName());
+            room->moveCardTo(card, effect.to, NULL, Player::DiscardPile, reason, true);
+        }
+    } else if (choice == "losehp"){
         room->loseHp(effect.to);
     }
 }

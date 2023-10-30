@@ -956,7 +956,7 @@ end
 --ThreatenEmperor
 function SmartAI:useCardThreatenEmperor(card, use)
 	if not card:isAvailable(self.player) then return end
-	if self.player:getCardCount(true) < 2 then return end
+	if self.player:getHandcardNum()< 2 then return end
 	if not self:hasTrickEffective(card, self.player, self.player) then return end
 	use.card = card
 end
@@ -966,19 +966,19 @@ sgs.ai_keep_value.ThreatenEmperor = 3.2
 
 sgs.ai_nullification.ThreatenEmperor = function(self, card, from, to, positive, keep)
 	if positive then
-		if self:isEnemy(from) and not from:isNude() then return true, true end
+		if self:isEnemy(to) and not to:isKongcheng() then return true, true end
 	else
-		if from:getCards("he"):length() == 1 and self.player:objectName() == from:objectName() then
-			if self:getCard("Nullification"):getEffectiveId() == self.player:getCards("he"):first():getEffectiveId() then return false end
+		if to:getCards("h"):length() == 1 and self.player:objectName() == to:objectName() then
+			if self:getCard("Nullification"):getEffectiveId() == self.player:getCards("h"):first():getEffectiveId() then return false end
 		end
-		if self:isFriend(from) and not from:isNude() then return true, true end
+		if self:isFriend(to) and not to:isKongcheng() then return true, true end
 	end
 	return
 end
 
 sgs.ai_skill_cardask["@threaten_emperor"] = function(self)
-	if self.player:isNude() then return "." end
-	local cards = sgs.QList2Table(self.player:getCards("he"))
+	if self.player:isKongcheng() then return "." end
+	local cards = sgs.QList2Table(self.player:getCards("h"))
 	self:sortByKeepValue(cards)
 	for _, card in ipairs(cards) do
 		if not card:isKindOf("JadeSeal") then

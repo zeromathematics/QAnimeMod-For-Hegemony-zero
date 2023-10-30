@@ -56,6 +56,7 @@ QVariant GeneralModel::data(const QModelIndex &index, int role) const
     case Qt::UserRole: return general->objectName();
     case Qt::DisplayRole: {
         switch (index.column()) {
+        case AnimeColumn: return general->getAnime();
         case TitleColumn: return general->getTitle(all_generals.value(general));
         case NameColumn: return Sanguosha->translate(general->objectName());
         case KingdomColumn: return Sanguosha->translate(general->getKingdom());
@@ -86,9 +87,15 @@ QVariant GeneralModel::data(const QModelIndex &index, int role) const
         }
     }
     case Qt::DecorationRole: {
-        if (index.column() == NameColumn && general->isLord()) {
-            QIcon icon("image/system/roles/lord.png");
-            return icon;
+        if (index.column() == NameColumn) {
+            if (general->isLord()) {
+                QIcon icon("image/system/roles/lord.png");
+                return icon;
+            }
+            if (general->getKingdom() == "careerist") {
+                QIcon icon("image/system/roles/renegade.png");
+                return icon;
+            }
         } else {
             break;
         }
@@ -146,6 +153,7 @@ QVariant GeneralModel::headerData(int section, Qt::Orientation orientation, int 
 
     if (orientation == Qt::Horizontal) {
         switch (section) {
+        case AnimeColumn: return tr("Anime");
         case TitleColumn: return tr("Title");
         case NameColumn: return tr("Name");
         case KingdomColumn: return tr("Kingdom");

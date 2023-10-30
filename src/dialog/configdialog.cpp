@@ -27,6 +27,7 @@
 #include "settings.h"
 #include "stylehelper.h"
 #include "audio.h"
+#include "mainwindow.h"
 #include "roomscene.h"
 
 #include <QFileDialog>
@@ -150,7 +151,12 @@ void ConfigDialog::setBackground(const QVariant &path)
     QString fileName = path.toString();
     ui->bgPathLineEdit->setText(fileName);
     Config.BackgroundImage = fileName;
-
+    QString order = fileName.split("/").last();
+    if (order.contains("main") && Config.EnableBgMusic && RoomSceneInstance == NULL){
+        order = order.split(".").first();
+        Audio::stopBGM();
+        Audio::playBGM(QString("audio/system/%1.ogg").arg(order));
+    }
     emit bg_changed();
 }
 
@@ -261,10 +267,25 @@ void ConfigDialog::setBGMEnabled(const QVariant &enabled)
     if (RoomSceneInstance != NULL) {
         bool play = enabled.toBool();
         if (play) {
+            Audio::stopBGM();
             Audio::playBGM(Config.value("BackgroundMusic",
                 "audio/system/background.ogg").toString());
         } else {
             Audio::stopBGM();
+        }
+    }
+    else{
+        bool play = enabled.toBool();
+        if (!play){
+            Audio::stopBGM();
+        }
+        else{
+            QString s = Config.value("BackgroundImage").toString();
+            QString order = s.split("/").last();
+            if (order.contains("main")){
+                order = order.split(".").first();
+                Audio::playBGM(QString("audio/system/%1.ogg").arg(order));
+            }
         }
     }
 #endif // AUDIO_SUPPORT

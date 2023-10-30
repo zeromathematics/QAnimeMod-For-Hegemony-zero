@@ -51,6 +51,15 @@ struct RoleMapping : public QMap < RolePair, AI::Relation >
     }
 };
 
+AI::Relation AI::GetRelation3v3(const ServerPlayer *a, const ServerPlayer *b)
+{
+    QChar c = a->getRole().at(0);
+    if (b->getRole().startsWith(c))
+        return Friend;
+    else
+        return Enemy;
+}
+
 AI::Relation AI::GetRelationHegemony(const ServerPlayer *a, const ServerPlayer *b)
 {
     Q_ASSERT(a->getRoom() != NULL);
@@ -81,6 +90,8 @@ AI::Relation AI::relationTo(const ServerPlayer *other) const
     const Scenario *scenario = room->getScenario();
     if (scenario)
         return scenario->relationTo(self, other);
+    if (room->getMode() == "06_3v3")
+        return GetRelation3v3(self, other);
 
     return GetRelationHegemony(self, other);
 }
@@ -231,6 +242,11 @@ QMap<QString, QList<int> > TrustAI::askForMoveCards(const QList<int> &, const QL
 }
 
 const Card *TrustAI::askForNullification(const Card *, ServerPlayer *, ServerPlayer *, bool)
+{
+    return NULL;
+}
+
+const Card *TrustAI::askForIgiari(const Card *, ServerPlayer *, ServerPlayer *, bool)
 {
     return NULL;
 }

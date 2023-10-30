@@ -203,7 +203,11 @@ bool Collateral::targetFilter(const QList<const Player *> &targets,
 
 void Collateral::onUse(Room *room, const CardUseStruct &card_use) const
 {
-    Q_ASSERT(card_use.to.length() == 2);
+    //Q_ASSERT(card_use.to.length() == 2);
+    if (card_use.to.length() != 2){
+        SingleTargetTrick::onUse(room, card_use);
+        return;
+    }
     ServerPlayer *killer = card_use.to.at(0);
     ServerPlayer *victim = card_use.to.at(1);
 
@@ -867,7 +871,12 @@ void AwaitExhausted::onUse(Room *room, const CardUseStruct &card_use) const
         }
     }
 
-    TrickCard::onUse(room, new_use);
+    if (!card_use.to.isEmpty()){
+       TrickCard::onUse(room, card_use);
+    }
+    else {
+        TrickCard::onUse(room, new_use);
+    }
 }
 
 void AwaitExhausted::use(Room *room, ServerPlayer *source, QList<ServerPlayer *> &targets) const
@@ -1055,6 +1064,9 @@ void KnownBoth::onEffect(const CardEffectStruct &effect) const
         arg << JsonUtils::toJsonArray(list);
         room->doNotify(effect.from, QSanProtocol::S_COMMAND_VIEW_GENERALS, arg);
     }
+    QVariant data = QVariant::fromValue(this->getSkillName() + ":" + choice+":"+effect.to->objectName());
+
+    room->getThread()->trigger(ChoiceMade, room, effect.from, data);  //for boxi
 }
 
 QStringList KnownBoth::checkTargetModSkillShow(const CardUseStruct &use) const

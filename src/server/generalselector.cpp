@@ -43,6 +43,7 @@ GeneralSelector::GeneralSelector()
 {
     loadGeneralTable();
     loadPairTable();
+    load3v3Table();
 }
 
 QStringList GeneralSelector::selectGenerals(ServerPlayer *player, const QStringList &candidates)
@@ -178,6 +179,24 @@ void GeneralSelector::loadPairTable()
     }
 }
 
+void GeneralSelector::load3v3Table()
+{
+    QFile file("etc/3v3-priority.txt");
+    if (file.open(QIODevice::ReadOnly)) {
+        QTextStream stream(&file);
+        while (!stream.atEnd()) {
+            QString name;
+            int priority;
+
+            stream >> name >> priority;
+
+            priority_3v3_table.insert(name, priority);
+        }
+
+        file.close();
+    }
+}
+
 void GeneralSelector::calculatePairValues(const ServerPlayer *player, const QStringList &_candidates)
 {
     // preference
@@ -233,7 +252,10 @@ void GeneralSelector::calculateDeputyValue(const ServerPlayer *player, const QSt
             }
 
 
-            if (!common|| general2->isLord()) continue;
+            if ((!common|| general2->isLord()) && kingdom != "careerist") continue;
+
+            if (general2->getKingdom() == "careerist") continue;
+
             const int general2_value = m_singleGeneralTable.value(second, 0);
             int v = m_singleGeneralTable.value(first, 0) + general2_value;
 
@@ -245,13 +267,16 @@ void GeneralSelector::calculateDeputyValue(const ServerPlayer *player, const QSt
 
             if (general1->isCompanionWith(second)) v += 3;
 
-            if (general1->isFemale()) {
-                if ("game" == kingdom)
-                    v -= 2;
-                else if (kingdom != "real")
+            //for jiasugaobai
+            if (general1->isMale()) {
+                if ("science" == kingdom)
                     v += 1;
-            } else if ("real" == kingdom)
-                v += 1;
+            }
+
+            //for mengfeng
+            if (general1->hasSkill("mengfeng")) {
+                v += 2;
+            }
 
             if (general1->hasSkill("baoling") && general2_value > 6) v -= 5;
 
@@ -266,4 +291,48 @@ void GeneralSelector::calculateDeputyValue(const ServerPlayer *player, const QSt
             m_privatePairValueTable[player][key] = v;
         }
     }
+}
+
+QString GeneralSelector::select3v3(ServerPlayer *, const QStringList &candidates)
+{
+    return selectHighest(priority_3v3_table, candidates, 5);
+}
+
+QString GeneralSelector::selectHighest(const QHash<QString, int> &table, const QStringList &candidates, int default_value)
+{
+    int max = -1;
+    QString max_general;
+
+    foreach (QString candidate, candidates) {
+        int value = table.value(candidate, default_value);
+
+        if (value > max) {
+            max = value;
+            max_general = candidate;
+        }
+    }
+
+    Q_ASSERT(!max_general.isEmpty());
+
+    return max_general;
+}
+
+static bool CompareByMaxHp(const QString &a, const QString &b)
+{
+    const General *g1 = Sanguosha->getGeneral(a);
+    const General *g2 = Sanguosha->getGeneral(b);
+
+    return g1->getMaxHpHead() < g2->getMaxHpHead();
+}
+
+QStringList GeneralSelector::arrange3v3(ServerPlayer *player)
+{
+    QStringList arranged = player->getSelected();
+    qShuffle(arranged);
+    arranged = arranged.mid(0, 3);
+
+    qSort(arranged.begin(), arranged.end(), CompareByMaxHp);
+    arranged.swap(0, 1);
+
+    return arranged;
 }

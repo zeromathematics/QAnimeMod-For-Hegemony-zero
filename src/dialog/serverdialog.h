@@ -22,6 +22,10 @@
 #define SERVERDIALOG_H
 
 #include "flatdialog.h"
+#include <QTabWidget>
+#include "package.h"
+#include <QListWidget>
+#include <QRadioButton>
 
 class QGroupBox;
 class QLineEdit;
@@ -110,6 +114,7 @@ private:
     QLayout *createButtonLayout();
 
     QGroupBox *createGameModeBox();
+    QGroupBox *create3v3Box();
 
     QLineEdit *server_name_edit;
     QSpinBox *timeout_spinbox;
@@ -132,6 +137,10 @@ private:
     QSpinBox *nullification_spinbox;
     QCheckBox *minimize_dialog_checkbox;
     QCheckBox *reward_the_first_showing_player_checkbox;
+    QCheckBox *view_next_player_deputy_general_checkbox;
+    QCheckBox *activate_special_card_mode_checkbox;
+    QCheckBox *ban_kingdom_checkbox;
+    QComboBox *ban_kingdom_checkbox_detail;
     QCheckBox *forbid_adding_robot_checkbox;
     QSpinBox *ai_delay_spinbox;
     QCheckBox *ai_delay_altered_checkbox;
@@ -147,9 +156,10 @@ private:
     QButtonGroup *mode_group;
 
 
-    QCheckBox *convert_ds_to_dp;
-    QCheckBox *convert_jf_to_ps;
+   // QCheckBox *convert_ds_to_dp;
+    //QCheckBox *convert_jf_to_ps;
     QCheckBox *convert_lord;
+    QCheckBox *prohibit_dp_betray;
 
     //QCheckBox *add_peace_spell;
     //QCheckBox *convert_zhangjiao_to_lord;
@@ -158,10 +168,35 @@ private:
 
     QComboBox *scenario_ComboBox;
 
+    QRadioButton *official_3v3_radiobutton;
+    QComboBox *official_3v3_ComboBox;
+    QComboBox *role_choose_ComboBox;
+    QCheckBox *exclude_disaster_checkbox;
+
 private slots:
     void onOkButtonClicked();
     void onDetectButtonClicked();
+    void select3v3Generals();
     void editBanlist();
+};
+
+class Select3v3GeneralDialog : public QDialog
+{
+    Q_OBJECT
+
+public:
+    Select3v3GeneralDialog(QDialog *parent);
+
+private:
+    QTabWidget *tab_widget;
+    QSet<QString> ex_generals;
+
+    void fillTabWidget();
+    void fillListWidget(QListWidget *list, const Package *pack);
+
+private slots:
+    void save3v3Generals();
+    void toggleCheck();
 };
 
 #endif // SERVERDIALOG_H

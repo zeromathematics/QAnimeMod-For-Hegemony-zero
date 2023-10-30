@@ -354,8 +354,12 @@ void Player::setGeneral(const General *new_general)
     if (this->general != new_general) {
         this->general = new_general;
 
-        if (new_general && kingdom.isEmpty())
-            setKingdom(new_general->getKingdom());
+        if (new_general && kingdom.isEmpty()) {
+            if (new_general->getKingdom() != "careerist" && !new_general->getKingdom().contains("|")){
+                setKingdom(new_general->getKingdom());
+            }
+
+        }
 
         emit general_changed();
     }
@@ -382,7 +386,28 @@ void Player::setGeneral2Name(const QString &general_name)
     if (general2 != new_general) {
         general2 = new_general;
 
+        if (new_general && kingdom.isEmpty()) {
+            if (general && general->getKingdom() == "careerist" && !new_general->getKingdom().contains("|"))
+                setKingdom(new_general->getKingdom());
+
+            else if (this->general->getKingdom().contains("|") && !this->general2->getKingdom().contains("|")){
+                setKingdom(this->general2->getKingdom());
+            }
+            else if (!this->general->getKingdom().contains("|") && this->general2->getKingdom().contains("|")){
+                setKingdom(this->general->getKingdom());
+            }
+
+        }
+
+
+
         emit general2_changed();
+
+        //test
+        if (general && general->getKingdom() == "careerist" && !new_general->getKingdom().contains("|") && !hasShownGeneral1()){
+            setKingdom("careerist");
+            setRole(new_general->getKingdom());
+        }
     }
 }
 
@@ -473,6 +498,8 @@ const General *Player::getGeneral() const
 
 bool Player::isLord() const
 {
+    if (Config.GameMode == "06_3v3")
+        return getRole() == "lord";
     return getLord() == this;
 }
 
@@ -491,8 +518,8 @@ bool Player::hasSkill(const QString &skill_name, bool include_lose) const
             return hasSkill(main_skill);
     }
 
-    if (skill_name != "companion" && skill_name != "halfmaxhp" && skill_name != "firstshow"
-            && skill_name != "showhead" && skill_name != "showdeputy") {
+    if (skill_name != "companion" && skill_name != "halfmaxhp" && skill_name != "companion" && skill_name != "firstshow"
+            && skill_name != "showhead" && skill_name != "showdeputy" && skill_name != "careerman") {
 
         if (!include_lose && !hasEquipSkill(skill_name) && !skill->isAttachedLordSkill()) {
             if (!getAcquiredSkills().contains(skill_name) && ownSkill(skill_name)) {
@@ -589,10 +616,12 @@ void Player::addSkill(const QString &skill_name, bool head_skill)
 {
     const Skill *skill = Sanguosha->getSkill(skill_name);
     Q_ASSERT(skill);
-    if (head_skill)
+    if (head_skill){
         head_skills[skill_name] = !skill->canPreshow() || general1_showed;
-    else
+    }
+    else{
         deputy_skills[skill_name] = !skill->canPreshow() || general2_showed;
+    }
 }
 
 void Player::loseSkill(const QString &skill_name, bool head)
@@ -831,7 +860,7 @@ void Player::setKingdom(const QString &kingdom)
 {
     if (this->kingdom != kingdom) {
         this->kingdom = kingdom;
-        if (role == "careerist") return;
+       //if (role == "careerist") return;
         emit kingdom_changed(kingdom);
     }
 }
@@ -1717,8 +1746,11 @@ bool Player::hasShownSkill(const Skill *skill) const
 
     if (!skill->isVisible()) {
         const Skill *main_skill = Sanguosha->getMainSkill(skill->objectName());
-        if (main_skill != NULL)
+        if (main_skill != NULL){
+            if (main_skill == skill)
+                return false;
             return hasShownSkill(main_skill);
+        }
         else
             return false;
     }
@@ -1981,6 +2013,10 @@ bool Player::isFriendWith(const Player *player) const
 
     if (this == player)
         return true;
+
+    if (role == "careerist" && player->role == "careerist"){
+        if (property("CareeristFriend").toString() == player->objectName() || player->property("CareeristFriend").toString() == objectName() ||player->property("CareeristFriend") == property("CareeristFriend").toString() ) return true;
+    }
 
     if (!hasShownOneGeneral() || !player->hasShownOneGeneral())
         return false;

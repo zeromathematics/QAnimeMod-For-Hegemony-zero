@@ -421,6 +421,17 @@ void Dashboard::_addHandCard(CardItem *card_item, bool prepend, const QString &f
         card_item->setEnabled(true);
 
     if (ClientInstance->getStatus() == Client::Playing && card_item->getCard()) {
+        const Card *card = card_item->getCard();
+        if (card && card->isKindOf("Clowcard")) {
+            Card *vs_card = Sanguosha->cloneCard("slash", card->getSuit(), card->getNumber());
+            if (vs_card) {
+                vs_card->addSubcard(card);
+                vs_card->setCanRecast(false);
+                vs_card->deleteLater();
+                vs_card->setSkillName("clowcard");
+                card = vs_card;
+            }
+        }
         const bool frozen = !card_item->getCard()->isAvailable(Self);
         card_item->setFrozen(frozen, false);
         if (!frozen && Config.EnableSuperDrag)
@@ -552,8 +563,20 @@ const Card *Dashboard::getSelected() const
 {
     if (viewAsSkill)
         return pendingCard;
-    else if (selected)
-        return selected->getCard();
+    else if (selected){
+        const Card *card = selected->getCard();
+        if (ClientInstance->getStatus() == Client::Playing && card && card->isKindOf("Clowcard")) {
+            Card *vs_card = Sanguosha->cloneCard("slash", card->getSuit(), card->getNumber());
+            if (vs_card) {
+                vs_card->addSubcard(card);
+                vs_card->setCanRecast(false);
+                vs_card->deleteLater();
+                vs_card->setSkillName("clowcard");
+                return vs_card;
+            }
+        }
+        return card;
+    }
     else
         return NULL;
 }
@@ -1011,7 +1034,7 @@ void Dashboard::showHeroSkinListHelper(const General *general,
     }
 
     QString generalName = general->objectName();
-    if (NULL == heroSkinContainer) {
+    if (NULL == heroSkinContainer || heroSkinContainer->getGeneralName() != general->objectName()) {
         heroSkinContainer = RoomSceneInstance->findHeroSkinContainer(generalName);
 
         if (NULL == heroSkinContainer) {
@@ -1326,7 +1349,27 @@ void Dashboard::enableCards()
         expandPileCards(pile);
 
     foreach (CardItem *card_item, m_handCards) {
-        const bool frozen = !card_item->getCard()->isAvailable(Self);
+        bool frozen = true;
+        const Card *card = card_item->getCard();
+        if (card) {
+            if (card->isVirtualCard()) {
+                const ViewAsSkill *vsSkill = Sanguosha->getViewAsSkill(card->getSkillName());
+                if (vsSkill)
+                    frozen = !vsSkill->isEnabledAtPlay(Self);
+            } else {
+                if (card && card->isKindOf("Clowcard")) {
+                    Card *vs_card = Sanguosha->cloneCard("slash", card->getSuit(), card->getNumber());
+                    if (vs_card) {
+                        vs_card->addSubcard(card);
+                        vs_card->setCanRecast(false);
+                        vs_card->deleteLater();
+                        vs_card->setSkillName("clowcard");
+                        card = vs_card;
+                    }
+                }
+                frozen = !card->isAvailable(Self);
+            }
+        }
         card_item->setFrozen(frozen, false);
         if (!frozen && Config.EnableSuperDrag)
             card_item->setFlag(ItemIsMovable);
@@ -1485,7 +1528,7 @@ void Dashboard::updateMarkCard()
 {
     //CompanionCard
     /*QStringList mark_names, mark_cards;
-    mark_names << "@companion" << "@halfmaxhp" << "@firstshow" << "animeshana";
+    mark_names << "@companion" << "@halfmaxhp" << "@firstshow" << "@careerist" <<"animeshana";
     mark_cards << "CompanionCard" << "HalfMaxHpCard" << "FirstShowCard";
     mark_cards << "AnimeShanaCard";
 
@@ -1592,9 +1635,55 @@ void Dashboard::updatePending()
     if (!viewAsSkill->inherits("OneCardViewAsSkill"))
         pended = cards;
 
+    bool expand = viewAsSkill->isResponseOrUse();
+    if (!expand && viewAsSkill->inherits("ResponseSkill")) {
+        const ResponseSkill *resp_skill = qobject_cast<const ResponseSkill *>(viewAsSkill);
+        if (resp_skill && (resp_skill->getRequest() == Card::MethodResponse || resp_skill->getRequest() == Card::MethodUse))
+            expand = true;
+    }
+
     foreach (CardItem *item, m_handCards) {
         if (!item->isSelected() || pendings.isEmpty()) {
-            const bool frozen = !viewAsSkill->viewFilter(pended, item->getCard());
+            bool frozen = true;
+            const Card *cheak_card = item->getCard();
+            if (cheak_card->isVirtualCard()) {
+                const ResponseSkill *resp_skill = qobject_cast<const ResponseSkill *>(viewAsSkill);
+                if (resp_skill && resp_skill->getRequest() == Card::MethodUse) {
+                    QString pattern = Sanguosha->currentRoomState()->getCurrentCardUsePattern();
+                    if (!pattern.startsWith("@")) {
+                        const ViewAsSkill *vsSkill = Sanguosha->getViewAsSkill(cheak_card->getSkillName());
+                        frozen = !vsSkill->isEnabledAtResponse(Self, pattern);
+                    }
+                }
+            } else {
+                bool not_handcard_pile = true;
+                foreach (const QString &pileName, _m_pile_expanded) {
+                    if (Self->getHandPileList(false).contains(pileName)) {
+                        QList<int> pile = Self->getPile(pileName);
+                        if (pile.contains(item->getId())){
+                            not_handcard_pile = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (cheak_card && cheak_card->isKindOf("Clowcard") && viewAsSkill->inherits("ResponseSkill")) {
+                    const ResponseSkill *resp_skill = qobject_cast<const ResponseSkill *>(viewAsSkill);
+                    if (resp_skill && (resp_skill->getRequest() == Card::MethodResponse || resp_skill->getRequest() == Card::MethodUse)) {
+                        QString pattern = Sanguosha->currentRoomState()->getCurrentCardUsePattern();
+                        if (pattern == "slash" || pattern == "jink") {
+                            Card *vs_card = Sanguosha->cloneCard(pattern, cheak_card->getSuit(), cheak_card->getNumber());
+                            if (vs_card) {
+                                vs_card->addSubcard(cheak_card);
+                                vs_card->setCanRecast(false);
+                                vs_card->setSkillName("clowcard");
+                                cheak_card = vs_card;
+                            }
+                        }
+                    }
+                }
+                frozen = !((expand || not_handcard_pile) && viewAsSkill->viewFilter(pended, cheak_card));
+            }
             item->setFrozen(frozen, false);
             if (!frozen && Config.EnableSuperDrag)
                 item->setFlag(ItemIsMovable);
@@ -1619,6 +1708,24 @@ void Dashboard::updatePending()
             if (!pendingCard->isKindOf("CompanionCard") && !pendingCard->isKindOf("HalfMaxHpCard") && !pendingCard->isKindOf("FirstShowCard") && !pendingCard->isKindOf("AnimeShanaCard"))
                 delete pendingCard;
             pendingCard = NULL;
+        }
+
+        if (new_pending_card && new_pending_card->isKindOf("Clowcard") && new_pending_card->getSkillName().isEmpty()) {
+            if (viewAsSkill->inherits("ResponseSkill")) {
+                const ResponseSkill *resp_skill = qobject_cast<const ResponseSkill *>(viewAsSkill);
+                if (resp_skill && (resp_skill->getRequest() == Card::MethodResponse || resp_skill->getRequest() == Card::MethodUse)) {
+                    QString pattern = Sanguosha->currentRoomState()->getCurrentCardUsePattern();
+                    if (pattern == "slash" || pattern == "jink") {
+                        Card *vs_card = Sanguosha->cloneCard(pattern, new_pending_card->getSuit(), new_pending_card->getNumber());
+                        if (vs_card) {
+                            vs_card->addSubcard(new_pending_card);
+                            vs_card->setCanRecast(false);
+                            vs_card->setSkillName("clowcard");
+                            new_pending_card = vs_card;
+                        }
+                    }
+                }
+            }
         }
 
         pendingCard = new_pending_card;

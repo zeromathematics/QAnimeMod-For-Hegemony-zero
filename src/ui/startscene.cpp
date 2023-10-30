@@ -39,10 +39,10 @@ StartScene::StartScene(QObject *parent)
 {
     // game logo
     QDate date = QDate::currentDate();
-    if (date.month() == 8 && date.day() >= 19 && date.day() <= 26) {
-        logo = new QSanSelectableItem("image/logo/logo-moxuan.png", true);
-        QString tip = "<img src='image/system/developers/moxuan.jpg' height = 125/><br/>";
-        tip.append(QString("<font color=%1><b>%2</b></font>").arg(Config.SkillDescriptionInToolTipColor.name()).arg(tr("At 10:40 a.m., August 19, 2014, Moxuanyanyun, a developer of QSanguosha, passed away peacefully in Dalian Medical College. He was 18 and had struggled with leukemia for more than 4 years. May there is no pain in Heaven.")));
+    if (date.month() == 7 && date.day() >= 18 && date.day() <= 25) {
+        logo = new QSanSelectableItem("image/logo/logo-kyoani.png", true);
+        QString tip = "<img src='image/system/developers/kyoani.jpg' height = 125/><br/>";
+        tip.append(QString("<font color=%1><b>%2</b></font>").arg(Config.SkillDescriptionInToolTipColor.name()).arg(tr("Dedicated to KyoAni forever.")));
         logo->setToolTip(tip);
         shouldMourn = true;
     } else {
@@ -62,7 +62,12 @@ StartScene::StartScene(QObject *parent)
     Config.Rect.height() / 2 - website_text->boundingRect().height());*/
     serverLog = NULL;
 
-    setBackgroundBrush(QBrush(QPixmap(Config.BackgroundImage)));
+    if (shouldMourn){
+        setBackgroundBrush(QBrush(QPixmap("image/backdrop/kyoani.jpg")));
+    }
+    else{
+        setBackgroundBrush(QBrush(QPixmap(Config.BackgroundImage)));
+    }
 
     connect(this, &StartScene::sceneRectChanged, this, &StartScene::onSceneRectChanged);
 }
@@ -170,10 +175,11 @@ void StartScene::showOrganization()
 {
 #ifdef AUDIO_SUPPORT
     if (shouldMourn)
-        Audio::playAudioOfMoxuan();
+        Audio::playAudioOfKyoani();
 #endif
-
     QSanSelectableItem *title = new QSanSelectableItem("image/system/dongmansha.png", true);
+    if (shouldMourn)
+        title = new QSanSelectableItem("image/system/dongmansha_kyoani.png", true);
 
     title->setOpacity(0);
     addItem(title);
@@ -295,6 +301,16 @@ void StartScene::printServerInfo()
 
     if (Config.RewardTheFirstShowingPlayer)
         serverLog->append(tr("The reward of showing general first is enabled"));
+
+    if (Config.ViewNextPlayerDeputyGeneral)
+        serverLog->append(tr("view next player deputy general is enabled"));
+
+    if (Config.ActivateSpecialCardMode)
+        serverLog->append(tr("activate special card mode is enabled"));
+
+    if (Config.BanKingdomMode){
+        serverLog->append(tr("ban kingdom mode is enabled") + "("+ tr(Config.BanKingdomModeDetail.toStdString().c_str()) +")");
+    }
 
     if (!Config.ForbidAddingRobot) {
         serverLog->append(tr("This server is AI enabled, AI delay is %1 milliseconds").arg(Config.AIDelay));

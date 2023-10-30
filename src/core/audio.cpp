@@ -99,9 +99,9 @@ void Audio::play(const QString &filename)
     sound->play();
 }
 
-void Audio::playAudioOfMoxuan()
+void Audio::playAudioOfKyoani()
 {
-    Sound *sound = new Sound("audio/system/moxuan.ogg");
+    Sound *sound = new Sound("audio/system/kyoani.ogg");
     sound->play(true);
 }
 

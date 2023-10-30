@@ -2006,11 +2006,11 @@ public:
 TransformationPackage::TransformationPackage()
     : Package("transformation")
 {
-    //skills<<new Zhiyu<<new Qice<<new Wanwei<<new Yuejian<<new YuejianMaxCards
-         //<<new Xichou<<new Xichou_record<<new Huashen<<new HuashenDisable<< new HuashenClear<<new Xinsheng
-        //<<new Jili<<new JiliRecord<<new JiliTM<<new Sanyao<<new Zhiman
-       //<<new LieFeng<<new Xuanlue<< new Diaodu<< new Diancai
-      //<<new Lianzi<<new Jubao<<new Jiahe<<new JubaoCardFixed<< new JiaheClear;
+    skills<<new Zhiyu<<new Qice<<new Wanwei<<new Yuejian<<new YuejianMaxCards
+         <<new Xichou<<new Xichou_record<<new Huashen<<new HuashenDisable<< new HuashenClear;/*<<new Xinsheng
+        <<new Jili<<new JiliRecord<<new JiliTM<<new Sanyao<<new Zhiman
+       <<new LieFeng<<new Xuanlue<< new Diaodu<< new Diancai
+      <<new Lianzi<<new Jubao<<new Jiahe<<new JubaoCardFixed<< new JiaheClear;*/
     /*General *Xunyou = new General(this, "xunyou", "wei", 3); // Wei
     Xunyou->addSkill(new Zhiyu);
     Xunyou->addSkill(new Qice);

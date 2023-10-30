@@ -26,6 +26,7 @@
 #include "recorder.h"
 #include "skinbank.h"
 #include "roomscene.h"
+#include "freechoosedialog.h"
 
 #include <QApplication>
 #include <QMessageBox>
@@ -84,6 +85,8 @@ Client::Client(QObject *parent, const QString &filename)
     callbacks[S_COMMAND_CARD_LIMITATION] = &Client::cardLimitation;
     callbacks[S_COMMAND_DISABLE_SHOW] = &Client::disableShow;
     callbacks[S_COMMAND_NULLIFICATION_ASKED] = &Client::setNullification;
+    callbacks[S_COMMAND_IGIARI_ASKED] = &Client::setIgiari;
+    callbacks[S_COMMAND_HIMITSU_ASKED] = &Client::setHimitsu;
     callbacks[S_COMMAND_ENABLE_SURRENDER] = &Client::enableSurrender;
     callbacks[S_COMMAND_EXCHANGE_KNOWN_CARDS] = &Client::exchangeKnownCards;
     callbacks[S_COMMAND_SET_KNOWN_CARDS] = &Client::setKnownCards;
@@ -124,12 +127,15 @@ Client::Client(QObject *parent, const QString &filename)
     interactions[S_COMMAND_INVOKE_SKILL] = &Client::askForSkillInvoke;
     interactions[S_COMMAND_MULTIPLE_CHOICE] = &Client::askForChoice;
     interactions[S_COMMAND_NULLIFICATION] = &Client::askForNullification;
+    interactions[S_COMMAND_IGIARI] = &Client::askForIgiari;
+    interactions[S_COMMAND_HIMITSU] = &Client::askForHimitsu;
     interactions[S_COMMAND_SHOW_CARD] = &Client::askForCardShow;
     interactions[S_COMMAND_AMAZING_GRACE] = &Client::askForAG;
     interactions[S_COMMAND_PINDIAN] = &Client::askForPindian;
     interactions[S_COMMAND_CHOOSE_CARD] = &Client::askForCardChosen;
     interactions[S_COMMAND_GLOBAL_CHOOSECARD] = &Client::globalCardChosen;
     interactions[S_COMMAND_CHOOSE_ORDER] = &Client::askForOrder;
+    interactions[S_COMMAND_CHOOSE_ROLE_3V3] = &Client::askForRole3v3;
     interactions[S_COMMAND_SURRENDER] = &Client::askForSurrender;
     interactions[S_COMMAND_LUCK_CARD] = &Client::askForLuckCard;
     interactions[S_COMMAND_TRIGGER_ORDER] = &Client::askForTriggerOrder;
@@ -139,6 +145,7 @@ Client::Client(QObject *parent, const QString &filename)
     callbacks[S_COMMAND_CLEAR_AMAZING_GRACE] = &Client::clearAG;
 
     // 3v3 mode & 1v1 mode
+    interactions[S_COMMAND_ASK_GENERAL] = &Client::askForGeneral3v3;
     interactions[S_COMMAND_ARRANGE_GENERAL] = &Client::startArrange;
 
     callbacks[S_COMMAND_FILL_GENERAL] = &Client::fillGenerals;
@@ -148,6 +155,8 @@ Client::Client(QObject *parent, const QString &filename)
 
     m_noNullificationThisTime = false;
     m_noNullificationTrickName = ".";
+    m_noIgiariThisTime = false;
+    m_noIgiariTrickName = ".";
 
     Self = new ClientPlayer(this);
     Self->setScreenName(Config.UserName);
@@ -502,9 +511,14 @@ void Client::updateProperty(const QVariant &arg)
     player->setProperty(args[1].toString().toLatin1().constData(), args[2].toString());
 
     //for shuangxiong { RoomScene::detachSkill(const QString &) }
-    if (args[1] == "phase" && player->getPhase() == Player::Finish
-        && player->hasFlag("shuangxiong_postpone") && player == Self && !Self->ownSkill("shuangxiong"))
-        emit skill_detached("shuangxiong");
+    if (args[1] == "phase"){
+        emit skill_detached("showhead");
+        emit skill_detached("showdeputy", false);
+       if (player->getPhase() == Player::Finish
+    && player->hasFlag("shuangxiong_postpone") && player == Self && !Self->ownSkill("shuangxiong"))
+           emit skill_detached("shuangxiong");
+
+    }
 
 }
 
@@ -912,6 +926,38 @@ void Client::setNullification(const QVariant &str)
     }
 }
 
+void Client::setIgiari(const QVariant &str)
+{
+    if (!JsonUtils::isString(str)) return;
+    QString astr = str.toString();
+    if (astr != ".") {
+        if (m_noIgiariTrickName == ".") {
+            m_noIgiariTrickName = astr;
+            emit igiari_asked(true);
+        }
+    } else {
+        m_noIgiariThisTime = false;
+        m_noIgiariTrickName = ".";
+        emit igiari_asked(false);
+    }
+}
+
+void Client::setHimitsu(const QVariant &str)
+{
+    if (!JsonUtils::isString(str)) return;
+    QString astr = str.toString();
+    if (astr != ".") {
+        if (m_noHimitsuTrickName == ".") {
+            m_noHimitsuTrickName = astr;
+            emit himitsu_asked(true);
+        }
+    } else {
+        m_noHimitsuThisTime = false;
+        m_noHimitsuTrickName = ".";
+        emit himitsu_asked(false);
+    }
+}
+
 void Client::enableSurrender(const QVariant &enabled)
 {
     if (!JsonUtils::isBool(enabled)) return;
@@ -1237,8 +1283,92 @@ void Client::askForNullification(const QVariant &arg)
             .arg(Sanguosha->translate(trick_name))
             .arg(getPlayerName(target_player->objectName())));
     }
+    if (trick_card->isKindOf("Nullification") or trick_card->isKindOf("Igiari")){
+        _m_roomState.setCurrentCardUsePattern("nullification+igiari");
+    }
+    else{
+        _m_roomState.setCurrentCardUsePattern("nullification");
+    }
 
-    _m_roomState.setCurrentCardUsePattern("nullification");
+    m_isDiscardActionRefusable = true;
+    _m_race = true;
+    setStatus(RespondingUse);
+}
+
+void Client::askForIgiari(const QVariant &arg)
+{
+    JsonArray args = arg.value<JsonArray>();
+    if (args.size() == 1 && JsonUtils::isBool(args[0])) {
+        _m_race = false;
+        emit status_changed(RespondingUse, status);
+        return;
+    }
+
+    if (args.size() != 3 || !JsonUtils::isString(args[0])
+        || !(args[1].isNull() || JsonUtils::isString(args[1]))
+        || !JsonUtils::isString(args[2]))
+        return;
+
+    QString trick_name = args[0].toString();
+    const QVariant &source_name = args[1];
+    ClientPlayer *target_player = getPlayer(args[2].toString());
+
+    if (!target_player || !target_player->getGeneral()) return;
+
+    ClientPlayer *source = NULL;
+    if (!source_name.isNull())
+        source = getPlayer(source_name.toString());
+#ifndef Q_OS_ANDROID
+    const Card *trick_card = Sanguosha->findChild<const Card *>(trick_name);
+#else
+    const Card *trick_card = Card::Parse(trick_name + ":[no_suit:0]=.&");
+#endif
+
+    if (source == NULL) {
+        prompt_doc->setHtml(tr("Do you want to use igiari to card %1 from %2?")
+            .arg(Sanguosha->translate(trick_card->objectName()))
+            .arg(getPlayerName(target_player->objectName())));
+    } else {
+        prompt_doc->setHtml(tr("%1 used card %2 to %3 <br>Do you want to use igiari?")
+            .arg(getPlayerName(source->objectName()))
+            .arg(Sanguosha->translate(trick_name))
+            .arg(getPlayerName(target_player->objectName())));
+    }
+
+    _m_roomState.setCurrentCardUsePattern("igiari");
+    m_isDiscardActionRefusable = true;
+    _m_race = true;
+    setStatus(RespondingUse);
+}
+
+void Client::askForHimitsu(const QVariant &arg)
+{
+    JsonArray args = arg.value<JsonArray>();
+
+    if (args.size() != 1 || !JsonUtils::isString(args[0]))
+        return;
+
+    //QString trick_name = args[0].toString();
+    const QVariant &source_name = args[0];
+    //ClientPlayer *target_player = getPlayer(args[2].toString());
+
+    //if (!target_player || !target_player->getGeneral()) return;
+
+    ClientPlayer *source = NULL;
+    if (!source_name.isNull())
+        source = getPlayer(source_name.toString());
+#ifndef Q_OS_ANDROID
+    //const Card *trick_card = Sanguosha->findChild<const Card *>(trick_name);
+#else
+    //const Card *trick_card = Card::Parse(trick_name + ":[no_suit:0]=.&");
+#endif
+
+    if (source != NULL) {
+        prompt_doc->setHtml(tr("Do you want to use himitsu to %1?")
+            .arg(getPlayerName(source->objectName())));
+    }
+
+    _m_roomState.setCurrentCardUsePattern("himitsu");
     m_isDiscardActionRefusable = true;
     _m_race = true;
     setStatus(RespondingUse);
@@ -1739,6 +1869,19 @@ void Client::askForOrder(const QVariant &arg)
     setStatus(ExecDialog);
 }
 
+void Client::askForRole3v3(const QVariant &arg)
+{
+    JsonArray ask = arg.value<JsonArray>();
+    if (ask.length() != 2 || !JsonUtils::isString(ask[0]) || !JsonUtils::isStringArray(ask[1], 0, ask[1].value<JsonArray>().length() - 1))
+        return;
+
+    QStringList roles;
+    if (!JsonUtils::tryParse(ask[1], roles)) return;
+    QString scheme = ask[0].toString();
+    emit roles_got(scheme, roles);
+    setStatus(ExecDialog);
+}
+
 void Client::askForDirection(const QVariant &)
 {
     emit directions_got();
@@ -1851,6 +1994,16 @@ void Client::askForSinglePeach(const QVariant &arg)
     if (args.size() != 2 || !JsonUtils::isString(args[0]) || !JsonUtils::isNumber(args[1])) return;
 
     ClientPlayer *dying = getPlayer(args[0].toString());
+
+    /*auto list = dying->getAliveSiblings();
+    int n = 1;
+    foreach(auto p, list){
+        if (p->hasFlag("Global_Dying") && n <= p->getMark("Dying_Order")){
+             n = p->getMark("Dying_Order")+1;
+        }
+    }
+    dying->setMark("Dying_Order", n);*/
+
     int peaches = args[1].toInt();
 
     // @todo: anti-cheating of askForSinglePeach is not done yet!!!
@@ -1888,6 +2041,7 @@ void Client::askForSinglePeach(const QVariant &arg)
     _m_roomState.setCurrentCardUsePattern(pattern.join("+"));
     m_isDiscardActionRefusable = true;
     setStatus(RespondingUse);
+    //dying->setMark("Dying_Order", 0);
 }
 
 void Client::askForCardShow(const QVariant &requestor)
@@ -2474,6 +2628,12 @@ void Client::fillGenerals(const QVariant &generals)
     emit generals_filled(filled);
 }
 
+void Client::askForGeneral3v3(const QVariant &)
+{
+    emit general_asked();
+    setStatus(AskForGeneralTaken);
+}
+
 void Client::takeGeneral(const QVariant &take)
 {
     JsonArray take_array = take.value<JsonArray>();
@@ -2498,6 +2658,12 @@ void Client::startArrange(const QVariant &to_arrange)
     setStatus(AskForArrangement);
 }
 
+void Client::onPlayerChooseRole3v3()
+{
+    replyToServer(S_COMMAND_CHOOSE_ROLE_3V3, sender()->objectName());
+    setStatus(NotActive);
+}
+
 void Client::recoverGeneral(const QVariant &recover)
 {
     JsonArray args = recover.value<JsonArray>();
@@ -2518,7 +2684,7 @@ void Client::revealGeneral(const QVariant &reveal)
     emit general_revealed(self, general);
 }
 
-/*void Client::onPlayerChooseOrder() {
+void Client::onPlayerChooseOrder() {
     OptionButton *button = qobject_cast<OptionButton *>(sender());
     QString order;
     if (button) {
@@ -2535,7 +2701,7 @@ void Client::revealGeneral(const QVariant &reveal)
     else req = (int)S_CAMP_COOL;
     replyToServer(S_COMMAND_CHOOSE_ORDER, req);
     setStatus(NotActive);
-    }*/
+}
 
 void Client::updateStateItem(const QVariant &state)
 {

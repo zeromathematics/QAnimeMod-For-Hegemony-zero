@@ -22,7 +22,7 @@
 -- and it is a little different from config.ini
 
 config = {
-	kingdoms = { "wei" , "qun" , "shu" , "wu", "god", "science", "magic", "real", "game", "magic|science", "magic|real", "science|real", "real|game", "magic|game", "science|game"},
+	kingdoms = {"science", "real", "magic", "game", "idol", "careerist", "god"--[["idol|real", "science|idol", "magic|science", "magic|real", "science|real", "real|game", "magic|game", "science|game",]] },
 	kingdom_colors = {
 		god = "#96943D",
 		wei = "#615E5D",
@@ -34,6 +34,8 @@ config = {
 		game = "#0CF0EC",
 		real = "#F5ED07",
 		WOF = "#C0C0C0",
+		careerist = "#A500CC",
+        idol = "#FF9EAC",  
 	},
 
 	skill_colors = {
@@ -52,7 +54,8 @@ config = {
 		magicskill = "#F00C95",
 		scienceskill = "#615E5D",
 		realskill = "#F5ED07",
-		gameskill = "#0CF0EC",		
+		gameskill = "#0CF0EC",
+        idolskill = "#FF9EAC",	
 	},
 
 	-- Sci-fi style background
@@ -64,7 +67,9 @@ config = {
 	package_names = {
 	    "NewtestCard",
 		"RevolutionCard",
+		"FadingCard",
 		"StandardCard",
+		"SpecialCard",
 		"FormationEquip",
 		"MomentumEquip" ,
 		"StrategicAdvantage",
@@ -72,6 +77,7 @@ config = {
 
 		"Newtest",
 		"Revolution",
+		"Fading",
 		"Standard",
 		"Test",
 		"Formation",

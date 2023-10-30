@@ -109,6 +109,18 @@ private slots:
     void disableSource(const QString &currentNature);
 };
 
+class KOFOrderBox : public QGraphicsPixmapItem
+{
+public:
+    KOFOrderBox(bool self, QGraphicsScene *scene);
+    void revealGeneral(const QString &name);
+    void killPlayer(const QString &general_name);
+
+private:
+    QSanSelectableItem *avatars[3];
+    int revealed;
+};
+
 class ReplayerControlBar : public QGraphicsObject
 {
     Q_OBJECT
@@ -173,6 +185,7 @@ public:
     GuhuoBox *current_guhuo_box;
 
     void updateGlobalCardBox(const ClientPlayer *player, int id = -1);
+    void redrawDashboardButtons();
 
 public slots:
     void addPlayer(ClientPlayer *player);
@@ -188,9 +201,9 @@ public slots:
         bool handcard_visible, Card::HandlingMethod method, QList<int> disabled_ids, QList<int> handcards);
     void chooseKingdom(const QStringList &kingdoms);
     void chooseOption(const QString &skillName, const QStringList &options);
-    //void chooseOrder(QSanProtocol::Game3v3ChooseOrderCommand reason);
-    //void chooseRole(const QString &scheme, const QStringList &roles);
-    //void chooseDirection();
+    void chooseOrder(QSanProtocol::Game3v3ChooseOrderCommand reason);
+    void chooseRole(const QString &scheme, const QStringList &roles);
+    void chooseDirection();
     void chooseTriggerOrder(const QString &reason, const QStringList &options, const bool optional);
 
     void bringToFront(QGraphicsItem *item);
@@ -353,6 +366,7 @@ private:
     Button *arrange_button;
     QPointF m_tableCenterPos;
     ReplayerControlBar *m_replayControl;
+    KOFOrderBox *enemy_box, *self_box;
 
     struct _MoveCardsClassifier
     {
@@ -481,6 +495,8 @@ private slots:
     void fillGenerals(const QStringList &);
     void takeGeneral(const QString &who, const QString &name, const QString &);
     void recoverGeneral(int index, const QString &name);
+    void startGeneralSelection();
+    void selectGeneral();
     void startArrange(const QString &);
     void toggleArrange();
     void finishArrange();

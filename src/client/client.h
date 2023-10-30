@@ -56,6 +56,7 @@ public:
         AskForGuanxing = 0x00000A,
         AskForGongxin = 0x00000B,
         AskForShowOrPindian = 0x00000C,
+        AskForGeneralTaken = 0x0D,
         AskForGeneralChosen = 0x01000D,
         AskForArrangement = 0x00000E,
         AskForChoice = 0x01000F,
@@ -158,6 +159,8 @@ public:
     void cardLimitation(const QVariant &limit);
     void disableShow(const QVariant &args);
     void setNullification(const QVariant &str);
+    void setIgiari(const QVariant &str);
+    void setHimitsu(const QVariant &str);
     void enableSurrender(const QVariant &enabled);
     void exchangeKnownCards(const QVariant &players);
     void setKnownCards(const QVariant &set_str);
@@ -192,6 +195,8 @@ public:
     void askForSuit(const QVariant &);
     void askForKingdom(const QVariant &);
     void askForNullification(const QVariant &);
+    void askForIgiari(const QVariant &);
+    void askForHimitsu(const QVariant &);
     void askForPindian(const QVariant &);
     void askForCardChosen(const QVariant &ask_str);
     void globalCardChosen(const QVariant &ask_str);
@@ -208,10 +213,12 @@ public:
     void handleGameEvent(const QVariant &);
     //3v3 & 1v1
     void askForOrder(const QVariant &);
+    void askForRole3v3(const QVariant &);
     void askForDirection(const QVariant &);
 
     // 3v3 & 1v1 methods
     void fillGenerals(const QVariant &generals);
+    void askForGeneral3v3(const QVariant &);
     void takeGeneral(const QVariant &take_str);
     void startArrange(const QVariant &to_arrange);
 
@@ -260,6 +267,10 @@ public:
     bool m_canDiscardEquip;
     bool m_noNullificationThisTime;
     QString m_noNullificationTrickName;
+    bool m_noIgiariThisTime;
+    QString m_noIgiariTrickName;
+    bool m_noHimitsuThisTime;
+    QString m_noHimitsuTrickName;
     int discard_num;
     int min_num;
     QString skill_name;
@@ -343,7 +354,8 @@ private slots:
     void processObsoleteServerPacket(const QString &cmd);
     void notifyRoleChange(const QString &new_role);
     void alertFocus();
-    //void onPlayerChooseOrder();
+    void onPlayerChooseOrder();
+    void onPlayerChooseRole3v3();
 
 signals:
     void version_checked(const QString &version_number, const QString &mod_name);
@@ -405,6 +417,8 @@ signals:
     void do_filter();
 
     void nullification_asked(bool asked);
+    void igiari_asked(bool asked);
+    void himitsu_asked(bool asked);
     void surrender_enabled(bool enabled);
 
     void mirror_guanxing_start(const QString &who, bool up_only, const QList<int> &cards);

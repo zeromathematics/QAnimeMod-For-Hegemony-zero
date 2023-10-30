@@ -160,6 +160,11 @@ void EquipCard::onUninstall(ServerPlayer *player) const
     }
 }
 
+bool EquipCard::targetFilter(const QList<const Player *> &targets, const Player *to_select, const Player *Self) const
+{
+    return targets.length()<1;
+}
+
 QString GlobalEffect::getSubtype() const
 {
     return "global_effect";
@@ -431,8 +436,8 @@ void DelayedTrick::onNullified(ServerPlayer *target) const
     }
 }
 
-Weapon::Weapon(Suit suit, int number, int range)
-    : EquipCard(suit, number), range(range)
+Weapon::Weapon(Suit suit, int number, int range, bool fixed)
+    : EquipCard(suit, number, fixed), range(range)
 {
 }
 

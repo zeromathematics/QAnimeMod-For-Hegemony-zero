@@ -81,6 +81,7 @@ public:
     void throwAllMarks(bool visible_only = true);
     void clearOnePrivatePile(const QString &pile_name);
     void clearPrivatePiles();
+    void fillHandCards(int n, const QString &reason = QString());
     int getMaxCards(MaxCardsType::MaxCardsCount type = MaxCardsType::Max) const;
     void drawCards(int n, const QString &reason = QString());
     bool askForSkillInvoke(const QString &skill_name, const QVariant &data = QVariant());
@@ -92,6 +93,8 @@ public:
     QList<const Card *> getCards(const QString &flags) const;
     DummyCard *wholeHandCards() const;
     bool hasNullification() const;
+    bool hasIgiari() const;
+    bool hasHimitsu() const;
     PindianStruct *pindianSelect(ServerPlayer *target, const QString &reason, const Card *card1 = NULL);
     PindianStruct *pindianSelect(const QList<ServerPlayer *> &target, const QString &reason, const Card *card1 = NULL);
     bool pindian(PindianStruct *pd, int index = 1); //pd is deleted after this function
@@ -115,7 +118,7 @@ public:
     void loseMark(const QString &mark, int n = 1);
     void loseAllMarks(const QString &mark_name);
 
-    void removeCurrentClub();
+    void removeCurrentClub(const QString &club_name);
     void addClub(const QString &club_name);
 
     virtual void addSkill(const QString &skill_name, bool head_skill = true);

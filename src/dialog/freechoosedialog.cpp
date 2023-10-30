@@ -21,6 +21,11 @@
 #include "freechoosedialog.h"
 #include "general.h"
 #include "engine.h"
+#include "client.h"
+#include "settings.h"
+#include "protocol.h"
+#include "clientplayer.h"
+#include "clientstruct.h"
 #include "skinbank.h"
 
 #include <QGridLayout>
@@ -30,6 +35,32 @@
 #include <QTabWidget>
 #include <QMessageBox>
 #include <QButtonGroup>
+
+using namespace QSanProtocol;
+
+OptionButton::OptionButton(QString icon_path, const QString &caption, QWidget *parent)
+    : QToolButton(parent)
+{
+    QPixmap pixmap(icon_path);
+    QIcon icon(pixmap);
+
+    setIcon(icon);
+    setIconSize(pixmap.size());
+
+    if (!caption.isEmpty()) {
+        setText(caption);
+        setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
+
+        QFont font = Config.SmallFont;
+        font.setPixelSize(Config.SmallFont.pixelSize() - 8);
+        setFont(font);
+    }
+}
+
+void OptionButton::mouseDoubleClickEvent(QMouseEvent *)
+{
+    emit double_clicked();
+}
 
 FreeChooseDialog::FreeChooseDialog(QWidget *parent, ButtonGroupType type)
     : FlatDialog(parent), type(type)
@@ -54,6 +85,10 @@ FreeChooseDialog::FreeChooseDialog(QWidget *parent, ButtonGroupType type)
             continue;
 
         map[general->getKingdom()] << general;
+
+        foreach (QString s, general->getKingdom().split("|")){
+            if (!map[s].contains(general)) map[s] << general;
+        }
     }
 
     QStringList kingdoms = Sanguosha->getKingdoms();

@@ -85,6 +85,9 @@ protected:
     QGraphicsPixmapItem *m_icon;
     QGraphicsPixmapItem *m_colorReversedIcon;
 
+private:
+    bool mute;
+
 signals:
     void clicked();
 

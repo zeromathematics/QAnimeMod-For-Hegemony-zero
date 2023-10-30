@@ -68,7 +68,7 @@ public:
         TreasureLocation
     };
 
-    EquipCard(Suit suit, int number) : Card(suit, number, true)
+    EquipCard(Suit suit, int number, bool fixed = true) : Card(suit, number, fixed)
     {
         handling_method = MethodUse;
     }
@@ -80,6 +80,7 @@ public:
     virtual void onUse(Room *room, const CardUseStruct &card_use) const;
     virtual void use(Room *room, ServerPlayer *source, QList<ServerPlayer *> &targets) const;
 
+    virtual bool targetFilter(const QList<const Player *> &targets, const Player *to_select, const Player *Self) const;
     virtual void onInstall(ServerPlayer *player) const;
     virtual void onUninstall(ServerPlayer *player) const;
 
@@ -163,7 +164,7 @@ class Weapon : public EquipCard
     Q_OBJECT
 
 public:
-    Weapon(Suit suit, int number, int range);
+    Weapon(Suit suit, int number, int range, bool fixed = true);
     int getRange() const;
 
     virtual QString getSubtype() const;

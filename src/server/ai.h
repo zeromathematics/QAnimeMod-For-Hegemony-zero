@@ -48,6 +48,7 @@ public:
     {
         Friend, Enemy, Neutrality
     };
+    static Relation GetRelation3v3(const ServerPlayer *a, const ServerPlayer *b);
     static Relation GetRelationHegemony(const ServerPlayer *a, const ServerPlayer *b);
     Relation relationTo(const ServerPlayer *other) const;
     bool isFriend(const ServerPlayer *other) const;
@@ -64,6 +65,7 @@ public:
     virtual QList<int> askForDiscard(const QString &reason, int discard_num, int min_num, bool optional, bool include_equip) = 0;
     virtual QMap<QString, QList<int> > askForMoveCards(const QList<int> &upcards, const QList<int> &downcards, const QString &reason, const QString &pattern, int min_num, int max_num) = 0;
     virtual const Card *askForNullification(const Card *trick, ServerPlayer *from, ServerPlayer *to, bool positive) = 0;
+    virtual const Card *askForIgiari(const Card *basic, ServerPlayer *from, ServerPlayer *to, bool positive) = 0;
     virtual int askForCardChosen(ServerPlayer *who, const QString &flags, const QString &reason, Card::HandlingMethod method, const QList<int> &disabled_ids) = 0;
     virtual QList<int> askForCardsChosen(const QList<ServerPlayer *> &targets, const QString &flags, const QString &reason, int min, int max, const QList<int> &disabled_ids) = 0;
     virtual const Card *askForCard(const QString &pattern, const QString &prompt, const QVariant &data) = 0;
@@ -99,6 +101,7 @@ public:
     virtual QList<int> askForDiscard(const QString &reason, int discard_num, int min_num, bool optional, bool include_equip);
     virtual QMap<QString, QList<int> >askForMoveCards(const QList<int> &upcards, const QList<int> &downcards, const QString &reason, const QString &pattern, int min_num, int max_num);
     virtual const Card *askForNullification(const Card *trick, ServerPlayer *from, ServerPlayer *to, bool positive);
+    virtual const Card *askForIgiari(const Card *basic, ServerPlayer *from, ServerPlayer *to, bool positive);
     virtual int askForCardChosen(ServerPlayer *who, const QString &flags, const QString &reason, Card::HandlingMethod method, const QList<int> &disabled_ids);
     virtual QList<int> askForCardsChosen(const QList<ServerPlayer *> &targets, const QString &flags, const QString &reason, int min, int max, const QList<int> &disabled_ids);
     virtual const Card *askForCard(const QString &pattern, const QString &prompt, const QVariant &data);
@@ -133,6 +136,7 @@ public:
     virtual QList<int> askForDiscard(const QString &reason, int discard_num, int min_num, bool optional, bool include_equip);
     virtual QMap<QString, QList<int> > askForMoveCards(const QList<int> &upcards, const QList<int> &downcards, const QString &reason, const QString &pattern, int min_num, int max_num);
     virtual const Card *askForNullification(const Card *trick, ServerPlayer *from, ServerPlayer *to, bool positive);
+    virtual const Card *askForIgiari(const Card *basic, ServerPlayer *from, ServerPlayer *to, bool positive);
     virtual QString askForChoice(const QString &skill_name, const QString &choices, const QVariant &data);
     virtual int askForCardChosen(ServerPlayer *who, const QString &flags, const QString &reason, Card::HandlingMethod method, const QList<int> &disabled_ids);
     virtual QList<int> askForCardsChosen(const QList<ServerPlayer *> &targets, const QString &flags, const QString &reason, int min, int max, const QList<int> &disabled_ids);

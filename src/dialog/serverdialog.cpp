@@ -39,6 +39,9 @@
 #include <QRadioButton>
 #include <QHostInfo>
 #include <QComboBox>
+#include "skinbank.h"
+#include "QAction"
+
 class QFont;
 
 static QLayout *HLay(QWidget *left, QWidget *right)
@@ -106,7 +109,7 @@ QWidget *ServerDialog::createBasicTab()
     hegemony_maxchoice_label = new QLabel(tr("Upperlimit for hegemony"));
     hegemony_maxchoice_spinbox = new QSpinBox;
     hegemony_maxchoice_spinbox->setRange(5, 7); //wait for a new extension
-    hegemony_maxchoice_spinbox->setValue(Config.value("HegemonyMaxChoice", 7).toInt());
+    hegemony_maxchoice_spinbox->setValue(Config.value("HegemonyMaxChoice", 9).toInt());
 #endif
 
     QPushButton *edit_button = new QPushButton(tr("Banlist ..."));
@@ -273,8 +276,8 @@ QWidget *ServerDialog::createAdvancedTab()
 #ifdef Q_OS_ANDROID
     hegemony_maxchoice_spinbox->setMinimumHeight(80);
 #endif
-    hegemony_maxchoice_spinbox->setRange(5, 7); //wait for a new extension
-    hegemony_maxchoice_spinbox->setValue(Config.value("HegemonyMaxChoice", 7).toInt());
+    hegemony_maxchoice_spinbox->setRange(2, 9); //wait for a new extension
+    hegemony_maxchoice_spinbox->setValue(Config.value("HegemonyMaxChoice", 9).toInt());
 #endif
     address_edit = new QLineEdit;
     address_edit->setText(Config.Address);
@@ -315,7 +318,7 @@ QWidget *ServerDialog::createConversionTab()
     convert_lord = new QCheckBox(tr("Enable Lord Convertion"));
     convert_lord->setChecked(enable_lord);
 
-    convert_ds_to_dp = new QCheckBox(tr("Convert DoubleSword to DragonPhoenix"));
+    /*convert_ds_to_dp = new QCheckBox(tr("Convert DoubleSword to DragonPhoenix"));
     convert_ds_to_dp->setChecked(Config.value("CardConversions").toStringList().contains("DragonPhoenix") || enable_lord);
     convert_ds_to_dp->setDisabled(enable_lord);
 
@@ -326,12 +329,17 @@ QWidget *ServerDialog::createConversionTab()
     connect(convert_lord, &QCheckBox::toggled, convert_ds_to_dp, &QCheckBox::setChecked);
     connect(convert_lord, &QCheckBox::toggled, convert_ds_to_dp, &QCheckBox::setDisabled);
     connect(convert_lord, &QCheckBox::toggled, convert_jf_to_ps, &QCheckBox::setChecked);
-    connect(convert_lord, &QCheckBox::toggled, convert_jf_to_ps, &QCheckBox::setDisabled);
+    connect(convert_lord, &QCheckBox::toggled, convert_jf_to_ps, &QCheckBox::setDisabled);*/
+
+    bool prohibit_dp = Config.value("Prohibit DP Betray", true).toBool();
+    prohibit_dp_betray = new QCheckBox(tr("Prohibit DP Betray (for contest)"));
+    prohibit_dp_betray->setChecked(prohibit_dp);
 
     QWidget *widget = new QWidget;
     layout->addWidget(convert_lord);
-    layout->addWidget(convert_ds_to_dp);
-    layout->addWidget(convert_jf_to_ps);
+    layout->addWidget(prohibit_dp_betray);
+    //layout->addWidget(convert_ds_to_dp);
+    //layout->addWidget(convert_jf_to_ps);
     widget->setLayout(layout);
     return widget;
 }
@@ -367,6 +375,22 @@ QWidget *ServerDialog::createMiscTab()
 
     reward_the_first_showing_player_checkbox = new QCheckBox(tr("The first player to show general can draw 2 cards"));
     reward_the_first_showing_player_checkbox->setChecked(Config.RewardTheFirstShowingPlayer);
+
+    view_next_player_deputy_general_checkbox = new QCheckBox(tr("View next player deputy general"));
+    view_next_player_deputy_general_checkbox->setChecked(Config.ViewNextPlayerDeputyGeneral);
+
+    activate_special_card_mode_checkbox = new QCheckBox(tr("Activate Special Card Mode"));
+    activate_special_card_mode_checkbox->setChecked(Config.ActivateSpecialCardMode);
+
+    ban_kingdom_checkbox = new QCheckBox(tr("Ban Kingdom Mode"));
+    ban_kingdom_checkbox->setChecked(Config.BanKingdomMode);
+    QComboBox *bankingdom = new QComboBox;
+    bankingdom->addItem(tr("Random"), "Random");
+    bankingdom->addItem(tr("HumanChoose"), "HumanChoose");
+    ban_kingdom_checkbox_detail = bankingdom;
+    ban_kingdom_checkbox_detail->setEnabled(Config.BanKingdomMode);
+    connect(ban_kingdom_checkbox,&QCheckBox::toggled ,ban_kingdom_checkbox_detail,&QComboBox::setEnabled);
+
 #if !defined(Q_OS_IOS) && !defined(Q_OS_ANDROID)
     QGroupBox *ai_groupbox = new QGroupBox(tr("Artificial intelligence"));
     ai_groupbox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
@@ -417,6 +441,10 @@ QWidget *ServerDialog::createMiscTab()
     tablayout->addLayout(HLay(minimize_dialog_checkbox, surrender_at_death_checkbox));
     tablayout->addLayout(HLay(luck_card_label, luck_card_spinbox));
     tablayout->addWidget(reward_the_first_showing_player_checkbox);
+    tablayout->addWidget(view_next_player_deputy_general_checkbox);
+    tablayout->addWidget(activate_special_card_mode_checkbox);
+    tablayout->addWidget(ban_kingdom_checkbox);
+    tablayout->addWidget(ban_kingdom_checkbox_detail);
 #if !defined(Q_OS_IOS) && !defined(Q_OS_ANDROID)
     tablayout->addWidget(ai_groupbox);
 #endif
@@ -490,6 +518,68 @@ QWidget *ServerDialog::createAiTab()
 }
 #endif
 
+QGroupBox *ServerDialog::create3v3Box()
+{
+    QGroupBox *box = new QGroupBox(tr("3v3 options"));
+    box->setEnabled(Config.GameMode == "06_3v3");
+    box->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+
+    QVBoxLayout *vlayout = new QVBoxLayout;
+
+    official_3v3_radiobutton = new QRadioButton(tr("Official mode"));
+
+    QComboBox *officialComboBox = new QComboBox;
+    //officialComboBox->addItem(tr("Classical"), "Classical");
+    //officialComboBox->addItem("2012", "2012");
+    officialComboBox->addItem("2016", "2016");
+
+    official_3v3_ComboBox = officialComboBox;
+
+    QString rule = Config.value("3v3/OfficialRule", "2016").toString();
+    /*
+    if (rule == "2012")
+        officialComboBox->setCurrentIndex(1);
+    else if (rule == "2013")
+        officialComboBox->setCurrentIndex(2);
+        */
+
+
+    QRadioButton *extend = new QRadioButton(tr("Extension mode"));
+    QPushButton *extend_edit_button = new QPushButton(tr("General selection ..."));
+    extend_edit_button->setEnabled(false);
+    connect(extend, SIGNAL(toggled(bool)), extend_edit_button, SLOT(setEnabled(bool)));
+    connect(extend_edit_button, SIGNAL(clicked()), this, SLOT(select3v3Generals()));
+
+    exclude_disaster_checkbox = new QCheckBox(tr("Exclude disasters"));
+    exclude_disaster_checkbox->setChecked(Config.value("3v3/ExcludeDisasters", true).toBool());
+
+    QComboBox *roleChooseComboBox = new QComboBox;
+    roleChooseComboBox->addItem(tr("Normal"), "Normal");
+    roleChooseComboBox->addItem(tr("Random"), "Random");
+    roleChooseComboBox->addItem(tr("All roles"), "AllRoles");
+
+    role_choose_ComboBox = roleChooseComboBox;
+
+    QString scheme = Config.value("3v3/RoleChoose", "Normal").toString();
+    if (scheme == "Random")
+        roleChooseComboBox->setCurrentIndex(1);
+    else if (scheme == "AllRoles")
+        roleChooseComboBox->setCurrentIndex(2);
+
+    vlayout->addLayout(HLay(official_3v3_radiobutton, official_3v3_ComboBox));
+    vlayout->addLayout(HLay(extend, extend_edit_button));
+    vlayout->addWidget(exclude_disaster_checkbox);
+    vlayout->addLayout(HLay(new QLabel(tr("Role choose")), role_choose_ComboBox));
+    box->setLayout(vlayout);
+
+    bool using_extension = Config.value("3v3/UsingExtension", true).toBool();
+    if (using_extension)
+        extend->setChecked(true);
+    else
+        official_3v3_radiobutton->setChecked(true);
+
+    return box;
+}
 
 QGroupBox *ServerDialog::createGameModeBox()
 {
@@ -509,7 +599,13 @@ QGroupBox *ServerDialog::createGameModeBox()
         button->setObjectName(itor.key());
         mode_group->addButton(button);
 
-        item_list << button;
+        if (itor.key() == "06_3v3") {
+             QGroupBox *box = create3v3Box();
+             connect(button, SIGNAL(toggled(bool)), box, SLOT(setEnabled(bool)));
+             item_list << button << box;
+        }else {
+            item_list << button;
+        }
 
         if (itor.key() == Config.GameMode)
             button->setChecked(true);
@@ -634,6 +730,10 @@ bool ServerDialog::config()
     Config.NullificationCountDown = nullification_spinbox->value();
     Config.EnableMinimizeDialog = minimize_dialog_checkbox->isChecked();
     Config.RewardTheFirstShowingPlayer = reward_the_first_showing_player_checkbox->isChecked();
+    Config.ViewNextPlayerDeputyGeneral = view_next_player_deputy_general_checkbox->isChecked();
+    Config.ActivateSpecialCardMode = activate_special_card_mode_checkbox->isChecked();
+    Config.BanKingdomMode = ban_kingdom_checkbox->isChecked();
+    Config.BanKingdomModeDetail = ban_kingdom_checkbox_detail->itemData(ban_kingdom_checkbox_detail->currentIndex()).toString();
     Config.ForbidAddingRobot = forbid_adding_robot_checkbox->isChecked();
     Config.OriginAIDelay = ai_delay_spinbox->value();
     Config.AIDelay = Config.OriginAIDelay;
@@ -670,6 +770,9 @@ bool ServerDialog::config()
     Config.setValue("NullificationCountDown", nullification_spinbox->value());
     Config.setValue("EnableMinimizeDialog", Config.EnableMinimizeDialog);
     Config.setValue("RewardTheFirstShowingPlayer", Config.RewardTheFirstShowingPlayer);
+    Config.setValue("ViewNextPlayerDeputyGeneral", Config.ViewNextPlayerDeputyGeneral);
+    Config.setValue("ActivateSpecialCardMode", Config.ActivateSpecialCardMode);
+    Config.setValue("BanKingdomMode", Config.BanKingdomMode);
     Config.setValue("ForbidAddingRobot", Config.ForbidAddingRobot);
     Config.setValue("OriginAIDelay", Config.OriginAIDelay);
     Config.setValue("AlterAIDelayAD", ai_delay_altered_checkbox->isChecked());
@@ -680,6 +783,13 @@ bool ServerDialog::config()
     Config.setValue("Address", Config.Address);
     Config.setValue("DisableLua", disable_lua_checkbox->isChecked());
     Config.setValue("AIChat", ai_chat_checkbox->isChecked());
+
+    Config.beginGroup("3v3");
+    Config.setValue("UsingExtension", !official_3v3_radiobutton->isChecked());
+    Config.setValue("RoleChoose", role_choose_ComboBox->itemData(role_choose_ComboBox->currentIndex()).toString());
+    Config.setValue("ExcludeDisaster", exclude_disaster_checkbox->isChecked());
+    Config.setValue("OfficialRule", official_3v3_ComboBox->itemData(official_3v3_ComboBox->currentIndex()).toString());
+    Config.endGroup();
 
     QSet<QString> ban_packages;
     QList<QAbstractButton *> checkboxes = extension_group->buttons();
@@ -694,11 +804,12 @@ bool ServerDialog::config()
     Config.BanPackages = ban_packages.toList();
     Config.setValue("BanPackages", Config.BanPackages);
     Config.setValue("EnableLordConvertion", convert_lord->isChecked());
+    Config.setValue("Prohibit DP Betray", prohibit_dp_betray->isChecked());
 
-    QStringList card_conversions;
-    if (convert_ds_to_dp->isChecked()) card_conversions << "DragonPhoenix";
-    if (convert_jf_to_ps->isChecked()) card_conversions << "PeaceSpell";
-    Config.setValue("CardConversions", card_conversions);
+    //QStringList card_conversions;
+    //if (convert_ds_to_dp->isChecked()) card_conversions << "DragonPhoenix";
+    //if (convert_jf_to_ps->isChecked()) card_conversions << "PeaceSpell";
+   // Config.setValue("CardConversions", card_conversions);
 
     return true;
 }
@@ -706,5 +817,114 @@ bool ServerDialog::config()
 void ServerDialog::editBanlist()
 {
     BanListDialog *dialog = new BanListDialog(this);
+    dialog->exec();
+}
+
+Select3v3GeneralDialog::Select3v3GeneralDialog(QDialog *parent)
+    : QDialog(parent)
+{
+    setWindowTitle(tr("Select generals in extend 3v3 mode"));
+    ex_generals = Config.value("3v3/ExtensionGenerals").toStringList().toSet();
+    QVBoxLayout *layout = new QVBoxLayout;
+    tab_widget = new QTabWidget;
+    fillTabWidget();
+
+    QPushButton *ok_button = new QPushButton(tr("OK"));
+    connect(ok_button, SIGNAL(clicked()), this, SLOT(accept()));
+    QHBoxLayout *hlayout = new QHBoxLayout;
+    hlayout->addStretch();
+    hlayout->addWidget(ok_button);
+
+    layout->addWidget(tab_widget);
+    layout->addLayout(hlayout);
+    setLayout(layout);
+    setMinimumWidth(550);
+
+    connect(this, SIGNAL(accepted()), this, SLOT(save3v3Generals()));
+}
+
+void Select3v3GeneralDialog::fillTabWidget()
+{
+    QList<const Package *> packages = Sanguosha->findChildren<const Package *>();
+    foreach (const Package *package, packages) {
+        if (package->getType() == Package::GeneralPack) {
+            QListWidget *list = new QListWidget;
+            list->setViewMode(QListView::IconMode);
+            list->setDragDropMode(QListView::NoDragDrop);
+            fillListWidget(list, package);
+
+            tab_widget->addTab(list, Sanguosha->translate(package->objectName()));
+        }
+    }
+}
+
+void Select3v3GeneralDialog::fillListWidget(QListWidget *list, const Package *pack)
+{
+    QList<const General *> generals = pack->findChildren<const General *>();
+    foreach (const General *general, generals) {
+        if (Sanguosha->isGeneralHidden(general->objectName())) continue;
+
+        QListWidgetItem *item = new QListWidgetItem(list);
+        item->setData(Qt::UserRole, general->objectName());
+        item->setIcon(QIcon(G_ROOM_SKIN.getGeneralPixmap(general->objectName(), QSanRoomSkin::S_GENERAL_ICON_SIZE_TINY)));
+
+        bool checked = false;
+        if (ex_generals.isEmpty()) {
+            checked = (pack->objectName() == "standard" || pack->objectName() == "wind")
+                && general->objectName() != "yuji";
+        } else
+            checked = ex_generals.contains(general->objectName());
+
+        if (checked)
+            item->setCheckState(Qt::Checked);
+        else
+            item->setCheckState(Qt::Unchecked);
+    }
+
+    QAction *action = new QAction(tr("Check/Uncheck all"), list);
+    list->addAction(action);
+    list->setContextMenuPolicy(Qt::ActionsContextMenu);
+    list->setResizeMode(QListView::Adjust);
+
+    connect(action, SIGNAL(triggered()), this, SLOT(toggleCheck()));
+}
+
+void Select3v3GeneralDialog::toggleCheck()
+{
+    QWidget *widget = tab_widget->currentWidget();
+    QListWidget *list = qobject_cast<QListWidget *>(widget);
+
+    if (list == NULL || list->item(0) == NULL) return;
+
+    bool checked = list->item(0)->checkState() != Qt::Checked;
+
+    for (int i = 0; i < list->count(); i++)
+        list->item(i)->setCheckState(checked ? Qt::Checked : Qt::Unchecked);
+}
+
+void Select3v3GeneralDialog::save3v3Generals()
+{
+    ex_generals.clear();
+
+    for (int i = 0; i < tab_widget->count(); i++) {
+        QWidget *widget = tab_widget->widget(i);
+        QListWidget *list = qobject_cast<QListWidget *>(widget);
+        if (list) {
+            for (int j = 0; j < list->count(); j++) {
+                QListWidgetItem *item = list->item(j);
+                if (item->checkState() == Qt::Checked)
+                    ex_generals << item->data(Qt::UserRole).toString();
+            }
+        }
+    }
+
+    QStringList list = ex_generals.toList();
+    QVariant data = QVariant::fromValue(list);
+    Config.setValue("3v3/ExtensionGenerals", data);
+}
+
+void ServerDialog::select3v3Generals()
+{
+    QDialog *dialog = new Select3v3GeneralDialog(this);
     dialog->exec();
 }

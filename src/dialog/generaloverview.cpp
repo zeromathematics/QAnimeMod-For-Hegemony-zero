@@ -369,6 +369,7 @@ void GeneralOverview::fillGenerals(const QList<const General *> &generals, bool 
                 general->tryLoadingSkinTranslation(skinId);
             tempGeneralMap[general] = skinId;
 #ifdef Q_OS_IOS
+            ui->comboBox->addItem(general->getAnime() + " " + Sanguosha->translate(general->objectName()), QVariant::fromValue(general->objectName()));
             ui->comboBox->addItem(general->getTitle() + " " + Sanguosha->translate(general->objectName()), QVariant::fromValue(general->objectName()));
 #endif
         } else {
@@ -391,19 +392,21 @@ void GeneralOverview::fillGenerals(const QList<const General *> &generals, bool 
 #if !defined(Q_OS_IOS)
     ui->tableView->setModel(model);
 #ifdef Q_OS_ANDROID
-    ui->tableView->setColumnWidth(0, 180);
-    ui->tableView->setColumnWidth(1, 120);
-    ui->tableView->setColumnWidth(2, 60);
+    ui->tableView->setColumnWidth(0, 70);
+    ui->tableView->setColumnWidth(1, 180);
+    ui->tableView->setColumnWidth(2, 120);
     ui->tableView->setColumnWidth(3, 60);
-    ui->tableView->setColumnWidth(4, 100);
-    ui->tableView->setColumnWidth(5, 100);
-#else
-    ui->tableView->setColumnWidth(0, 80);
-    ui->tableView->setColumnWidth(1, 95);
-    ui->tableView->setColumnWidth(2, 40);
-    ui->tableView->setColumnWidth(3, 50);
     ui->tableView->setColumnWidth(4, 60);
-    ui->tableView->setColumnWidth(5, 85);
+    ui->tableView->setColumnWidth(5, 100);
+    ui->tableView->setColumnWidth(6, 100);
+#else
+    ui->tableView->setColumnWidth(0, 60);
+    ui->tableView->setColumnWidth(1, 80);
+    ui->tableView->setColumnWidth(2, 95);
+    ui->tableView->setColumnWidth(3, 40);
+    ui->tableView->setColumnWidth(4, 50);
+    ui->tableView->setColumnWidth(5, 60);
+    ui->tableView->setColumnWidth(6, 85);
 #endif
     on_tableView_clicked(model->firstIndex());
 #else
@@ -782,7 +785,7 @@ void GeneralOverview::startSearch(bool include_hidden, const QString &anime, con
             QString g_anime = Sanguosha->translate("@" + general_name);
             if (g_anime.startsWith("@"))
                 g_anime = Sanguosha->translate("@" + general_name.split("_").last());
-            if (!rx.exactMatch(g_anime))
+            if (!g_anime.contains(v_anime)/*!rx.exactMatch(g_anime)*/)
                 continue;
         }
         if (!nickname.isEmpty()) {
@@ -794,7 +797,7 @@ void GeneralOverview::startSearch(bool include_hidden, const QString &anime, con
             QString g_nickname = Sanguosha->translate("#" + general_name);
             if (g_nickname.startsWith("#"))
                 g_nickname = Sanguosha->translate("#" + general_name.split("_").last());
-            if (!rx.exactMatch(g_nickname))
+            if (!g_nickname.contains(v_nickname)/*!rx.exactMatch(g_nickname)*/)
                 continue;
         }
         if (!name.isEmpty()) {
@@ -804,7 +807,7 @@ void GeneralOverview::startSearch(bool include_hidden, const QString &anime, con
             QRegExp rx(v_name);
 
             QString g_name = Sanguosha->translate(general_name);
-            if (!rx.exactMatch(g_name))
+            if (!g_name.contains(v_name)/*!rx.exactMatch(g_name)*/)
                 continue;
         }
         if (!genders.isEmpty()) {
@@ -815,8 +818,13 @@ void GeneralOverview::startSearch(bool include_hidden, const QString &anime, con
             if (general->isNeuter() && !genders.contains("nogender"))
                 continue;
         }
-        if (!kingdoms.isEmpty() && !kingdoms.contains(general->getKingdom()))
-            continue;
+        if (!kingdoms.isEmpty() && !kingdoms.contains(general->getKingdom())){
+            bool has = false;
+            foreach (QString s, general->getKingdom().split("|")){
+                if (kingdoms.contains(s)) has = true;
+            }
+            if (!has) continue;
+        }
         if (!(lower == 0 && upper == 0) && (general->getDoubleMaxHp() < lower || general->getDoubleMaxHp() > upper))
             continue;
         if (!packages.isEmpty() && !packages.contains(general->getPackage()))
@@ -837,5 +845,14 @@ void GeneralOverview::fillAllGenerals()
 {
     ui->returnButton->hide();
     setWindowTitle(origin_window_title);
-    fillGenerals(all_generals->keys(), false);
+    QList<const General *> generals = all_generals->keys();
+    QList<const General *> generals_copy = all_generals->keys();
+    foreach(auto g, generals_copy){
+        if (g->getPackage() == "selfavatar"){
+            generals.removeOne(g);
+            generals << g;
+        }
+    }
+
+    fillGenerals(generals, false);
 }

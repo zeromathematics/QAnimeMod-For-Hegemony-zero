@@ -205,7 +205,7 @@ function sgs.getDefenseSlash(player, self)
 	local has_fire_slash
 	local cards = sgs.QList2Table(attacker:getHandcards())
 	for i = 1, #cards, 1 do
-		if (attacker:hasWeapon("Fan") and cards[i]:objectName() == "slash" and not cards[i]:isKindOf("ThunderSlash")) or cards[i]:isKindOf("FireSlash")  then
+		if (attacker:hasWeapon("Fan") and cards[i]:objectName() == "slash" and not cards[i]:isKindOf("ThunderSlash") and not cards[i]:isKindOf("IceSlash")) or cards[i]:isKindOf("FireSlash") then
 			has_fire_slash = true
 			break
 		end
@@ -270,9 +270,9 @@ function SmartAI:slashProhibit(card, enemy, from)
 	from = from or self.player
 	if enemy:isRemoved() then return true end
 
-	local nature = card:isKindOf("FireSlash") and sgs.DamageStruct_Fire
-					or card:isKindOf("ThunderSlash") and sgs.DamageStruct_Thunder
-					or card:isKindOf("IceSlash") and sgs.DamageStruct_Ice
+	local nature = (card:isKindOf("FireSlash") and sgs.DamageStruct_Fire)
+					or (card:isKindOf("ThunderSlash") and sgs.DamageStruct_Thunder)
+					or (card:isKindOf("IceSlash") and sgs.DamageStruct_Ice)
 	for _, askill in sgs.qlist(enemy:getVisibleSkillList(true)) do
 		local filter = sgs.ai_slash_prohibit[askill:objectName()]
 		if filter and type(filter) == "function" and filter(self, from, enemy, card) then return true end
@@ -323,6 +323,13 @@ function SmartAI:slashIsEffective(slash, to, from, ignore_armor)
 	    return false
 	  end
 	end
+    local minhei = true
+    for _,p in sgs.qlist(to:getAliveSiblings()) do
+       if p:getHandcardNum()< to:getHandcardNum() then minhei = false end
+    end
+    if to:hasShownSkill("tianhuo") and slash:isKindOf("FireSlash") then return false end
+    if to:hasShownSkill("yingdi") and minhei then return false end
+
 	if to:isRemoved() then return false end
 
 	local nature = sgs.Slash_Natures[slash:getClassName()]
@@ -382,6 +389,12 @@ function SmartAI:slashIsEffective(slash, to, from, ignore_armor)
 			return self:slashProhibit(f_slash, to, from)
 		end
 	elseif slash:isKindOf("FireSlash") then
+		local t_slash = self:getCard("ThunderSlash")
+		if t_slash and self:hasHeavySlashDamage(from, t_slash, to, true) > self:hasHeavySlashDamage(from, slash, to, true)
+			and (not to:isChained() or self:isGoodChainTarget(to, from, sgs.DamageStruct_Thunder, nil, t_slash)) then
+			return self:slashProhibit(t_slash, to, from)
+		end
+	elseif slash:isKindOf("IceSlash") then
 		local t_slash = self:getCard("ThunderSlash")
 		if t_slash and self:hasHeavySlashDamage(from, t_slash, to, true) > self:hasHeavySlashDamage(from, slash, to, true)
 			and (not to:isChained() or self:isGoodChainTarget(to, from, sgs.DamageStruct_Thunder, nil, t_slash)) then

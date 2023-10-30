@@ -32,7 +32,7 @@ public:
     static void quit();
 
     static void play(const QString &filename);
-    static void playAudioOfMoxuan();
+    static void playAudioOfKyoani();
     static void stop();
 
     static void playBGM(const QString &filename);

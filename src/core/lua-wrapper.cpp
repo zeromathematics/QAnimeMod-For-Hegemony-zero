@@ -21,7 +21,7 @@
 #include "lua-wrapper.h"
 #include "util.h"
 
-LuaTriggerSkill::LuaTriggerSkill(const char *name, Frequency frequency, const char *limit_mark)
+LuaTriggerSkill::LuaTriggerSkill(const char *name, Frequency frequency, const char *limit_mark,  const char *club_name)
     : TriggerSkill(name), can_trigger(0), on_cost(0),
     on_effect(0), priority(3),
     on_turn_broken(0), on_record(0)
@@ -29,6 +29,7 @@ LuaTriggerSkill::LuaTriggerSkill(const char *name, Frequency frequency, const ch
 {
     this->frequency = frequency;
     this->limit_mark = limit_mark;
+    this->club_name = QString(club_name);
     this->guhuo_type = "";
 }
 
@@ -47,16 +48,22 @@ QString LuaTriggerSkill::getGuhuoBox() const
     return guhuo_type;
 }
 
-LuaBattleArraySkill::LuaBattleArraySkill(const char *name, Frequency frequency, const char *limit_mark, HegemonyMode::ArrayType array_type)
+LuaBattleArraySkill::LuaBattleArraySkill(const char *name, Frequency frequency, const char *limit_mark, const char *club_name, HegemonyMode::ArrayType array_type)
     : BattleArraySkill(name, array_type)
 {
     this->frequency = frequency;
     this->limit_mark = limit_mark;
+    this->club_name = club_name;
 }
 
 int LuaBattleArraySkill::getPriority() const
 {
     return priority;
+}
+
+bool LuaBattleArraySkill::canPreshow() const
+{
+    return can_preshow;
 }
 
 LuaProhibitSkill::LuaProhibitSkill(const char *name)
@@ -71,7 +78,7 @@ LuaFixCardSkill::LuaFixCardSkill(const char *name)
 
 LuaViewAsSkill::LuaViewAsSkill(const char *name, const char *response_pattern, bool response_or_use, const char *expand_pile, const char *limit_mark)
     : ViewAsSkill(name), view_filter(0), view_as(0),
-    enabled_at_play(0), enabled_at_response(0), enabled_at_nullification(0), in_pile(0)
+    enabled_at_play(0), enabled_at_response(0), enabled_at_nullification(0), in_pile(0), enabled_at_igiari(0), enabled_at_himitsu(0), button_enabled(0)
 {
     this->response_pattern = response_pattern;
     this->response_or_use = response_or_use;
@@ -309,7 +316,7 @@ LuaTrickCard *LuaTrickCard::clone(Card::Suit suit, int number) const
     return new_card;
 }
 
-LuaWeapon::LuaWeapon(Card::Suit suit, int number, int range, const char *obj_name, const char *class_name)
+LuaWeapon::LuaWeapon(Card::Suit suit, int number, int range, const char *obj_name, const char *class_name, bool fixed)
     : Weapon(suit, number, range)
 {
     setObjectName(obj_name);
@@ -320,10 +327,11 @@ LuaWeapon *LuaWeapon::clone(Card::Suit suit, int number) const
 {
     if (suit == Card::SuitToBeDecided) suit = this->getSuit();
     if (number == -1) number = this->getNumber();
-    LuaWeapon *new_card = new LuaWeapon(suit, number, this->getRange(), objectName().toStdString().c_str(), class_name.toStdString().c_str());
+    LuaWeapon *new_card = new LuaWeapon(suit, number, this->getRange(), objectName().toStdString().c_str(), class_name.toStdString().c_str(), true);
 
     new_card->on_install = on_install;
     new_card->on_uninstall = on_uninstall;
+    new_card->filter = filter;
 
     return new_card;
 }

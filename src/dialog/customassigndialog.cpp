@@ -221,8 +221,10 @@ CustomAssignDialog::CustomAssignDialog(QWidget *parent)
     int index = 0;
     foreach (const QString &kingdom, Sanguosha->getKingdoms()) {
         nationalitiesComboBox->addItem(QIcon(QString("image/kingdom/icon/%1.png").arg(kingdom)), Sanguosha->translate(kingdom), kingdom);
+
         m_kingdomIndex[kingdom] = index;
         index++;
+
     }
     nationalitiesComboBox->setEnabled(false);
 
@@ -1601,9 +1603,12 @@ GeneralAssignDialog::GeneralAssignDialog(QWidget *parent, bool canBan)
 
     QList<const General *> all_generals = Sanguosha->getGeneralList();
     QMap<QString, QList<const General *> > map;
-    foreach (const General *general, all_generals)
+    foreach (const General *general, all_generals){
         map[general->getKingdom()] << general;
-
+        foreach (QString s, general->getKingdom().split("|")){
+            map[s] << general;
+        }
+    }
     QStringList kingdoms = Sanguosha->getKingdoms();
 
     foreach (const QString &kingdom, kingdoms) {

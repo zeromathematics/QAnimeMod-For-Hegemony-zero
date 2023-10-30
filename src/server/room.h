@@ -24,6 +24,7 @@
 class TriggerSkill;
 class ProhibitSkill;
 class Scenario;
+class RoomThread3v3;
 class TrickCard;
 class GeneralSelector;
 class RoomThread;
@@ -62,6 +63,7 @@ public:
     };
 
     friend class RoomThread;
+    friend class RoomThread3v3;
 
     typedef void (Room::*Callback)(ServerPlayer *, const QVariant &);
     typedef bool (Room::*ResponseVerifyFunction)(ServerPlayer *, const QVariant &, void *);
@@ -134,6 +136,7 @@ public:
     QList<int> getNCards(int n, bool update_pile_number = true);
     ServerPlayer *getLord(const QString &kingdom, bool include_death = false) const;
     void askForGuanxing(ServerPlayer *zhuge, const QList<int> &cards, GuanxingType guanxing_type = GuanxingBothSides);
+    void putIdAtDrawpile(int id, int index);
     AskForMoveCardsStruct askForMoveCards(ServerPlayer *zhuge, const QList<int> &upcards, const QList<int> &downcards, bool visible, const QString &reason,
         const QString &pattern, const QString &skillName, int min_num, int max_num, bool can_refuse = true, bool moverestricted = false,const QList<int> &notify_visible_list = QList<int>());
     int doGongxin(ServerPlayer *shenlvmeng, ServerPlayer *target, QList<int> enabled_ids = QList<int>(), const QString &skill_name = "shangyi");
@@ -298,6 +301,7 @@ public:
     void preparePlayers();
     void changePlayerGeneral(ServerPlayer *player, const QString &new_general);
     void changePlayerGeneral2(ServerPlayer *player, const QString &new_general);
+    void changePlayerGeneral1(ServerPlayer *player, const QString &new_general);
     void filterCards(ServerPlayer *player, QList<const Card *> cards, bool refilter);
 
     void acquireSkill(ServerPlayer *player, const Skill *skill, bool open = true, bool head = true);
@@ -331,10 +335,13 @@ public:
     void transformHeadGeneral(ServerPlayer *player);
     void transformDeputyGeneralTo(ServerPlayer *player, QString general_name);
     void transformHeadGeneralTo(ServerPlayer *player, QString general_name);
+    void exchangeDeputyGeneralTo(ServerPlayer *player, QString general_name);
+    void exchangeHeadGeneralTo(ServerPlayer *player, QString general_name);
     void swapSeat(ServerPlayer *a, ServerPlayer *b);
     lua_State *getLuaState() const;
     void setFixedDistance(Player *from, const Player *to, int distance);
     ServerPlayer *getFront(ServerPlayer *a, ServerPlayer *b) const;
+    void reverseFor3v3(const Card *card, ServerPlayer *player, QList<ServerPlayer *> &list);
     void signup(ServerPlayer *player, const QString &screen_name, const QString &avatar, bool is_robot);
     ServerPlayer *getOwner() const;
     void updateStateItem();
@@ -392,7 +399,11 @@ public:
     QList<int> askForExchange(ServerPlayer *player, const QString &reason, int exchange_num, int min_num = 0, const QString &prompt = QString(),
         const QString &expand_pile = QString(), const QString &pattern = QString());
     bool askForNullification(const Card *trick, ServerPlayer *from, ServerPlayer *to, bool positive);
+    bool askForIgiari(const Card *basic, ServerPlayer *from, ServerPlayer *to, bool positive);
+    bool askForHimitsu(ServerPlayer *current, bool positive);
     bool isCanceled(const CardEffectStruct &effect);
+    bool basicCanceled(const CardEffectStruct &effect);
+    bool himitsuStart(ServerPlayer *current);
     int askForCardChosen(ServerPlayer *player, ServerPlayer *who, const QString &flags, const QString &reason,
         bool handcard_visible = false, Card::HandlingMethod method = Card::MethodNone, const QList<int> &disabled_ids = QList<int>());
     QList<int> askForCardsChosen(ServerPlayer *chooser, ServerPlayer *choosee, const QStringList &handle_list,const QString &reason);
@@ -609,6 +620,7 @@ private:
     QList<AI *> ais;
 
     RoomThread *thread;
+    RoomThread3v3 *thread_3v3;
     QSemaphore _m_semRaceRequest; // When race starts, server waits on his semaphore for the first replier
     QSemaphore _m_semRoomMutex; // Provide per-room  (rather than per-player) level protection of any shared variables
 
@@ -647,7 +659,8 @@ private:
     AI *cloneAI(ServerPlayer *player);
     void broadcast(const QByteArray &message, ServerPlayer *except = NULL);
     void initCallbacks();
-    QString askForOrder(ServerPlayer *player);
+    QString askForOrder(ServerPlayer *player, const QString &default_choice);
+    QString askForRole(ServerPlayer *player, const QStringList &roles, const QString &scheme);
 
     //process client requests
     void processRequestCheat(ServerPlayer *player, const QVariant &arg);
@@ -669,6 +682,7 @@ private:
         ServerPlayer *m_to;
     };
     bool _askForNullification(const Card *trick, ServerPlayer *from, ServerPlayer *to, bool positive, _NullificationAiHelper helper);
+    bool _askForIgiari(const Card *basic, ServerPlayer *from, ServerPlayer *to, bool positive, _NullificationAiHelper helper);
     QList<CardsMoveStruct> _breakDownCardMoves(QList<CardsMoveStruct> &cards_moves);
 
 private slots:

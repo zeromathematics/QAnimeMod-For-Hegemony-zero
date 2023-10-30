@@ -24,6 +24,7 @@
 #include "engine.h"
 #include "client.h"
 #include "roomscene.h"
+#include "serverplayer.h"
 
 #include <QPixmap>
 #include <QBitmap>
@@ -190,6 +191,8 @@ void QSanButton::_onMouseClick(bool inside)
     if (inherits("QSanSkillButton")) {
         const Skill * skill = qobject_cast<const QSanSkillButton *>(this)->getSkill();
         if (skill->canPreshow() && !Self->hasShownSkill(skill)) changeState = false;
+        if (Self->hasPreshowedSkill(skill, Self->inHeadSkills(skill)) && skill->canChangeState() && Self->getPhase()==Player::Play) changeState = true;
+        //if (Self->hasPreshowedSkill(skill, Self->inHeadSkills(skill)) && skill->canChangeState() &&  Sanguosha->getCurrentCardUsePattern() != "") changeState = true;
     }
     if (multi_state && inside)
         m_isFirstState = !m_isFirstState;
@@ -262,7 +265,7 @@ void QSanSkillButton::onMouseClick()
         setState(S_STATE_DISABLED);
         ClientInstance->preshow(_m_skill->objectName(), true, head);
     } else if (Self->hasPreshowedSkill(_m_skill, head) && _m_state == QSanButton::S_STATE_DISABLED
-        && _m_skill->canPreshow() && !Self->hasShownSkill(_m_skill)) {
+        && _m_skill->canPreshow() && !Self->hasShownSkill(_m_skill) && (!_m_skill->canChangeState() || Self->getPhase()!=Player::Play || !Self->hasPreshowedSkill(_m_skill, Self->inHeadSkills(_m_skill)))) {
         setState(QSanButton::S_STATE_CANPRESHOW);
         ClientInstance->preshow(_m_skill->objectName(), false, head);
     } else {
@@ -335,7 +338,7 @@ void QSanSkillButton::setSkill(const Skill *skill)
     desc = desc.simplified();
     setToolTip(desc);
 
-    if (!Self->hasShownSkill(skill) && skill->canPreshow())
+    if (!Self->hasShownSkill(skill) && skill->canPreshow() && (!skill->canChangeState() || Self->getPhase()!=Player::Play || !Self->hasPreshowedSkill(skill, Self->inHeadSkills(skill))))
         setState(QSanButton::S_STATE_CANPRESHOW);
 
     Q_ASSERT((int)_m_skillType <= 5 && _m_state <= 4);
@@ -367,7 +370,7 @@ void QSanSkillButton::setEnabled(bool enabled)
 {
     bool head = objectName() == "left";
     if (!enabled && _m_skill->canPreshow()
-        && (!Self->hasShownSkill(_m_skill) || Self->hasFlag("hiding"))) {
+        && (!Self->hasShownSkill(_m_skill) || Self->hasFlag("hiding")) && (!_m_skill->canChangeState() || Self->getPhase()!=Player::Play || !Self->hasPreshowedSkill(_m_skill, Self->inHeadSkills(_m_skill)))) {
         setState(Self->hasPreshowedSkill(_m_skill, head) ? S_STATE_DISABLED : S_STATE_CANPRESHOW);
     } else {
         QSanButton::setEnabled(enabled);
@@ -459,8 +462,16 @@ QSanSkillButton *QSanInvokeSkillDock::addSkillButtonByName(const QString &skillN
 {
     Q_ASSERT(getSkillButtonByName(skillName) == NULL);
     QSanInvokeSkillButton *button = new QSanInvokeSkillButton(this);
-
+    QSanInvokeSkillButton *button1 = new QSanInvokeSkillButton(this);
     const Skill *skill = Sanguosha->getSkill(skillName);
+    /*if (skill->canChangeState()){
+        button1->setSkill(qobject_cast<const TriggerSkill *>(skill)->getViewAsSkill());
+        button1->setObjectName(this->objectName());
+        connect(button1, (void (QSanInvokeSkillButton::*)(const Skill *))(&QSanInvokeSkillButton::skill_activated), this, &QSanInvokeSkillDock::skill_activated);
+        connect(button1, (void (QSanInvokeSkillButton::*)(const Skill *))(&QSanInvokeSkillButton::skill_deactivated), this, &QSanInvokeSkillDock::skill_deactivated);
+        _m_buttons.append(button1);
+        return button1;
+    }*/
     button->setSkill(skill);
     button->setObjectName(this->objectName());
     connect(button, (void (QSanInvokeSkillButton::*)(const Skill *))(&QSanInvokeSkillButton::skill_activated), this, &QSanInvokeSkillDock::skill_activated);
@@ -572,6 +583,17 @@ void QSanInvokeSkillDock::paint(QPainter *, const QStyleOptionGraphicsItem *, QW
 
 QSanInvokeSkillButton *QSanInvokeSkillDock::getSkillButtonByName(const QString &skillName) const
 {
+    const Skill *skill = Sanguosha->getSkill(skillName);
+    /*if (skill->canChangeState()){
+        foreach (QSanInvokeSkillButton *button, _m_buttons) {
+            if (button->getSkill() == qobject_cast<const TriggerSkill *>(skill)->getViewAsSkill() && Self->getPhase() == Player::Play){
+                return button;
+            }
+            else if (button->getSkill() == skill && Self->getPhase() != Player::Play){
+                return button;
+            }
+        }
+    }*/
     foreach (QSanInvokeSkillButton *button, _m_buttons) {
         if (button->getSkill()->objectName() == skillName)
             return button;

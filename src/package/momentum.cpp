@@ -1745,8 +1745,16 @@ public:
         if (ps_owner == NULL)
             return 0;
 
-        if (target->isFriendWith(ps_owner))
-            return ps_owner->getPlayerNumWithSameKingdom("PeaceSpell", QString(), type);
+        if (target->isFriendWith(ps_owner)){
+            int n = 0;
+            foreach (ServerPlayer *p, targets) {
+                if (target->isFriendWith(p)) {
+                    n++;
+                }
+            }
+            //return ps_owner->getPlayerNumWithSameKingdom("PeaceSpell", QString(), type);
+            return n;
+        }
 
         return 0;
     }

@@ -90,6 +90,10 @@ public:
     QStringList RemovedHiddenGenerals;
 
     bool RewardTheFirstShowingPlayer;
+    bool ViewNextPlayerDeputyGeneral;
+    bool ActivateSpecialCardMode;
+    bool BanKingdomMode;
+    QString BanKingdomModeDetail;
 
     // client side
     QString HostAddress;

@@ -71,6 +71,7 @@ CommonTranslationTable = {
 	["realskill"] = "现世技，",
 	["scienceskill"] = "科学技，",
 	["gameskill"] = "游戏技，",
+    ["idolskill"] = "偶像技，",
 
 	["spade_char"] = "♠",
 	["club_char"] = "♣",
@@ -137,6 +138,7 @@ CommonTranslationTable = {
 	["magic"]="魔法",
 	["real"]="现世",
 	["game"]="游戏",
+    ["idol"] = "偶像",
 	["wei"] = "魏",
 	["shu"] = "蜀",
 	["wu"] = "吴",
@@ -246,7 +248,7 @@ CommonTranslationTable = {
 	["#TrickDirection"] = "%from 选择了 %arg 作为结算顺序",
 	["custom"] = "自定义模式",
 	["UnknowNick"] = "",
-	["DefaultIllustrator"] = "KayaK",
+	["DefaultIllustrator"] = "",
 
 	["@waked"] = "觉醒",
 
@@ -286,7 +288,13 @@ CommonTranslationTable = {
 	["MultiTarget"] = "群体锦囊",
 	["DelayedTrick"] = "延时锦囊",
 
-	["convert_general"] = "武将转换",
+	["convert_general"] = "人物转换",
+
+	--rule category
+	["hegemony"] = "基本规则",
+	["rule1-card"] = "卡牌规则",
+	["rule2-wording"] = "术语解释",
+	["rule3-extras"] = "其他规则",
 }
 
 return CommonTranslationTable

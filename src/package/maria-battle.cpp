@@ -11,8 +11,15 @@ public:
     MariaBattleRule() : TriggerSkill("mariabattlerule")
     {
         frequency = NotFrequent;
-        events << HpChanged;
+        events << HpChanged << BuryVictim;
         global = true;
+    }
+
+    double getDynamicPriority(TriggerEvent e) const
+    {
+        if (e == BuryVictim){
+            return 1;
+        }
     }
 
     virtual bool canPreshow() const
@@ -60,12 +67,33 @@ public:
                 }
             }
         }
+        if (event == BuryVictim){
+            return QStringList(objectName());
+        }
         return QStringList();
     }
 
     virtual bool cost(TriggerEvent event, Room *room, ServerPlayer *skill_target, QVariant &data, ServerPlayer *player) const
     {
+        if (event == BuryVictim)
+            return true;
         return false;
+    }
+
+    virtual bool effect(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *) const
+    {
+        if (event == BuryVictim){
+            if (player->getGeneralName() == "Armored_Titan"){
+                 player->bury();
+                 //room->speakCommand(player, "Beast_Titan");
+                 room->revivePlayer(player);
+                 room->transformHeadGeneralTo(player, "Beast_Titan");
+                 room->setPlayerProperty(player, "maxhp", QVariant(20));
+                 room->setPlayerProperty(player, "hp", QVariant(20));
+                 player->drawCards(10);
+                 return true;
+            }
+        }
     }
 };
 

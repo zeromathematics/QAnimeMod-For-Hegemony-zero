@@ -63,8 +63,10 @@ QRectF BlackEdgeTextItem::boundingRect() const
     QFontMetrics metric(font);
 
     QRectF rect;
-    rect.setWidth(metric.width(text.at(0)));
-    rect.setHeight(text.length() * (metric.height() - metric.descent() + skip) + 10);
+    //rect.setWidth(metric.width(text.at(0)));
+   //rect.setHeight(text.length() * (metric.height() - metric.descent() + skip) + 10);
+   rect.setHeight(metric.height());
+   rect.setWidth(text.length() * (metric.width(text.at(0)) - metric.descent() + skip) + 20);
     return rect;
 }
 
@@ -136,7 +138,8 @@ void BlackEdgeTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem 
         text.append(this->text.at(i));
 
         QPainterPath path;
-        path.addText(0, (i + 1) * height, font, text);
+        //path.addText(0, (i + 1) * height, font, text);
+        path.addText((i + 1) * height-15, 18, font, text);
 
         if (outline > 0)
             painter->drawPath(path);
@@ -646,9 +649,11 @@ CardScene::CardScene()
         addItem(item);
 
         if (i % 2 == 0)
-            item->setPos(69 + i * 14, 14);
+            //item->setPos(69 + i * 14, 14);
+            item->setPos(292, 415);
         else
-            item->setPos(63 + i * 14, 14);
+            //item->setPos(63 + i * 14, 14);
+            item->setPos(292, 415);
 
         magatama_group->addToGroup(item);
     }
@@ -699,10 +704,12 @@ void CardScene::setFrame(const QString &kingdom, bool is_lord)
 
     for (int i = 0; i < magatamas.length(); i++) {
         QGraphicsPixmapItem *item = magatamas[i];
-        if (i % 2 == 0)
+        /*if (i % 2 == 0)
             item->setPixmap(QPixmap(QString("diy/%1-magatama-l.png").arg(is_lord ? "lord" : kingdom)));
         else
-            item->setPixmap(QPixmap(QString("diy/%1-magatama-r.png").arg(is_lord ? "lord" : kingdom)));
+            item->setPixmap(QPixmap(QString("diy/%1-magatama-r.png").arg(is_lord ? "lord" : kingdom)));*/
+
+        item->setPixmap(QPixmap(QString("diy/%1-magatama-%2.png").arg(is_lord ? "lord" : kingdom).arg(max_hp)));
     }
 
     skill_box->setKingdom(kingdom);
@@ -832,10 +839,12 @@ void CardScene::_redrawTransMaxHp()
         QString suffix = "";
         if (i >= start - 1)
             suffix = "t";
-        if (i % 2 == 0)
+        /*if (i % 2 == 0)
             item->setPixmap(QPixmap(QString("diy/%1-magatama-l%2.png").arg(is_lord ? "lord" : kingdom).arg(suffix)));
         else
-            item->setPixmap(QPixmap(QString("diy/%1-magatama-r%2.png").arg(is_lord ? "lord" : kingdom).arg(suffix)));
+            item->setPixmap(QPixmap(QString("diy/%1-magatama-r%2.png").arg(is_lord ? "lord" : kingdom).arg(suffix)));*/
+
+        item->setPixmap(QPixmap(QString("diy/%1-magatama-%2.png").arg(is_lord ? "lord" : kingdom).arg(max_hp)));
     }
 }
 
@@ -1142,8 +1151,32 @@ QWidget *CardEditor::createPropertiesBox()
     QStringList kingdom_names = Sanguosha->getKingdoms();
     foreach (const QString &kingdom, kingdom_names) {
         if ("god" == kingdom) continue;
-        QIcon icon(QString("image/kingdom/icon/%1.png").arg(kingdom));
-        kingdom_ComboBox->addItem(icon, Sanguosha->translate(kingdom), kingdom);
+       /* if (kingdom.contains("|")){
+            QStringList list;
+            foreach(auto v, kingdom.split("|")){
+                list.append(v);
+            }
+            QIcon dummyIcon;
+            QPixmap comboPixmap(50, 25);
+            QPixmap image1(QString("image/kingdom/icon/%1.png").arg(list.at(0)));
+            QPixmap image2(QString("image/kingdom/icon/%1.png").arg(list.at(1)));
+            image1.scaled(25,25);
+            image2.scaled(25,25);
+            QPainter painter(&comboPixmap);
+            painter.drawPixmap(0, 0, image1);
+            painter.drawPixmap(image1.width(), 0, image2);
+            dummyIcon.addPixmap(comboPixmap);
+            for (int i=0; i< list.length(); i++){
+                icon.addFile(QString("image/kingdom/icon/%1.png").arg(list.at(i)));
+            }
+
+            kingdom_ComboBox->addItem(dummyIcon, Sanguosha->translate(kingdom), kingdom);
+        }
+        else{*/
+            QIcon icon(QString("image/kingdom/icon/%1.png").arg(kingdom));
+
+            kingdom_ComboBox->addItem(icon, Sanguosha->translate(kingdom), kingdom);
+        //}
     }
 
     QSpinBox *hp_spinbox = new QSpinBox;

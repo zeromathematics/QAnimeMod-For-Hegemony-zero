@@ -199,6 +199,13 @@ QString ClientPlayer::getDeathPixmapPath() const
 {
     QString basename = getRole() == "careerist" ? "careerist" : getKingdom();
 
+    if (ServerInfo.GameMode == "06_3v3" || ServerInfo.GameMode == "06_XMode") {
+        if (getRole() == "lord" || getRole() == "renegade")
+            basename = "marshal";
+        else
+            basename = "guard";
+    }
+
     if (basename.isEmpty())
         basename = "unknown";
 
@@ -225,7 +232,7 @@ void ClientPlayer::setFlags(const QString &flag)
     //emit skill_state_changed(flag);
 }
 
-void ClientPlayer::setMark(const QString &mark, int value)
+void ClientPlayer::setMark(const QString &mark, int value, bool is_tip)
 {
     if (marks[mark] == value)
         return;
@@ -233,6 +240,20 @@ void ClientPlayer::setMark(const QString &mark, int value)
 
     if (mark == "drank")
         emit drank_changed();
+
+    /*if (mark.startsWith("#")) {
+        QString new_mark = mark.mid(1);
+        if (is_tip)
+            emit tip_changed(new_mark, value > 0 ? true : false);
+        else
+            emit count_changed(new_mark, value);
+
+    }*/
+
+    if (mark.startsWith("#")) {
+        emit tip_changed(mark);
+    }
+
 
     if (!mark.startsWith("@"))
         return;
@@ -263,7 +284,7 @@ void ClientPlayer::setMark(const QString &mark, int value)
     if (mark == "@duanchang")
         emit duanchang_invoked();
 
-    if (mark == "@companion" || mark == "@halfmaxhp" || mark == "@firstshow" || mark == "animeshana") // for event cards
+    if (mark == "@companion" || mark == "@halfmaxhp" || mark == "@firstshow" || mark == "@careerist" || mark.startsWith("anime")) // for event cards
         emit update_markcard();
 }
 
@@ -274,6 +295,7 @@ QStringList ClientPlayer::getBigKingdoms(const QString &, MaxCardsType::MaxCards
     kingdom_map.insert("magic", 0);
     kingdom_map.insert("game", 0);
     kingdom_map.insert("real", 0);
+    kingdom_map.insert("idol", 0);
     QList<const Player *> players = getAliveSiblings();
     players.prepend(this);
     foreach (const Player *p, players) {

@@ -587,6 +587,7 @@ enum TriggerEvent
     CardResponded,
     BeforeCardsMove, // sometimes we need to record cards before the move
     CardsMoveOneTime,
+    PileSwaped,
 
     PreCardUsed,
     CardUsed,
@@ -605,12 +606,15 @@ enum TriggerEvent
 
     StageChange, // For hulao pass only
     FetchDrawPileCard, // For miniscenarios only
+    ActionedReset, // For 3v3 only
 
     TurnBroken, // For the skill 'DanShou'. Do not use it to trigger events
 
     GeneralShown, // For Official Hegemony mode
     GeneralHidden, // For Official Hegemony mode
     GeneralRemoved, // For Official Hegemony mode
+    GeneralTransformed, // For Official Hegemony mode
+    GeneralRevived, // For Official Hegemony mode
 
     DFDebut, // for Dragon Phoenix Debut
 

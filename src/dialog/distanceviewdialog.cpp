@@ -122,7 +122,7 @@ DistanceViewDialog::DistanceViewDialog(QWidget *parent)
     connect(closeButton, &QPushButton::clicked, this, &DistanceViewDialog::reject);
     layout->addWidget(closeButton);
 
-    showDistance();
+   showDistance();
 }
 
 DistanceViewDialog::~DistanceViewDialog()

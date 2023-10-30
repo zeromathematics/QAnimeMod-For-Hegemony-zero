@@ -31,6 +31,7 @@ class GeneralModel : public QAbstractTableModel
 public:
     enum ColumnType
     {
+        AnimeColumn,
         TitleColumn,
         NameColumn,
         KingdomColumn,

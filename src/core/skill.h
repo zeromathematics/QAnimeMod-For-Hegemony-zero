@@ -71,7 +71,12 @@ public:
     QStringList getSources() const;
 
     virtual bool canPreshow() const;
+    virtual bool canShowInPlay() const;
+    virtual bool canChangeState() const;
+    virtual void setPreshow(bool can);
     virtual bool relateToPlace(bool head = true) const;
+
+    //virtual bool buttonEnabled(const QString &button_name = QString(), const QList<const Card *> &selected = QList<const Card *>(), const QList<const Player *> &targets = QList<const Player *>()) const;
 
     //for LUA
     inline void setRelateToPlace(const char *rtp)
@@ -85,6 +90,7 @@ protected:
     QString relate_to_place;
     QString club_name;
     bool attached_lord_skill;
+    bool can_preshow = true;
 
 private:
     bool lord_skill;
@@ -107,6 +113,9 @@ public:
     virtual bool isEnabledAtPlay(const Player *player) const;
     virtual bool isEnabledAtResponse(const Player *player, const QString &pattern) const;
     virtual bool isEnabledAtNullification(const ServerPlayer *player) const;
+    virtual bool isEnabledAtIgiari(const ServerPlayer *player) const;
+    virtual bool isEnabledAtHimitsu(const ServerPlayer *player) const;
+    virtual bool buttonEnabled(const QString &button_name) const;
     static const ViewAsSkill *parseViewAsSkill(const Skill *skill);
 
     inline bool isResponseOrUse() const
@@ -441,6 +450,7 @@ public:
 
     virtual int getPriority() const;
     virtual bool triggerable(const ServerPlayer *target) const;
+    virtual bool cost(Room *room, ServerPlayer *player, QVariant &data) const;
 };
 
 class ArmorSkill : public TriggerSkill
@@ -465,6 +475,7 @@ public:
 
     virtual int getPriority() const;
     virtual bool triggerable(const ServerPlayer *target) const;
+    virtual bool cost(Room *room, ServerPlayer *player, QVariant &data) const;
 };
 
 class FixCardSkill : public Skill

@@ -254,10 +254,29 @@ bool Skill::canPreshow() const
     if (inherits("TriggerSkill")) {
         const TriggerSkill *triskill = qobject_cast<const TriggerSkill *>(this);
         return triskill->getViewAsSkill() == NULL;
+        //return can_preshow;
     }
 
     return false;
 }
+
+bool Skill::canShowInPlay() const
+{
+    const TriggerSkill *triskill = qobject_cast<const TriggerSkill *>(this);
+    return (getFrequency() == Compulsory);
+}
+
+bool Skill::canChangeState() const
+{
+    const TriggerSkill *triskill = qobject_cast<const TriggerSkill *>(this);
+    return inherits("TriggerSkill") && triskill->getViewAsSkill()!= NULL  && triskill->canPreshow();
+}
+
+void Skill::setPreshow(bool can)
+{
+    can_preshow = can;
+}
+
 
 bool Skill::relateToPlace(bool head) const
 {
@@ -267,6 +286,36 @@ bool Skill::relateToPlace(bool head) const
         return relate_to_place == "deputy";
     return false;
 }
+
+/*bool Skill::buttonEnabled(const QString &button_name, const QList<const Card *> &, const QList<const Player *> &) const
+{
+    if (button_name.isEmpty()) {
+        if (Sanguosha->currentRoomState()->getCurrentCardUseReason() != CardUseStruct::CARD_USE_REASON_PLAY) {
+            QString pattern = Sanguosha->currentRoomState()->getCurrentCardUsePattern();
+            if (pattern.startsWith(".") || pattern.startsWith("@"))
+                return false;
+        }
+        return true;
+    }
+
+    const Card *card = Sanguosha->cloneCard(button_name, Card::NoSuit, 0);
+    if (card == NULL)
+        return true;
+    if (Sanguosha->currentRoomState()->getCurrentCardUseReason() == CardUseStruct::CARD_USE_REASON_PLAY)
+        return !Self->isCardLimited(card, Card::MethodUse, false) && card->isAvailable(Self);
+    else {
+        QString pattern = Sanguosha->currentRoomState()->getCurrentCardUsePattern();
+        if (pattern.startsWith(".") || pattern.startsWith("@"))
+            return false;
+        if (pattern == "slash") {
+            return card->isKindOf("Slash");
+        } else if (pattern == "nullification") {
+            return card->isKindOf("Nullification");
+        } else
+            return pattern.contains(button_name);
+    }
+    return false;
+}*/
 
 ViewAsSkill::ViewAsSkill(const QString &name)
     : Skill(name), response_pattern(QString()), response_or_use(false), expand_pile(QString())
@@ -298,20 +347,60 @@ bool ViewAsSkill::isAvailable(const Player *invoker, CardUseStruct::CardUseReaso
     }
 }
 
-bool ViewAsSkill::isEnabledAtPlay(const Player *) const
+bool ViewAsSkill::isEnabledAtPlay(const Player *player) const
 {
-    return response_pattern.isEmpty();
+    return response_pattern.isEmpty() && player->getMark(this->objectName()+"_null")==0;
 }
 
-bool ViewAsSkill::isEnabledAtResponse(const Player *, const QString &pattern) const
+bool ViewAsSkill::isEnabledAtResponse(const Player *player, const QString &pattern) const
 {
     if (!response_pattern.isEmpty())
-        return pattern == response_pattern;
+        return pattern == response_pattern && player->getMark(this->objectName()+"_null")==0;
     return false;
 }
 
 bool ViewAsSkill::isEnabledAtNullification(const ServerPlayer *) const
 {
+    return false;
+}
+
+bool ViewAsSkill::isEnabledAtIgiari(const ServerPlayer *) const
+{
+    return false;
+}
+
+bool ViewAsSkill::isEnabledAtHimitsu(const ServerPlayer *) const
+{
+    return false;
+}
+
+bool ViewAsSkill::buttonEnabled(const QString &button_name) const
+{
+    if (button_name.isEmpty()) {
+        if (Sanguosha->currentRoomState()->getCurrentCardUseReason() != CardUseStruct::CARD_USE_REASON_PLAY) {
+            QString pattern = Sanguosha->currentRoomState()->getCurrentCardUsePattern();
+            if (pattern.startsWith(".") || pattern.startsWith("@"))
+                return false;
+        }
+        return true;
+    }
+
+    const Card *card = Sanguosha->cloneCard(button_name, Card::NoSuit, 0);
+    if (card == NULL)
+        return true;
+    if (Sanguosha->currentRoomState()->getCurrentCardUseReason() == CardUseStruct::CARD_USE_REASON_PLAY)
+        return !Self->isCardLimited(card, Card::MethodUse, false) && card->isAvailable(Self);
+    else {
+        QString pattern = Sanguosha->currentRoomState()->getCurrentCardUsePattern();
+        if (pattern.startsWith(".") || pattern.startsWith("@"))
+            return false;
+        if (pattern == "slash") {
+            return card->isKindOf("Slash");
+        } else if (pattern == "nullification") {
+            return card->isKindOf("Nullification");
+        } else
+            return pattern.contains(button_name);
+    }
     return false;
 }
 
@@ -840,7 +929,59 @@ bool WeaponSkill::triggerable(const ServerPlayer *target) const
 {
     if (target == NULL) return false;
     if (target->getMark("Equips_Nullified_to_Yourself") > 0) return false;
+    //if (objectName()=="Halberd-trigger" && target->hasShownSkill("shengjian") && !target->getWeapon()) return true;
     return target->hasWeapon(objectName())||target->property("touying_type").toString()==objectName();
+}
+
+bool WeaponSkill::cost(Room *room, ServerPlayer *target, QVariant &data) const
+{
+    if (target->getWeapon() && target->getWeapon()->objectName() == objectName())
+        return getFrequency() == Skill::Compulsory || target->askForSkillInvoke(objectName(), data);
+
+    QStringList skill_names;
+    bool show = false;
+    foreach (QString name, Sanguosha->getSkillNames()) {
+        if (Sanguosha->getSkill(name)->inherits("ViewHasSkill")) {
+            const ViewHasSkill *skill = qobject_cast<const ViewHasSkill *>(Sanguosha->getSkill(name));
+            if (skill->ViewHas(target, objectName(), "weapon")) {
+                if (target->hasShownSkill(skill)) show = true;
+                if (target->getHeadActivedSkills().contains(skill))
+                    skill_names << "left?" + name;
+                if (target->getDeputyActivedSkills().contains(skill))
+                    skill_names << "right?" + name;
+            }
+        }
+    }
+    if (skill_names.isEmpty()) return false;
+    QString name;
+    bool invoke = false;
+    if (skill_names.length() > 1){
+        SPlayerDataMap map;
+        map.insert(target, skill_names);
+        bool option = show && getFrequency() == Skill::Compulsory;
+        QString answer = room->askForTriggerOrder(target, "Weaponskill", map, !option, data);
+        if (answer != "cancel") invoke = true;
+        name = answer.split(":").first().split("?").last() + "?" + answer.split(":").last();
+    } else {
+        name = skill_names.first();
+        QString skill_name = name.split("?").last();
+        invoke = target->hasShownSkill(skill_name) && getFrequency() == Skill::Compulsory
+                || target->askForSkillInvoke(target->hasShownSkill(skill_name) ? objectName() : skill_name, data);
+    }
+    if (!invoke) return false;
+
+    QStringList names = room->getTag(objectName() + target->objectName()).toStringList();   //add for player audio
+    names.append(name);
+    room->setTag(objectName() + target->objectName(), names);
+
+    LogMessage log;
+    log.type = "#InvokeSkill";
+    log.from = target;
+    log.arg = objectName();
+    room->sendLog(log);
+
+    target->showSkill(name.split("?").last(), name.split("?").first());
+    return true;
 }
 
 ArmorSkill::ArmorSkill(const QString &name)
@@ -936,6 +1077,57 @@ bool TreasureSkill::triggerable(const ServerPlayer *target) const
     if (target == NULL)
         return false;
     return target->hasTreasure(objectName());
+}
+
+bool TreasureSkill::cost(Room *room, ServerPlayer *target, QVariant &data) const
+{
+    if (target->getTreasure() && target->getTreasure()->objectName() == objectName())
+        return getFrequency() == Skill::Compulsory || target->askForSkillInvoke(objectName(), data);
+
+    QStringList skill_names;
+    bool show = false;
+    foreach (QString name, Sanguosha->getSkillNames()) {
+        if (Sanguosha->getSkill(name)->inherits("ViewHasSkill")) {
+            const ViewHasSkill *skill = qobject_cast<const ViewHasSkill *>(Sanguosha->getSkill(name));
+            if (skill->ViewHas(target, objectName(), "treasure")) {
+                if (target->hasShownSkill(skill)) show = true;
+                if (target->getHeadActivedSkills().contains(skill))
+                    skill_names << "left?" + name;
+                if (target->getDeputyActivedSkills().contains(skill))
+                    skill_names << "right?" + name;
+            }
+        }
+    }
+    if (skill_names.isEmpty()) return false;
+    QString name;
+    bool invoke = false;
+    if (skill_names.length() > 1){
+        SPlayerDataMap map;
+        map.insert(target, skill_names);
+        bool option = show && getFrequency() == Skill::Compulsory;
+        QString answer = room->askForTriggerOrder(target, "Treasureskill", map, !option, data);
+        if (answer != "cancel") invoke = true;
+        name = answer.split(":").first().split("?").last() + "?" + answer.split(":").last();
+    } else {
+        name = skill_names.first();
+        QString skill_name = name.split("?").last();
+        invoke = target->hasShownSkill(skill_name) && getFrequency() == Skill::Compulsory
+                || target->askForSkillInvoke(target->hasShownSkill(skill_name) ? objectName() : skill_name, data);
+    }
+    if (!invoke) return false;
+
+    QStringList names = room->getTag(objectName() + target->objectName()).toStringList();   //add for player audio
+    names.append(name);
+    room->setTag(objectName() + target->objectName(), names);
+
+    LogMessage log;
+    log.type = "#InvokeSkill";
+    log.from = target;
+    log.arg = objectName();
+    room->sendLog(log);
+
+    target->showSkill(name.split("?").last(), name.split("?").first());
+    return true;
 }
 
 FixCardSkill::FixCardSkill(const QString &name)

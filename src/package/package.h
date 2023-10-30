@@ -90,6 +90,11 @@ public:
         return convert_pairs;
     }
 
+    QStringList getSpecialCards() const
+    {
+        return special_cards;
+    }
+
     Type getType() const
     {
         return type;
@@ -109,6 +114,8 @@ public:
     void insertRelatedSkills(const QString &main_skill, int n, ...);
     void insertCompanionSkill(const QString &general1, const QString &general2, const QString &skill);
     QString getCompanionSkill(const QString &general1, const QString &general2);
+    void insertRelatedAttachSkill(const QString skill, const QString skill_attach);
+    QString getRelatedAttachSkill(const QString skill);
 
     inline void insertConvertPairs(const QString &from, const QString &to)
     {
@@ -123,6 +130,8 @@ protected:
     QMap<QString, const CardPattern *> patterns;
     QMultiMap<QString, QString> related_skills;
     QStringList companions_skills;
+    QStringList related_attachskills;
+    QStringList special_cards;
     QMultiMap<QString, QString> convert_pairs;
     Type type;
 };

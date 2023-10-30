@@ -25,17 +25,22 @@ function sgs.CreateTriggerSkill(spec)
 	assert(type(spec.name) == "string")
 	if spec.frequency then assert(type(spec.frequency) == "number") end
 	if spec.limit_mark then assert(type(spec.limit_mark) == "string") end
+	if spec.club_name then assert(type(spec.club_name) == "string") end
 
 	local frequency = spec.frequency or sgs.Skill_NotFrequent
 	local limit_mark = spec.limit_mark or ""
+	local club_name = spec.club_name or ""
 	local skill
 
 	if spec.is_battle_array then
 		assert(spec.battle_array_type and type(spec.battle_array_type) == "number")
 		assert(spec.view_as_skill)
-		skill = sgs.LuaBattleArraySkill(spec.name, frequency, limit_mark, spec.battle_array_type)
+		skill = sgs.LuaBattleArraySkill(spec.name, frequency, limit_mark, club_name, spec.battle_array_type)
+		if type(spec.can_preshow) == "boolean" then
+			skill:setCanPreshow(spec.can_preshow)
+		end
 	else
-		skill = sgs.LuaTriggerSkill(spec.name, frequency, limit_mark)
+		skill = sgs.LuaTriggerSkill(spec.name, frequency, limit_mark, club_name)
 		if type(spec.can_preshow) == "boolean" then
 			skill:setCanPreshow(spec.can_preshow)
 		else
@@ -204,7 +209,7 @@ end
 
 function sgs.CreateAttackRangeSkill(spec)
 	assert(type(spec.name) == "string")
-	assert(type(spec.extra_func) == "function" or type(spec.fixed.func) == "function")
+	assert(type(spec.extra_func) == "function" or type(spec.fixed_func) == "function")
 
 	local skill = sgs.LuaAttackRangeSkill(spec.name)
 
@@ -590,6 +595,9 @@ function sgs.CreateViewAsSkill(spec)
 	skill.enabled_at_play = spec.enabled_at_play
 	skill.enabled_at_response = spec.enabled_at_response
 	skill.enabled_at_nullification = spec.enabled_at_nullification
+	skill.enabled_at_igiari = spec.enabled_at_igiari
+	skill.enabled_at_himitsu = spec.enabled_at_himitsu
+	skill.button_enabled = spec.button_enabled
 	skill.in_pile = spec.in_pile
 
 	return skill
@@ -634,6 +642,9 @@ function sgs.CreateOneCardViewAsSkill(spec)
 	skill.enabled_at_play = spec.enabled_at_play
 	skill.enabled_at_response = spec.enabled_at_response
 	skill.enabled_at_nullification = spec.enabled_at_nullification
+	skill.enabled_at_igiari = spec.enabled_at_igiari
+	skill.enabled_at_himitsu = spec.enabled_at_himitsu
+	skill.button_enabled = spec.button_enabled
 	skill.in_pile = spec.in_pile
 
 	if type(spec.guhuo_type) == "string" and spec.guhuo_type ~= ""then
@@ -668,6 +679,9 @@ function sgs.CreateZeroCardViewAsSkill(spec)
 	skill.enabled_at_play = spec.enabled_at_play
 	skill.enabled_at_response = spec.enabled_at_response
 	skill.enabled_at_nullification = spec.enabled_at_nullification
+	skill.enabled_at_igiari = spec.enabled_at_igiari
+	skill.enabled_at_himitsu = spec.enabled_at_himitsu
+	skill.button_enabled = spec.button_enabled
 	skill.in_pile = spec.in_pile
 
 	if type(spec.guhuo_type) == "string" and spec.guhuo_type ~= ""then
@@ -705,16 +719,16 @@ function sgs.CreateArraySummonSkill(spec)
 		if skill then
 			local a_type = skill:getArrayType()
 			if a_type == sgs.Siege then
-				if player:isFriendWith(player:getNextAlive()) and player:isFriendWith(player:getLastAlive()) then
+				if player:willBeFriendWith(player:getNextAlive()) and player:willBeFriendWith(player:getLastAlive()) then
 					return false
 				end
-				if not player:isFriendWith(player:getNextAlive()) then
-					if not player:getNextAlive(2):hasShownOneGeneral() then
+				if not player:willBeFriendWith(player:getNextAlive()) then
+					if not player:getNextAlive(2):hasShownOneGeneral() and player:getNextAlive():hasShownOneGeneral() then
 						return true
 					end
 				end
-				if not player:isFriendWith(player:getLastAlive()) then
-					return not player:getLastAlive(2):hasShownOneGeneral()
+				if not player:willBeFriendWith(player:getLastAlive()) then
+					return not player:getLastAlive(2):hasShownOneGeneral() and player:getLastAlive():hasShownOneGeneral()
 				end
 			elseif a_type == sgs.Formation then
 				local n = player:aliveCount()
@@ -758,7 +772,10 @@ function sgs.CreateEquipCard(spec)
 
 	local card = nil
 	if spec.location == sgs.EquipCard_WeaponLocation then
-		card = sgs.LuaWeapon(spec.suit or sgs.Card_NoSuit, spec.number or 0, spec.range, spec.name, spec.class_name)
+		if type(spec.target_fixed) == "boolean" then
+			card = sgs.LuaWeapon(spec.suit or sgs.Card_NoSuit, spec.number or 0, spec.range, spec.name, spec.class_name, spec.target_fixed)
+		end
+		card = sgs.LuaWeapon(spec.suit or sgs.Card_NoSuit, spec.number or 0, spec.range, spec.name, spec.class_name, true)
 	elseif spec.location == sgs.EquipCard_ArmorLocation then
 		card = sgs.LuaArmor(spec.suit or sgs.Card_NoSuit, spec.number or 0, spec.name, spec.class_name)
 	elseif spec.location == sgs.EquipCard_TreasureLocation then
@@ -768,6 +785,7 @@ function sgs.CreateEquipCard(spec)
 
 	card.on_install = spec.on_install
 	card.on_uninstall = spec.on_uninstall
+	card.filter = spec.filter
 
 	return card
 end

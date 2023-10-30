@@ -22,6 +22,7 @@
 #include "title.h"
 #include "skinbank.h"
 #include "stylehelper.h"
+#include "engine.h"
 
 #include <QPainter>
 #include <QGraphicsSceneMouseEvent>
@@ -125,12 +126,14 @@ void Button::prepareIcons()
 
 void Button::mouseReleaseEvent(QGraphicsSceneMouseEvent *)
 {
+    //Sanguosha->playSystemAudioEffect("button-down");
     emit clicked();
 }
 
 void Button::hoverEnterEvent(QGraphicsSceneHoverEvent *)
 {
     setFocus(Qt::MouseFocusReason);
+    //Sanguosha->playSystemAudioEffect("button-hover");
     setTextColorReversed(true);
 }
 

@@ -33,7 +33,7 @@ class LuaTriggerSkill : public TriggerSkill
     Q_OBJECT
 
 public:
-    LuaTriggerSkill(const char *name, Frequency frequency, const char *limit_mark);
+    LuaTriggerSkill(const char *name, Frequency frequency, const char *limit_mark , const char *club_name);
     inline void addEvent(TriggerEvent triggerEvent)
     {
         events << triggerEvent;
@@ -81,7 +81,7 @@ class LuaBattleArraySkill : public BattleArraySkill
     Q_OBJECT
 
 public:
-    LuaBattleArraySkill(const char *name, Frequency frequency, const char *limit_mark, HegemonyMode::ArrayType array_type);
+    LuaBattleArraySkill(const char *name, Frequency frequency, const char *limit_mark, const char *club_name, HegemonyMode::ArrayType array_type);
     inline void addEvent(TriggerEvent triggerEvent)
     {
         events << triggerEvent;
@@ -90,9 +90,14 @@ public:
     {
         this->view_as_skill = view_as_skill;
     }
+    inline void setCanPreshow(bool preshow)
+    {
+        this->can_preshow = preshow;
+    }
 
     virtual int getPriority() const;
 
+    virtual bool canPreshow() const;
     virtual TriggerList triggerable(TriggerEvent triggerEvent, Room *room, ServerPlayer *player, QVariant &data) const;
     virtual bool cost(TriggerEvent triggerEvent, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *ask_who = NULL) const;
     virtual bool effect(TriggerEvent triggerEvent, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *ask_who = NULL) const;
@@ -154,14 +159,20 @@ public:
     LuaFunction view_filter;
     LuaFunction view_as;
 
+    LuaFunction button_enabled;
     LuaFunction enabled_at_play;
     LuaFunction enabled_at_response;
     LuaFunction enabled_at_nullification;
+    LuaFunction enabled_at_igiari;
+    LuaFunction enabled_at_himitsu;
     LuaFunction in_pile;
 
     virtual bool isEnabledAtPlay(const Player *player) const;
     virtual bool isEnabledAtResponse(const Player *player, const QString &pattern) const;
     virtual bool isEnabledAtNullification(const ServerPlayer *player) const;
+    virtual bool isEnabledAtIgiari(const ServerPlayer *player) const;
+    virtual bool isEnabledAtHimitsu(const ServerPlayer *player) const;
+    virtual bool buttonEnabled(const QString &button_name) const;
     virtual QString getExpandPile() const;
 
 protected:
@@ -460,12 +471,13 @@ class LuaWeapon : public Weapon
     Q_OBJECT
 
 public:
-    Q_INVOKABLE LuaWeapon(Card::Suit suit, int number, int range, const char *obj_name, const char *class_name);
+    Q_INVOKABLE LuaWeapon(Card::Suit suit, int number, int range, const char *obj_name, const char *class_name, bool fixed);
     LuaWeapon *clone(Card::Suit suit = Card::SuitToBeDecided, int number = -1) const;
 
     // member functions that do not expose to Lua interpreter
     void pushSelf(lua_State *L) const;
 
+    virtual bool targetFilter(const QList<const Player *> &targets, const Player *to_select, const Player *Self) const;
     virtual void onInstall(ServerPlayer *player) const;
     virtual void onUninstall(ServerPlayer *player) const;
 
@@ -484,6 +496,7 @@ public:
     // the lua callbacks
     LuaFunction on_install;
     LuaFunction on_uninstall;
+    LuaFunction filter;
 
 private:
     QString class_name;

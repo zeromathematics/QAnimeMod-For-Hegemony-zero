@@ -109,6 +109,10 @@ void Settings::init()
     ServerPort = value("ServerPort", 9527u).toUInt();
     DisableLua = value("DisableLua", false).toBool();
     RewardTheFirstShowingPlayer = value("RewardTheFirstShowingPlayer", false).toBool();
+    ViewNextPlayerDeputyGeneral = value("ViewNextPlayerDeputyGeneral", false).toBool();
+    ActivateSpecialCardMode = value("ActivateSpecialCardMode", false).toBool();
+    BanKingdomMode = value("BanKingdomMode", false).toBool();
+    //BanKingdomModeDetail = "Random";
 
 #ifdef Q_OS_WIN32
     UserName = value("UserName", qgetenv("USERNAME")).toString();

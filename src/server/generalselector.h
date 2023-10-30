@@ -35,6 +35,8 @@ class GeneralSelector : public QObject
 
 public:
     static GeneralSelector *getInstance();
+    QString select3v3(ServerPlayer *player, const QStringList &candidates);
+    QStringList arrange3v3(ServerPlayer *player);
     QStringList selectGenerals(ServerPlayer *player, const QStringList &candidates);
     inline void resetValues()
     {
@@ -45,12 +47,15 @@ private:
     GeneralSelector();
     void loadGeneralTable();
     void loadPairTable();
+    void load3v3Table();
     void calculatePairValues(const ServerPlayer *player, const QStringList &candidates);
     void calculateDeputyValue(const ServerPlayer *player, const QString &first, const QStringList &candidates, const QStringList &kingdom_list = QStringList());
+    QString selectHighest(const QHash<QString, int> &table, const QStringList &candidates, int default_value);
 
     QHash<QString, int> m_singleGeneralTable;
     QHash<QString, int> m_pairTable;
     QHash<const ServerPlayer *, QHash<QString, int> > m_privatePairValueTable;
+    QHash<QString, int> priority_3v3_table;
 };
 
 #endif // GENERALSELECTOR_H

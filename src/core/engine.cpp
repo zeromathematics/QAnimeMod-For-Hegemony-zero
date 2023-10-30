@@ -41,6 +41,7 @@
 #include <QDir>
 #include <QFile>
 #include <QApplication>
+//#include <QVersionNumber>
 
 Engine *Sanguosha = NULL;
 
@@ -120,6 +121,7 @@ Engine::Engine()
     modes["08p"] = tr("8 players");
     modes["09p"] = tr("9 players");
     modes["10p"] = tr("10 players");
+    modes["06_3v3"] = tr("6 players (3v3)");
 
     BanPair::loadBanPairs();
 
@@ -252,6 +254,10 @@ void Engine::addPackage(Package *package)
     sp_convert_pairs.unite(package->getConvertPairs());
     patterns.unite(package->getPatterns());
     related_skills.unite(package->getRelatedSkills());
+
+    foreach(QString card, package->getSpecialCards()){
+        Sanguosha->addSpecialCards(card);
+    }
 
     QList<Card *> all_cards = package->findChildren<Card *>();
     foreach (Card *card, all_cards) {
@@ -681,6 +687,11 @@ QString Engine::getVersionName() const
     return "Heg";
 }
 
+/*QVersionNumber Engine::getQVersionNumber() const
+{
+    return QVersionNumber(0, 10, 2);
+}*/
+
 QString Engine::getMODName() const
 {
     return "official";
@@ -804,9 +815,20 @@ QString Engine::getSetupString() const
         flags.append("S");
     if (Config.EventcardMode)
         flags.append("E");
+    if (Config.ViewNextPlayerDeputyGeneral)
+        flags.append("V");
+    if (Config.ActivateSpecialCardMode)
+        flags.append("N");
+    if (Config.BanKingdomMode)
+        flags.append("B");
 
     QString server_name = Config.ServerName;
     QStringList setup_items;
+    QString mode = Config.GameMode;
+    if (mode == "02_1v1")
+        mode = mode + Config.value("1v1/Rule", "2013").toString();
+    else if (mode == "06_3v3")
+        mode = mode + Config.value("3v3/OfficialRule", "2016").toString();
     setup_items << server_name
         << Config.GameMode
         << QString::number(timeout)
@@ -970,7 +992,7 @@ QList<int> Engine::getRandomCards() const
 
     QStringList card_conversions = Config.value("CardConversions").toStringList();
 
-    if (card_conversions.contains("DragonPhoenix"))
+    /*if (card_conversions.contains("DragonPhoenix"))
         list.removeOne(55);
     else
         list.removeOne(108);
@@ -978,7 +1000,7 @@ QList<int> Engine::getRandomCards() const
     if (card_conversions.contains("PeaceSpell"))
         list.removeOne(157);
     else
-        list.removeOne(109);
+        list.removeOne(109);*/
 
     qShuffle(list);
 
@@ -1109,19 +1131,20 @@ int Engine::correctDistance(const Player *from, const Player *to) const
 
 int Engine::correctMaxCards(const ServerPlayer *target, bool fixed, MaxCardsType::MaxCardsCount type) const
 {
-    int extra = 0;
-
-    foreach (const MaxCardsSkill *skill, maxcards_skills) {
-        if (fixed) {
-            int f = skill->getFixed(target, type);
-            if (f > extra)
-                extra = f;
-        } else {
-            extra += skill->getExtra(target, type);
+    if (fixed) {
+        int max = -1;
+        foreach (const MaxCardsSkill *skill, maxcards_skills) {
+            int f = skill->getFixed(target);
+            if (f > max) max = f;
         }
+        return max;
+    } else {
+        int extra = 0;
+        foreach(const MaxCardsSkill *skill, maxcards_skills)
+            extra += skill->getExtra(target);
+        return extra;
     }
-
-    return extra;
+    return 0;
 }
 
 int Engine::correctCardTarget(const TargetModSkill::ModType type, const Player *from, const Card *card) const
@@ -1179,4 +1202,14 @@ int Engine::correctAttackRange(const Player *target, bool include_weapon, bool f
 QList<Card *> Engine::getCards() const
 {
     return cards;
+}
+
+QStringList Engine::getAllSpecialCards() const
+{
+    return specialcards;
+}
+
+void Engine::addSpecialCards(QString card)
+{
+    specialcards << card;
 }

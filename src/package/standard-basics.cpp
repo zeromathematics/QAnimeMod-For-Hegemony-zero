@@ -106,6 +106,18 @@ void Slash::onUse(Room *room, const CardUseStruct &card_use) const
     CardUseStruct use = card_use;
     ServerPlayer *player = use.from;
 
+    //zhenghe
+    if (use.card->getSkillName() == "zhenghe") {
+        player->loseMark("@zhenghe");
+    }
+
+    //huanqi
+    if (use.card->getSkillName() == "huanqi") {
+        room->setPlayerMark(player, "huanqi_used", 1);
+        player->showGeneral(false);
+        room->transformDeputyGeneral(player);
+    }
+
     if (player->hasFlag("slashTargetFix")) {
         room->setPlayerFlag(player, "-slashTargetFix");
         room->setPlayerFlag(player, "-slashTargetFixToOne");
