@@ -1072,11 +1072,11 @@ sgs.ai_skill_choice["toushe"] = function(self, choices, data)
 end
 
 sgs.ai_skill_invoke.lixiangjianqiao = function(self, data)
-	return data:toDamage().to:isWounded()
+	return data:toPlayer():isWounded()
 end
 
 sgs.ai_skill_invoke.zishang = function(self, data)
-	return self:isFriend(data:toDamage().to) and self.player:getHp()>=data:toDamage().to:getHp()
+	return self:isFriend(data:toPlayer()) and self.player:getHp()>=data:toPlayer():getHp()
 end
 
 sgs.ai_skill_playerchosen.zishang = function(self, targets, max_num, min_num)
@@ -1107,7 +1107,7 @@ sgs.ai_skill_discard["wenchang"] = function(self, discard_num, min_num, optional
 end
 
 sgs.ai_skill_invoke.yuanxin = function(self, data)
-	return self:isFriend(data:toDamage().to)
+	return self:isFriend(data:toPlayer())
 end
 
 local duanzui_skill={}
@@ -1179,8 +1179,7 @@ sgs.ai_skill_use_func.DuanzuiCard = function(card,use,self)
 end
 
 sgs.ai_skill_invoke.buwu = function(self, data)
-	local damage = data:toDamage()
-	local dest = damage.to
+	local dest = data:toPlayer()
 	if self:isEnemy(dest) and self:willShowForAttack() then
 		return true
 	end
@@ -1269,8 +1268,8 @@ sgs.ai_skill_choice["jinghua"] = function(self, choices, data)
 end
 
 sgs.ai_skill_invoke["jiushu"] = function(self, data)
-	local dying_data = data:toDying()
-	local source = dying_data.who
+	--local dying_data = data:toDying()
+	local source = data:toPlayer()
 	for _,player in ipairs(self.friends) do
 		if player:isAlive() and source:objectName() == player:objectName() then
 			return true
@@ -1424,7 +1423,7 @@ end
 
 --绫波丽
 sgs.ai_skill_invoke.chidun = function(self, data)
-	return self:isFriend(data:toDamage().to) and self.player:getHp()>=data:toDamage().to:getHp() and (self.player:getHp()>1 or self.player:getHandcardNum()<=data:toDamage().to:getHandcardNum())
+	return self:isFriend(data:toPlayer()) and self.player:getHp()>=data:toPlayer():getHp() and (self.player:getHp()>1 or self.player:getHandcardNum()<=data:toPlayer():getHandcardNum())
 end
 
 sgs.ai_skill_invoke.weixiao = function(self, data)
@@ -1466,8 +1465,8 @@ sgs.ai_skill_invoke.huansha = function(self, data)
 end
 
 sgs.ai_skill_invoke.dapo = function(self, data)
-    if data:toDamage().to then
-	  return self:isFriend(data:toDamage().to) and (self:willShowForAttack() or self:isWeak(data:toDamage().to))
+    if data:toPlayer() then
+	  return self:isFriend(data:toPlayer()) and (self:willShowForAttack() or self:isWeak(data:toPlayer()))
 	end
 end
 
@@ -1496,8 +1495,8 @@ end
 
 --友利奈绪
 sgs.ai_skill_invoke.huanxing = function(self, data)
-  local use = data:toCardUse()
-  return self:isEnemy(use.from) and self:willShowForDefence() and self:getCardsNum("Slash")>0
+  --local use = data:toCardUse()
+  return self:isEnemy(data:toPlayer()) and self:willShowForDefence() --[[and self:getCardsNum("Slash")>0]]
 end
 
 sgs.ai_skill_invoke.fushang = function(self, data)
@@ -1521,12 +1520,12 @@ sgs.ai_skill_invoke.gaoxiao = function(self, data)
 end
 
 sgs.ai_skill_invoke.gaokang = function(self, data)
-  local damage = data:toDamage()
+  --local damage = data:toDamage()
   local can
   for _,c in sgs.qlist(self.player:getHandcards()) do
     if c:isBlack() then can = true end
   end
-  return damage.damage > 0 and self:isFriend(damage.to) and can
+  return --[[damage.damage > 0 and]] self:isFriend(data:toPlayer()) and can
 end
 
 --玛茵
@@ -1648,8 +1647,8 @@ sgs.ai_card_intention.NuequCard = function(self, card, from, tos)
 end
 
 sgs.ai_skill_invoke["BurningLove"] = function(self, data)
-	local damage = data:toDamage()
-	return self:isEnemy(damage.to)
+	--local damage = data:toDamage()
+	return self:isEnemy(data:toPlayer())
 end
 
 sgs.ai_skill_choice.BurningLove = function(self, choices, data)
@@ -2182,8 +2181,8 @@ end
 
 --夕立
 sgs.ai_skill_invoke.kuangquan = function(self, data)
-  local damage = data:toDamage()
-  return self:willShowForAttack() and self:isEnemy(damage.to) and (not damage.to:hasShownSkill("rennai") or damage.to:getMark("@Patience") > 0)
+  --local damage = data:toDamage()
+  return self:willShowForAttack() and self:isEnemy(data:toPlayer()) and (not data:toPlayer():hasShownSkill("rennai") or data:toPlayer():getMark("@Patience") > 0)
 end
 
 --黑雪姬
@@ -2851,9 +2850,9 @@ end
 
 sgs.ai_skill_invoke.azuyizhi = function(self, data)
 	local source = self.player
-	local damage = data:toDamage()
+	--local damage = data:toDamage()
 	if source:getHp()<=1 and self:getCardsNum("Peach") == 0 and self:getCardsNum("Analeptic") == 0 and self:getCardsNum("GuangyuCard") == 0 then return false end
-	return damage.from ~= nil and self:isEnemy(damage.from) 
+	return data:toPlayer() ~= nil and self:isEnemy(data:toPlayer()) 
 end
 
 sgs.ai_skill_choice.azuyizhi = function(self, choices, data)
@@ -2948,9 +2947,9 @@ sgs.ai_skill_invoke.qiubang= function(self, data)
 end
 
 sgs.ai_skill_invoke.randong= function(self, data)
-  local use = data:toCardUse()
-  local dest = use.to:at(0)
-  if self:isEnemy(use.from) then
+  --local use = data:toCardUse()
+  local dest = data:toPlayer()
+  if self:isEnemy(self.player:property("randong_from"):toPlayer()) then
      return true  
   end
 end
@@ -3406,28 +3405,28 @@ sgs.ai_skill_invoke.tucao = function(self, data)
   if not self:willShowForAttack() and not self:willShowForDefence() then
     return false
   end
-  local use = data:toCardUse()
-  local card = use.card
+  --local use = data:toCardUse()
+  local card = self.player:property("tucao_card"):toCard()
   
-  if not use then return false end
+  if not data:toPlayer() then return false end
   
-  if self:isFriend(use.from)then
+  if self:isFriend(data:toPlayer())then
     for _,c in sgs.qlist(self.player:getHandcards()) do
-	  if c:isRed() and c:getTypeId()~= use.card:getTypeId() then
+	  if c:isRed() and c:getTypeId()~= card:getTypeId() then
 	     return true 
 	  end
 	end
   end
   
-  if self:isEnemy(use.from) then
-    local can
-    for _,f in ipairs(self.friends) do
+  if self:isEnemy(data:toPlayer()) then
+    local can = true
+    --[[for _,f in ipairs(self.friends) do
 		if use.to:contains(f) then
 			can = true
 		end
-	end
+	end]]
 	for _,c in sgs.qlist(self.player:getHandcards()) do
-	  if can and c:isBlack() and c:getTypeId()~= use.card:getTypeId() then
+	  if can and c:isBlack() and c:getTypeId()~= card:getTypeId() then
 	     return true 
 	  end
 	end
@@ -3529,10 +3528,10 @@ sgs.ai_use_priority.TiaoyueCard  = 7
 
 --Fubuki
 sgs.ai_skill_invoke.qianlei = function(self, data)
-	local dying_data = data:toDying()
-	local damage = dying_data.damage
-	local der = dying_data.who
-	return self:isEnemy(der) or self:isEnemy(damage.from)
+	--local dying_data = data:toDying()
+	--local damage = dying_data.damage
+	local der = data:toPlayer()
+	return self:isEnemy(data:toPlayer()) or self:isEnemy(self.player:property("qianlei_from"):toPlayer())
 end
 
 sgs.ai_skill_choice["qianlei"] = function(self, choices, data)

@@ -8025,7 +8025,9 @@ public:
         ServerPlayer *k1 = ask_who;
         CardUseStruct use = data.value<CardUseStruct>();
         ServerPlayer *dest = use.to.at(0);
+        k1->setProperty("randong_from", QVariant::fromValue(use.from));
         if (k1 && k1->askForSkillInvoke(this, QVariant::fromValue(dest))) {
+            k1->setProperty("randong_from", QVariant());
             if (k1!=dest && !k1->isKongcheng()){
                 int id = room->askForCardChosen(k1,k1,"h",objectName());
                 room->throwCard(id, k1, k1);
@@ -8037,6 +8039,7 @@ public:
             room->doBattleArrayAnimate(k1);
             return true;
         }
+        k1->setProperty("randong_from", QVariant());
         return false;
     }
 
@@ -8497,7 +8500,9 @@ public:
     {
         ServerPlayer *kagami = ask_who;
         CardUseStruct use = data.value<CardUseStruct>();
+        kagami->setProperty("tucao_card", QVariant::fromValue(use.card));
         if (kagami && kagami->askForSkillInvoke(this, QVariant::fromValue(use.from))) {
+            kagami->setProperty("tucao_card", QVariant());
             CardUseStruct use = data.value<CardUseStruct>();
             const Card *card;
             if (use.card->isKindOf("BasicCard")){
@@ -8516,6 +8521,7 @@ public:
               return true;
             }
         }
+        kagami->setProperty("tucao_card", QVariant());
         return false;
     }
 
@@ -9973,9 +9979,12 @@ public:
     virtual bool cost(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *ask_who) const
     {
         DyingStruct dying = data.value<DyingStruct>();
+        player->setProperty("qianlei_from", QVariant::fromValue(dying.damage->from));
         if (player->askForSkillInvoke(this, QVariant::fromValue(dying.who))){
+            player->setProperty("qianlei_from", QVariant());
             return true;
         }
+        player->setProperty("qianlei_from", QVariant());
         return false;
     }
 
