@@ -370,7 +370,7 @@ public:
 
     virtual bool cost(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *yukihira) const
     {
-        if (yukihira->askForSkillInvoke(this, data)){
+        if (yukihira->askForSkillInvoke(this, QVariant::fromValue(player))){
             room->broadcastSkillInvoke(objectName(), yukihira);
             return true;
         }
@@ -418,7 +418,8 @@ public:
 
     virtual bool cost(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *f) const
     {
-        if (f->askForSkillInvoke(this, data)){
+        DamageStruct damage = data.value<DamageStruct>();
+        if (f->askForSkillInvoke(this, QVariant::fromValue(damage.to))){
             room->broadcastSkillInvoke(objectName(), rand()%2+1, f);
             f->loseMark("@revival");
             return true;
@@ -591,7 +592,8 @@ public:
 
     virtual bool cost(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *ask_who) const
     {
-        if (ask_who->askForSkillInvoke(this, data)){
+        DamageStruct damage = data.value<DamageStruct>();
+        if (ask_who->askForSkillInvoke(this, QVariant::fromValue(damage.to))){
             if (!ask_who->hasShownSkill(this) && ask_who->getMark("huamingtri")==0){
                 room->broadcastSkillInvoke(objectName(), 1, player);
                 room->setPlayerMark(ask_who, "huamingtri", 1);
@@ -775,7 +777,8 @@ public:
     }
     virtual bool cost(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *) const
     {
-        if (player->askForSkillInvoke(this, data) ) {
+        DyingStruct dying = data.value<DyingStruct>();
+        if (player->askForSkillInvoke(this, QVariant::fromValue(dying.who)) ) {
             room->setPlayerFlag(room->getCurrent(), "mishi_used");
             room->broadcastSkillInvoke(objectName(), player);
             return true;
@@ -895,7 +898,8 @@ public:
 
     virtual bool cost(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *) const
     {
-        if (player->askForSkillInvoke(this, data)) {
+        DamageStruct damage = data.value<DamageStruct>();
+        if (player->askForSkillInvoke(this, QVariant::fromValue(damage.to))) {
             return true;
         }
         return false;
@@ -1906,9 +1910,9 @@ public:
 
     virtual bool cost(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *) const
     {
-        if (player->askForSkillInvoke(this, data)) {
+        DamageStruct damage = data.value<DamageStruct>();
+        if (player->askForSkillInvoke(this, QVariant::fromValue(damage.to))) {
             room->broadcastSkillInvoke(objectName(), player);
-            DamageStruct damage = data.value<DamageStruct>();
             room->setPlayerFlag(player, damage.to->objectName()+"caoxue_used");
             return true;
         }
@@ -2552,7 +2556,7 @@ public:
 
     virtual bool cost(TriggerEvent, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *ask_who) const
     {
-        if(ask_who->askForSkillInvoke(this, data) && room->askForDiscard(ask_who,objectName(),1,1,true,true)){
+        if(ask_who->askForSkillInvoke(this, QVariant::fromValue(player)) && room->askForDiscard(ask_who,objectName(),1,1,true,true)){
             room->broadcastSkillInvoke(objectName(), ask_who);
             return true;
         }
