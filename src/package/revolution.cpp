@@ -6138,7 +6138,7 @@ public:
 
         if (damage.card && damage.card->isKindOf("IceSlash")
             && !damage.to->isNude() && damage.by_user
-            && !damage.chain && !damage.transfer && player->askForSkillInvoke(this, QVariant::fromValue(damage.to))) {
+            && !damage.chain && !damage.transfer && player->askForSkillInvoke(this, data)) {
             if (damage.from->canDiscard(damage.to, "he")) {
                 int card_id = room->askForCardChosen(player, damage.to, "he", "IceSword", false, Card::MethodDiscard);
                 room->throwCard(Sanguosha->getCard(card_id), damage.to, damage.from);

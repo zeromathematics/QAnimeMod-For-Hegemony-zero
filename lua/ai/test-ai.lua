@@ -184,22 +184,13 @@ sgs.ai_use_value.GonglueCard = 8
 sgs.ai_use_priority.GonglueCard = 8
 sgs.ai_card_intention.GonglueCard = 60
 
-sgs.ai_skill_invoke.lichang = function(self, data)
-	return true
-end
+sgs.ai_skill_invoke.lichang = true
 
-sgs.ai_skill_invoke.kongni = function(self, data)
-	return true
-end
+sgs.ai_skill_invoke.kongni = true
 
 sgs.ai_skill_invoke.wucun = function(self, data)
-	if self:willShowForDefence() then 
-		return true 
-	end
-	return false
+	return self:willShowForDefence()
 end
-
-
 
 --手刃实验
 
@@ -1179,11 +1170,7 @@ sgs.ai_skill_use_func.DuanzuiCard = function(card,use,self)
 end
 
 sgs.ai_skill_invoke.buwu = function(self, data)
-	local dest = data:toPlayer()
-	if self:isEnemy(dest) and self:willShowForAttack() then
-		return true
-	end
-	return false
+	return self:isEnemy(data:toPlayer()) and self:willShowForAttack()
 end
 
 sgs.ai_skill_invoke.chigui = function(self, data)
@@ -1470,9 +1457,7 @@ sgs.ai_skill_invoke.dapo = function(self, data)
 	end
 end
 
-sgs.ai_skill_invoke.wujie = function(self, data)
-	return true
-end
+sgs.ai_skill_invoke.wujie = true
 
 sgs.ai_skill_invoke.shuangqiang = function(self, data)
 	local use=data:toCardUse()
@@ -2947,11 +2932,7 @@ sgs.ai_skill_invoke.qiubang= function(self, data)
 end
 
 sgs.ai_skill_invoke.randong= function(self, data)
-  --local use = data:toCardUse()
-  local dest = data:toPlayer()
-  if self:isEnemy(self.player:property("randong_from"):toPlayer()) then
-     return true  
-  end
+  return self:isEnemy(self.player:property("randong_from"):toPlayer())
 end
 
 --koromo
