@@ -231,9 +231,7 @@ sgs.ai_view_as.xueren = function(card, player, card_place)
 	end
 end
 
-sgs.ai_skill_choice["zhouxue"] = function(self, choices, data)
-	return "zhouxue_yes"
-end
+sgs.ai_skill_choice["zhouxue"] = "zhouxue_yes"
 
 --艾露莎
 sgs.ai_skill_invoke.huanzhuang = function(self, data)
@@ -727,8 +725,7 @@ sgs.ai_skill_invoke.huaming = function(self, data)
 end
 
 sgs.ai_skill_choice.huaming= function(self, choices, data)
-	local player = data:toPlayer()
-	if self:isFriend(player) then
+	if self:isFriend(data:toPlayer()) then
 	   return "huaming_show"
 	else
 	   return "cancel"
@@ -1011,10 +1008,10 @@ end
 
 --威尔艾米娜
 sgs.ai_skill_invoke.qiaoshou = function(self, data)
-   if (data:toDamage().to == self.player) then
+   if (data:toPlayer() == self.player) then
       return self.player:hasSkill("tianhuo")
    end
-   return self:isEnemy(data:toDamage().to) and not data:toDamage().to:hasSkill("tianhuo") and not data:toDamage().to:hasSkill("huansha") and (not data:toDamage().to:getArmor() or data:toDamage().to:getArmor():objectName()~="IronArmor") and (not data:toDamage().to:getArmor() or data:toDamage().to:getArmor():objectName()~="PeaceSpell")
+   return self:isEnemy(data:toPlayer()) and not data:toPlayer():hasSkill("tianhuo") and not data:toPlayer():hasSkill("huansha") and (not data:toPlayer():getArmor() or data:toPlayer():getArmor():objectName()~="IronArmor") and (not data:toPlayer():getArmor() or data:toPlayer():getArmor():objectName()~="PeaceSpell")
 end
 
 sgs.ai_skill_discard["qiaoshou"] = function(self, discard_num, min_num, optional, include_equip)

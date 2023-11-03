@@ -1347,8 +1347,8 @@ sgs.ai_skill_invoke.kuangzao= function(self, data)
 end
 
 sgs.ai_skill_invoke.haoqi= function(self, data)
-   local use = data:toCardUse()
-   return self:isEnemy(use.from) or use.card:isRed()
+	local card = self.player:property("haoqi_card"):toCard()
+	return self:isEnemy(data:toPlayer()) or card:isRed()
 end
 
 local function add_different_kingdoms2(self, target, targets)
@@ -1405,15 +1405,15 @@ sgs.ai_use_value.ShoujiCard= 8
 sgs.ai_use_priority.ShoujiCard  = 5
 
 sgs.ai_skill_invoke.zhouli= function(self, data)
-   local damage = data:toDamage()
-   return (self:isEnemy(damage.from) and not damage.to:hasShownAllGenerals()) or (self:isFriend(damage.to) and self:isFriend(damage.from))
+	local to = self.player:property("zhouli_to"):toPlayer()
+	return (self:isEnemy(data:toPlayer()) and not to:hasShownAllGenerals()) or (self:isFriend(to) and self:isFriend(data:toPlayer()))
 end
 
 sgs.ai_skill_choice.zhouli = function(self, choices, data)
-   local damage = data:toDamage()
-   if self:isFriend(damage.to) and table.contains(choices:split("+"), "zhouli_prevent") then
-      return "zhouli_prevent"
-   end
+	local to = self.player:property("zhouli_to"):toPlayer()
+	if self:isFriend(to) and table.contains(choices:split("+"), "zhouli_prevent") then
+		return "zhouli_prevent"
+	end
 end
 
 sgs.ai_skill_invoke.zhenyan= function(self, data)

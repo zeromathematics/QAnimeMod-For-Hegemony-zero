@@ -820,9 +820,12 @@ public:
     virtual bool cost(TriggerEvent, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *chitanda) const
     {
         CardUseStruct use = data.value<CardUseStruct>();
-        if(chitanda->askForSkillInvoke(this, QVariant::fromValue(use.from))){
-            return true;
+        chitanda->setProperty("haoqi_card", QVariant::fromValue(use.card));
+        if(chitanda->askForSkillInvoke(this, QVariant::fromValue(use.from))){      
+            chitanda->setProperty("haoqi_card", QVariant());
+            return true;          
         }
+        chitanda->setProperty("haoqi_card", QVariant());
         return false;
     }
 
@@ -1939,9 +1942,13 @@ public:
 
     virtual bool cost(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *saki) const
    {
-        if (saki->askForSkillInvoke(this, QVariant::fromValue(player))) {
+        DamageStruct damage = data.value<DamageStruct>();
+        saki->setProperty("zhouli_to", QVariant::fromValue(damage.to));
+        if (saki->askForSkillInvoke(this, QVariant::fromValue(damage.from))) {
+            saki->setProperty("zhouli_to", QVariant());
             return true;
         }
+        saki->setProperty("zhouli_to", QVariant());
         return false;
     }
 
@@ -1949,6 +1956,7 @@ public:
     {
         room->setPlayerFlag(room->getCurrent(), saki->objectName()+"zhouli");
         DamageStruct damage = data.value<DamageStruct>();
+        saki->setProperty("zhouli_to", QVariant::fromValue(damage.to));
         if (!player->hasShownOneGeneral()){
             player->askForGeneralShow(true, true);
         }
@@ -1972,6 +1980,7 @@ public:
                }
             }
         }
+        saki->setProperty("zhouli_to", QVariant());
         return false;
     }
 };
