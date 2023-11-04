@@ -1410,8 +1410,7 @@ sgs.ai_skill_invoke.zhouli= function(self, data)
 end
 
 sgs.ai_skill_choice.zhouli = function(self, choices, data)
-	local to = self.player:property("zhouli_to"):toPlayer()
-	if self:isFriend(to) and table.contains(choices:split("+"), "zhouli_prevent") then
+	if self:isFriend(data:toDamage().to) and table.contains(choices:split("+"), "zhouli_prevent") then
 		return "zhouli_prevent"
 	end
 end

@@ -1956,7 +1956,6 @@ public:
     {
         room->setPlayerFlag(room->getCurrent(), saki->objectName()+"zhouli");
         DamageStruct damage = data.value<DamageStruct>();
-        saki->setProperty("zhouli_to", QVariant::fromValue(damage.to));
         if (!player->hasShownOneGeneral()){
             player->askForGeneralShow(true, true);
         }
@@ -1980,7 +1979,6 @@ public:
                }
             }
         }
-        saki->setProperty("zhouli_to", QVariant());
         return false;
     }
 };
