@@ -1739,7 +1739,7 @@ public:
     {
         DamageStruct damage = data.value<DamageStruct>();
         ServerPlayer *hikigaya = ask_who;
-        if (damage.to && hikigaya &&hikigaya->askForSkillInvoke(this, QVariant::fromValue(player))) {
+        if (damage.to && hikigaya &&hikigaya->askForSkillInvoke(this, QVariant::fromValue(damage.to))) {
             room->broadcastSkillInvoke(objectName(), hikigaya);
             return true;
         }

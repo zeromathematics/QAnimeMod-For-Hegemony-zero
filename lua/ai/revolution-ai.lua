@@ -1371,8 +1371,8 @@ sgs.ai_skill_use_func.ShoujiCard = function(card,use,self)
 	local hp = math.max(self.player:getHp(), 1)
 	local cards = sgs.QList2Table(self.player:getHandcards())
 	local equips = sgs.QList2Table(self.player:getEquips())
-	self:sortByUseValue(cards)
-	self:sortByUseValue(equips)
+	self:sortByKeepValue(cards)
+	self:sortByKeepValue(equips)
 	for _,acard in ipairs(cards) do
 		table.insert(needed, acard:getEffectiveId())
 			if #needed >= hp then
