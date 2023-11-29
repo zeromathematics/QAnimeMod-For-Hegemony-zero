@@ -11,6 +11,7 @@
 #include "roomthread.h"
 #include "json.h"
 #include "guhuobox.h"
+#include "revolution.h"
 
 Key::Key(Card::Suit suit, int number)
     : DelayedTrick(suit, number)
@@ -18,10 +19,18 @@ Key::Key(Card::Suit suit, int number)
     setObjectName("keyCard");
 }
 
-bool Key::targetFilter(const QList<const Player *> &targets, const Player *to_select, const Player *) const
+bool Key::targetFilter(const QList<const Player *> &targets, const Player *to_select, const Player *source) const
 {
     // please use this to check validity when put key
     int num = 0;
+    int count=0;
+    QList<const Player *> sib = source->getAliveSiblings();
+    sib << source;
+    foreach (const Player *p, sib){
+        if(p->hasClub("yanjubu")){
+             count=count+1;
+        }
+    }
     foreach (const Card *card, to_select->getJudgingArea())
     {
         if (card->objectName() == objectName())
@@ -29,7 +38,7 @@ bool Key::targetFilter(const QList<const Player *> &targets, const Player *to_se
             num++;
         }
     }
-    return targets.isEmpty() && (num == 0 || (to_select->hasShownSkill("huanyuan") && num < 3));
+    return targets.isEmpty() && (num == 0 ||(num<count && to_select->hasClub("yanjubu")));
 }
 
 void Key::takeEffect(ServerPlayer *target) const
@@ -236,10 +245,10 @@ public:
                 key->addSubcard(card);
                 Card *trick = Sanguosha->cloneCard(key);
                 Q_ASSERT(trick != NULL);
-                WrappedCard *wrapped = Sanguosha->getWrappedCard(move.card_ids[i]);
-                wrapped->takeOver(trick);
-                room->broadcastUpdateCard(room->getPlayers(), wrapped->getId(), wrapped);
-                room->cardEffect(wrapped, ask_who, ask_who);
+               // WrappedCard *wrapped = Sanguosha->getWrappedCard(move.card_ids[i]);
+                //wrapped->takeOver(trick);
+                //room->broadcastUpdateCard(room->getPlayers(), wrapped->getId(), wrapped);
+                room->cardEffect(trick, ask_who, ask_who);
 
                     QList<QVariant> ql = room->getTag("keyList").toList();
                     ql.removeOne(QVariant::fromValue(move.card_ids[i]));
@@ -296,6 +305,19 @@ bool ZhurenCard::targetFilter(const QList<const Player *> &targets, const Player
     return to_select != Self && targets.length() == 0;
 }
 
+bool ZhurenCard::targetsFeasible(const QList<const Player *> &targets, const Player *Self) const
+{
+    int key_num = 0;
+    foreach(auto p, targets){
+        if (p != Self)
+            foreach(const Card *card, p->getJudgingArea())
+                key_num += card->isKindOf("Key") ? 1 : 0;
+    }
+    foreach(const Card *card, Self->getJudgingArea())
+        key_num += card->isKindOf("Key") ? 1 : 0;
+    return this->getSubcards().length() <= Self->getLostHp() + key_num;
+}
+
 void ZhurenCard::use(Room *room, ServerPlayer *player, QList<ServerPlayer *> &targets) const
 {
     ServerPlayer *target = targets.at(0);
@@ -319,7 +341,7 @@ public:
 
     bool viewFilter(const QList<const Card *> &selected, const Card *) const
     {
-        auto list = Self->getAliveSiblings();
+        /*auto list = Self->getAliveSiblings();
         int key_num = 0;
         foreach(auto p, list){
             if (Self->isFriendWith(p))
@@ -328,7 +350,8 @@ public:
         }
         foreach(const Card *card, Self->getJudgingArea())
             key_num += card->isKindOf("Key") ? 1 : 0;
-        return selected.length() < Self->getLostHp() + key_num;
+        return selected.length() < Self->getLostHp() + key_num;*/
+        return true;
     }
 
     const Card *viewAs(const QList<const Card *> &cards) const
@@ -373,6 +396,106 @@ public:
 
     virtual bool effect(TriggerEvent triggerEvent, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *) const
     {
+        return false;
+    }
+};
+
+class Guangyuvs : public OneCardViewAsSkill
+{
+public:
+    Guangyuvs() : OneCardViewAsSkill("guangyu"){
+
+    }
+
+    bool viewFilter(const Card *card) const
+    {
+        return !card->isEquipped() && card->getSuitString() == "heart";
+    }
+
+    const Card *viewAs(const Card *originalCard) const
+    {
+        GuangyuCard *card = new GuangyuCard(originalCard->getSuit(), originalCard->getNumber());
+        card->addSubcard(originalCard);
+        card->setSkillName(objectName());
+        card->setShowSkill(objectName());
+        return card;
+    }
+
+    bool isEnabledAtPlay(const Player *player) const
+    {
+        return player->getMark("guangyu_used1") == 0;
+    }
+
+    bool isEnabledAtResponse(const Player *player, const QString &pattern) const
+    {
+        return player->getMark("guangyu_used1") == 0 && pattern.contains("guangyucard");
+    }
+};
+
+class Guangyu : public TriggerSkill
+{
+public:
+    Guangyu() : TriggerSkill("guangyu")
+    {
+        events << TurnStart << CardsMoveOneTime << CardUsed;
+        view_as_skill = new Guangyuvs;
+        can_preshow = true;
+    }
+
+    virtual void record(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data) const
+    {
+        if (event == CardUsed) {
+            CardUseStruct use = data.value<CardUseStruct>();
+            if (use.card->getSkillName() == objectName()){
+                room->setPlayerMark(player, "guangyu_used1", 1);
+            }
+        }
+        if (event == TurnStart && !player->hasFlag("Point_ExtraTurn")) {
+            room->setPlayerMark(player, "guangyu_used1", 0);
+            room->setPlayerMark(player, "guangyu_used2", 0);
+        }
+    }
+
+    virtual QStringList triggerable(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer * &) const
+    {
+        if (event == CardsMoveOneTime && TriggerSkill::triggerable(player)) {
+             CardsMoveOneTimeStruct move = data.value<CardsMoveOneTimeStruct>();
+             if (move.reason.m_reason != CardMoveReason::S_REASON_USE && move.reason.m_reason != CardMoveReason::S_REASON_LETUSE && move.to_place == Player::DiscardPile && player->getMark("guangyu_used2") == 0){
+                 foreach(int id, move.card_ids){
+                     if (Sanguosha->getCard(id)->getSuitString() == "heart")
+                         return QStringList(objectName());
+                 }
+             }
+        }
+        return QStringList();
+    }
+
+    virtual bool cost(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *) const
+    {
+        if (event == CardsMoveOneTime && player->askForSkillInvoke(this, data)) {
+            CardsMoveOneTimeStruct move = data.value<CardsMoveOneTimeStruct>();
+            QList<int> list;
+            foreach(int id, move.card_ids){
+                if (Sanguosha->getCard(id)->getSuitString() == "heart")
+                    list << id;
+            }
+            room->fillAG(list, player);
+            int id = room->askForAG(player, list, false, objectName());
+            room->clearAG(player);
+            room->setPlayerMark(player, "guangyu_used2", 1);
+            player->tag["guangyu_id"] = QVariant::fromValue(id);
+            room->broadcastSkillInvoke(objectName(), player);
+            return true;
+        }
+        return false;
+    }
+
+
+    virtual bool effect(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *) const
+    {
+        int id = player->tag["guangyu_id"].toInt();
+        player->tag["guangyu_id"] = QVariant();
+        room->obtainCard(player, id);
         return false;
     }
 };
@@ -4640,7 +4763,7 @@ public:
     {
         DamageStruct damage = data.value<DamageStruct>();
         ServerPlayer *touma = ask_who;
-        if (damage.from && touma && touma->askForSkillInvoke(this, QVariant::fromValue(damage.from))) {
+        if (damage.from && touma && touma->askForSkillInvoke(this, QVariant::fromValue(damage.to))) {
             room->broadcastSkillInvoke(objectName(), touma);
             return true;
         }
@@ -10170,6 +10293,9 @@ NewtestPackage::NewtestPackage()
 
    General *tomoya = new General(this, "Tomoya", "real");
    tomoya->addSkill(new Zhuren);
+   tomoya->addSkill(new Guangyu);
+   tomoya->setHeadMaxHpAdjustedValue();
+   tomoya->addRelateSkill("xiyuan");
    General *keima = new General(this, "Keima", "real", 3);
    keima->addSkill(new Newshenzhi);
    keima->addSkill(new Gonglue);

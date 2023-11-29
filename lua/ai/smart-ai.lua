@@ -1940,7 +1940,7 @@ function sgs.updateAlivePlayerRoles()
 end
 
 function findPlayerByObjectName(name, include_death, except)
-	local player = global_room:findPlayerByObjectName(name, include_death)
+	local player = global_room:findPlayerbyobjectName(name, include_death)
 
 	if player and not except or except:objectName() ~= player:objectName() then
 		return player

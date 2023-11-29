@@ -94,7 +94,7 @@ sgs.ai_skill_use_func.ZhurenCard = function(card,use,self)
 		end
 	end
 	
-	for _,p in sgs.qlist(self.room:getOtherPlayers(source)) do
+	--[[for _,p in sgs.qlist(self.room:getOtherPlayers(source)) do
 	
 	if source:isFriendWith(p) then
 	for _,card in sgs.qlist(p:getJudgingArea()) do
@@ -106,7 +106,7 @@ sgs.ai_skill_use_func.ZhurenCard = function(card,use,self)
 	
 	end
 	
-	local max_num = source:getMaxHp() - source:getHp() + keys
+	local max_num = source:getMaxHp() - source:getHp() + keys]]
 	local max_x = 0
 	for _,friend in ipairs(self.friends) do
 		local x = 5 - friend:getHandcardNum()
@@ -116,6 +116,15 @@ sgs.ai_skill_use_func.ZhurenCard = function(card,use,self)
 			target = friend
 		end
 	end
+
+	if not target then return end
+    for _,card in sgs.qlist(target:getJudgingArea()) do
+		if card:isKindOf("Key") then
+			keys = keys + 1
+		end
+	end
+
+	local max_num = source:getMaxHp() - source:getHp() + keys
 	local cards=sgs.QList2Table(self.player:getHandcards())
 	local equips=sgs.QList2Table(self.player:getEquips())
 	local needed = {}

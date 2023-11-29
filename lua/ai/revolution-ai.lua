@@ -447,7 +447,8 @@ sgs.ai_skill_invoke.zuozhan = function(self, data)
 end
 
 sgs.ai_skill_choice["zuozhan1"] = function(self, choices, data)
-	local p = data:toPlayer()
+	local room = self.room
+	local p = room:getCurrent()
 	if self:isEnemy(p) then
 		return "1_Zuozhan"
 	else
@@ -457,7 +458,8 @@ sgs.ai_skill_choice["zuozhan1"] = function(self, choices, data)
 end
 
 sgs.ai_skill_choice["zuozhan2"] = function(self, choices, data)
-	local p = data:toPlayer()
+	local room = self.room
+	local p = room:getCurrent()
 	if self:isEnemy(p) then
 		if p:getHandcardNum() <= 1 and p:getHp() <= 2 then
 			return "3_Zuozhan"
@@ -471,7 +473,8 @@ sgs.ai_skill_choice["zuozhan2"] = function(self, choices, data)
 end
 
 sgs.ai_skill_choice["zuozhan3"] = function(self, choices, data)
-	local p = data:toPlayer()
+	local room = self.room
+	local p = room:getCurrent()
 	if self:isEnemy(p) then
 		if p:getHandcardNum() <= 1 and p:getHp() <= 2 then
 			return "2_Zuozhan"
@@ -485,7 +488,8 @@ sgs.ai_skill_choice["zuozhan3"] = function(self, choices, data)
 end
 
 sgs.ai_skill_choice["zuozhan4"] = function(self, choices, data)
-	local p = data:toPlayer()
+	local room = self.room
+	local p = room:getCurrent()
 	if self:isEnemy(p) then
 		if p:getHandcardNum() <= 1 and p:getHp() <= 2 then
 			return "4_Zuozhan"

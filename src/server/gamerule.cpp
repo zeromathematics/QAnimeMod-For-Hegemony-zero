@@ -1063,17 +1063,16 @@ bool GameRule::effect(TriggerEvent triggerEvent, Room *room, ServerPlayer *playe
                 player->addClub(skill->getClubName());
         }
         if (player->isAlive() && player->hasShownAllGenerals()) {
-            Package *package;
             const QList<const Package *> packages = Sanguosha->getPackages();
             foreach(const Package *p, packages){
-                if (p->objectName()==player->getGeneral()->getPackage()){
-                    package=const_cast<Package *>(p);
-                }
-            }
-            if (package){
-                QString skill=package->getCompanionSkill(player->getGeneralName(),player->getGeneral2Name());
-                if (skill!=""){
-                    room->acquireSkill(player,skill);
+                Package *package = const_cast<Package *>(p);
+                if (package){
+                    QString skills = package->getCompanionSkill(player->getGeneralName(),player->getGeneral2Name());
+                    if (skills != ""){
+                        foreach(QString skill, skills.split("+")){
+                            room->acquireSkill(player,skill);
+                        }
+                    }
                 }
             }
             if (player->getMark("CompanionEffect") > 0) {               
