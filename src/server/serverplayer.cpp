@@ -2102,6 +2102,12 @@ void ServerPlayer::hideGeneral(bool head_general)
 
     if (head_general) {
         if (getGeneralName() == "anjiang") return;
+        if (getActualGeneral1()->isLord()){
+            LogMessage log;
+            log.type = "#LordHideRule";
+            room->sendLog(log);
+            return;
+        }
 
         setSkillsPreshowed("h", false);
         // dirty hack for temporary convenience.
@@ -2204,6 +2210,12 @@ void ServerPlayer::hideGeneralWithoutChangingRole(bool head_general)
 
     if (head_general) {
         if (getGeneralName() == "anjiang") return;
+        if (getActualGeneral1()->isLord()){
+            LogMessage log;
+            log.type = "#LordHideRule";
+            room->sendLog(log);
+            return;
+        }
 
         setSkillsPreshowed("h", false);
         // dirty hack for temporary convenience.

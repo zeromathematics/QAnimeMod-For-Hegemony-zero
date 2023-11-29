@@ -4059,6 +4059,18 @@ public:
                 room->sendLog(log);
                 return;
             }
+            if (player->getKingdom() == "idol" && player->getRole() != "careerist"){
+                foreach(auto p, room->getAlivePlayers()){
+                    if (p->getTreasure() && p->getTreasure()->objectName()=="Idolyousei" && p->hasShownSkill("qingge")){
+                        LogMessage log;
+                        log.from = p;
+                        log.to << player;
+                        log.type = "#QinggeEffect";
+                        room->sendLog(log);
+                        return;
+                    }
+                }
+            }
             room->setPlayerMark(player, "#musicmaxh", 0);
             room->setPlayerMark(player, "#musicrange", 0);
             room->setPlayerMark(player, "#musicdistance", 0);
