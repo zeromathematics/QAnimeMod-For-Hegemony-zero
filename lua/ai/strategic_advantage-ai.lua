@@ -861,13 +861,11 @@ function SmartAI:useCardAllianceFeast(card, use)
 	end
 end
 
-sgs.ai_skill_choice["alliance_feast"] = function(self, choices)
-	if self.player:isWounded() then
-		return "recover"
-	else
-		return "draw"
-	end
+sgs.ai_skill_choice["alliancefeast_draw"] = function(self, choices)
+	choices = choices:split("+")
+	return choices[#choices]
 end
+
 sgs.ai_use_value.AllianceFeast = 7.5
 sgs.ai_use_priority.AllianceFeast = 8.8
 sgs.ai_keep_value.AllianceFeast = 3.26

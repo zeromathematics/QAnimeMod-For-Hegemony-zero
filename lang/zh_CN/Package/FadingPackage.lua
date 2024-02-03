@@ -330,7 +330,7 @@ return {
 	["@Oyuu"] = "Charlotte",
 	["#Oyuu"] = "独眼死神",
 	["~Oyuu"] = "一定要回去……已经约好了才对……",
-	["designer:Oyuu"] = "樱内瑞业",
+	["designer:Oyuu"] = "花宫瑞业",
 	["cv:Oyuu"] = "内山昂辉",
 	--["illustrator:Oyuu"] = "",
 	["duoquyan"] = "夺取眼",
