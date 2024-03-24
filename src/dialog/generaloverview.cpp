@@ -503,7 +503,7 @@ void GeneralOverview::addLines(const General *general, const Skill *skill)
         button->setEnabled(false);
         button_layout->addWidget(button);
     } else {
-        QString pattern = ".+/(" + skill->objectName() + "_" + general->objectName() + ")(\\w+\\d?).ogg";
+        QString pattern = ".+/(" + skill->objectName() + "_" + general->objectName() + ")(\\d?).ogg";
         QStringList sources_copy;
         foreach (QString source, sources) {
             QRegExp rx(pattern);
@@ -511,7 +511,7 @@ void GeneralOverview::addLines(const General *general, const Skill *skill)
                 sources_copy << source;
         }
         if (sources_copy.isEmpty()) {
-            pattern = ".+/(" + skill->objectName() + ")(\\w+\\d?).ogg";
+            pattern = ".+/(" + skill->objectName() + ")(\\d?).ogg";
             QRegExp rx(pattern);
             foreach (QString source, sources) {
                 if (rx.exactMatch(source))

@@ -39,17 +39,16 @@ void Package::insertCompanionSkill(const QString &general1, const QString &gener
 
 QString Package::getCompanionSkill(const QString &general1, const QString &general2)
 {
-    QStringList skills;
     foreach(QString s,companions_skills){
         QStringList names=s.split("+");
         if (names.contains(general1)&&names.contains(general2)){
             names.removeOne(general1);
             names.removeOne(general2);
             if (names.length()==1)
-                skills << names.at(0);
+                return names.at(0);
         }
     }
-    return skills.join("+");
+    return "";
 }
 
 void Package::insertRelatedAttachSkill(const QString skill, const QString skill_attach)

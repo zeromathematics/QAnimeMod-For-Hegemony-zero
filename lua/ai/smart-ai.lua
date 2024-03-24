@@ -3117,8 +3117,14 @@ function SmartAI:askForAG(card_ids, refusable, reason)
 
 	local ids = card_ids
 	local cards = {}
+	local dis_list = self.player:property("ag_disable_ids"):toList()
+    local dis_ids = {}
+	for _,s in sgs.qlist(dis_list) do
+		local id = s:toInt()
+		table.insert(dis_ids, id)
+	end
 	for _, id in ipairs(ids) do
-		table.insert(cards, sgs.Sanguosha:getCard(id))
+		if not table.contains(dis_ids, id) then table.insert(cards, sgs.Sanguosha:getCard(id)) end
 	end
 	for _, card in ipairs(cards) do
 		if card:isKindOf("Peach") then return card:getEffectiveId() end

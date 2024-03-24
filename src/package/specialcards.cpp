@@ -370,7 +370,7 @@ public:
 
     virtual bool cost(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *yukihira) const
     {
-        if (yukihira->askForSkillInvoke(this, QVariant::fromValue(player))){
+        if (yukihira->askForSkillInvoke(this, data)){
             room->broadcastSkillInvoke(objectName(), yukihira);
             return true;
         }
@@ -418,8 +418,7 @@ public:
 
     virtual bool cost(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *f) const
     {
-        DamageStruct damage = data.value<DamageStruct>();
-        if (f->askForSkillInvoke(this, QVariant::fromValue(damage.to))){
+        if (f->askForSkillInvoke(this, data)){
             room->broadcastSkillInvoke(objectName(), rand()%2+1, f);
             f->loseMark("@revival");
             return true;
@@ -592,8 +591,7 @@ public:
 
     virtual bool cost(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *ask_who) const
     {
-        DamageStruct damage = data.value<DamageStruct>();
-        if (ask_who->askForSkillInvoke(this, QVariant::fromValue(damage.to))){
+        if (ask_who->askForSkillInvoke(this, data)){
             if (!ask_who->hasShownSkill(this) && ask_who->getMark("huamingtri")==0){
                 room->broadcastSkillInvoke(objectName(), 1, player);
                 room->setPlayerMark(ask_who, "huamingtri", 1);
@@ -777,8 +775,7 @@ public:
     }
     virtual bool cost(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *) const
     {
-        DyingStruct dying = data.value<DyingStruct>();
-        if (player->askForSkillInvoke(this, QVariant::fromValue(dying.who)) ) {
+        if (player->askForSkillInvoke(this, data) ) {
             room->setPlayerFlag(room->getCurrent(), "mishi_used");
             room->broadcastSkillInvoke(objectName(), player);
             return true;
@@ -898,8 +895,7 @@ public:
 
     virtual bool cost(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *) const
     {
-        DamageStruct damage = data.value<DamageStruct>();
-        if (player->askForSkillInvoke(this, QVariant::fromValue(damage.to))) {
+        if (player->askForSkillInvoke(this, data)) {
             return true;
         }
         return false;
@@ -1910,9 +1906,9 @@ public:
 
     virtual bool cost(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *) const
     {
-        DamageStruct damage = data.value<DamageStruct>();
-        if (player->askForSkillInvoke(this, QVariant::fromValue(damage.to))) {
+        if (player->askForSkillInvoke(this, data)) {
             room->broadcastSkillInvoke(objectName(), player);
+            DamageStruct damage = data.value<DamageStruct>();
             room->setPlayerFlag(player, damage.to->objectName()+"caoxue_used");
             return true;
         }
@@ -2556,7 +2552,7 @@ public:
 
     virtual bool cost(TriggerEvent, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *ask_who) const
     {
-        if(ask_who->askForSkillInvoke(this, QVariant::fromValue(player)) && room->askForDiscard(ask_who,objectName(),1,1,true,true)){
+        if(ask_who->askForSkillInvoke(this, data) && room->askForDiscard(ask_who,objectName(),1,1,true,true)){
             room->broadcastSkillInvoke(objectName(), ask_who);
             return true;
         }
@@ -4058,18 +4054,6 @@ public:
                 log.type = "#IdolyouseiEffect";
                 room->sendLog(log);
                 return;
-            }
-            if (player->getKingdom() == "idol" && player->getRole() != "careerist"){
-                foreach(auto p, room->getAlivePlayers()){
-                    if (p->getTreasure() && p->getTreasure()->objectName()=="Idolyousei" && p->hasShownSkill("qingge")){
-                        LogMessage log;
-                        log.from = p;
-                        log.to << player;
-                        log.type = "#QinggeEffect";
-                        room->sendLog(log);
-                        return;
-                    }
-                }
             }
             room->setPlayerMark(player, "#musicmaxh", 0);
             room->setPlayerMark(player, "#musicrange", 0);

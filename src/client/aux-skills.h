@@ -139,15 +139,15 @@ private:
 
 class TransferCard;
 
-class TransferSkill : public OneCardViewAsSkill
+class TransferSkill : public ViewAsSkill
 {
     Q_OBJECT
 
 public:
     explicit TransferSkill();
 
-    virtual bool viewFilter(const Card *to_select) const;
-    virtual const Card *viewAs(const Card *originalCard) const;
+    virtual bool viewFilter(const QList<const Card *> &selected, const Card *to_select) const;
+    virtual const Card *viewAs(const QList<const Card *> &cards) const;
     virtual bool isEnabledAtPlay(const Player *player) const;
     void setToSelect(int _toSelect);
 
