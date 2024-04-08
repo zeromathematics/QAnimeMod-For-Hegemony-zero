@@ -1785,6 +1785,7 @@ int Room::askForCardChosen(ServerPlayer *player, ServerPlayer *who, const QStrin
         if (player->hasShownSkill("duxin") || player->askForSkillInvoke("duxin", QVariant::fromValue(who))) {
             if (!player->hasShownSkill("duxin"))
                 player->showSkill("duxin");
+            broadcastSkillInvoke("duxin", player);
             handcard_visible = true;
             notifySkillInvoked(player, "duxin");
             doAnimate(S_ANIMATE_INDICATE, player->objectName(), who->objectName());
@@ -2409,6 +2410,7 @@ int Room::askForAG(ServerPlayer *player, const QList<int> &card_ids, bool refusa
 
     QVariant decisionData = QVariant::fromValue("AGChosen:" + reason + ":" + QString::number(card_id));
     thread->trigger(ChoiceMade, this, player, decisionData);
+    setPlayerProperty(player, "ag_disable_ids", QVariant());
 
     return card_id;
 }
@@ -3586,8 +3588,8 @@ void Room::exchangeDeputyGeneralTo(ServerPlayer *player, QString general_name)
     names << player->getActualGeneral1Name() << player->getActualGeneral2Name();
 
 
-    room->handleUsedGeneral("-" + player->getActualGeneral2Name());
-    room->handleUsedGeneral(general_name);
+    //room->handleUsedGeneral("-" + player->getActualGeneral2Name());
+    //room->handleUsedGeneral(general_name);
 
     player->removeGeneral(false);
 
@@ -3643,8 +3645,8 @@ void Room::exchangeHeadGeneralTo(ServerPlayer *player, QString general_name)
     QStringList names;
     names << player->getActualGeneral1Name() << player->getActualGeneral2Name();
 
-    room->handleUsedGeneral("-" + player->getActualGeneral1Name());
-    room->handleUsedGeneral(general_name);
+    //room->handleUsedGeneral("-" + player->getActualGeneral1Name());
+    //room->handleUsedGeneral(general_name);
 
     player->removeGeneral(true);
 
@@ -3699,12 +3701,16 @@ void Room::handleUsedGeneral(const QString &general)
     QString main = Sanguosha->getMainGenerals(general_name);
     if (remove)
         used_general.removeAll(main);
-    else
+    else if (!used_general.contains(main)){
         used_general.append(main);
+        QList<QVariant> list = getTag("removed_general").value<QList<QVariant>>();
+        if (list.contains(QVariant::fromValue(main))) list.removeAll(QVariant::fromValue(main));
+        setTag("removed_general", QVariant::fromValue(list));
+    }
     foreach (QString sub, Sanguosha->getConvertGenerals(main)) {
         if (remove)
             used_general.removeAll(sub);
-        else
+        else if (!used_general.contains(sub))
             used_general.append(sub);
     }
 }
@@ -7951,6 +7957,14 @@ void Room::fillAG(const QList<int> &card_ids, ServerPlayer *who, const QList<int
     arg << JsonUtils::toJsonArray(disabled_ids);
 
     if (who) {
+        if (disabled_ids.length()>0){
+            QList<QVariant> list;
+            foreach(int id, disabled_ids){
+                list << QVariant::fromValue(id);
+            }
+
+            setPlayerProperty(who, "ag_disable_ids", QVariant::fromValue(list));
+        }
         doNotify(who, S_COMMAND_FILL_AMAZING_GRACE, arg);
         if (!watchers.isEmpty()) {
             foreach (ServerPlayer *player, watchers)

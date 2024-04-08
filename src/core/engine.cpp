@@ -982,9 +982,20 @@ QStringList Engine::getRandomGenerals(int count, const QSet<QString> &ban_set) c
 
 QList<int> Engine::getRandomCards() const
 {
+    bool exclude_disaters = false, using_2016_3v3 = false;
+
+    if (Config.GameMode == "06_3v3") {
+        using_2016_3v3 = (Config.value("3v3/OfficialRule", "2016").toString() == "2016");
+        exclude_disaters = !Config.value("3v3/UsingExtension", false).toBool() || Config.value("3v3/ExcludeDisasters", true).toBool();
+    }
+
     QList<int> list;
     foreach (Card *card, cards) {
         card->clearFlags();
+
+        if (Config.GameMode == "06_3v3" && !Config.value("3v3/UsingExtension", false).toBool()
+            && card->getPackage() != "standard_cards" && card->getPackage() != "standard_ex_cards")
+            continue;
 
         if (!getBanPackages().contains(card->getPackage()))
             list << card->getId();

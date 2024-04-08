@@ -1,15 +1,15 @@
 extension = sgs.Package("selfavatar", sgs.Package_GeneralPack)
 
-zerojustice = sgs.General(extension,"zerojustice","god",4,true,true)
-clannaddaisuki = sgs.General(extension,"clannaddaisuki","god",4,false,true)
-favoryuuki = sgs.General(extension,"favoryuuki","god",4,true,true)
-qingkong = sgs.General(extension,"qingkong","god",4,true,true)
-qiluo = sgs.General(extension,"qiluo","god",4,true,true)
-Mizuwaza = sgs.General(extension,"Mizuwaza","god",3,true,true)
-Tenthclass = sgs.General(extension,"Tenthclass","god",4,true,true)
-FlameHaze = sgs.General(extension,"FlameHaze","god",4,true,true)
-Internetjuvenile = sgs.General(extension,"Internetjuvenile","god",4,true,true)
-KurashinaAsuka = sgs.General(extension,"KurashinaAsuka","god",4,true,true)
+zerojustice = sgs.General(extension,"zerojustice","god")
+clannaddaisuki = sgs.General(extension,"clannaddaisuki","god")
+favoryuuki = sgs.General(extension,"favoryuuki","god")
+qingkong = sgs.General(extension,"qingkong","god")
+qiluo = sgs.General(extension,"qiluo","god")
+Mizuwaza = sgs.General(extension,"Mizuwaza","god",3)
+Tenthclass = sgs.General(extension,"Tenthclass","god")
+FlameHaze = sgs.General(extension,"FlameHaze","god")
+Internetjuvenile = sgs.General(extension,"Internetjuvenile","god")
+KurashinaAsuka = sgs.General(extension,"KurashinaAsuka","god")
 
 zerojusticeskill = sgs.CreateTriggerSkill{
 	name = "zerojusticeskill",
