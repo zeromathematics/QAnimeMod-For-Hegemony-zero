@@ -238,25 +238,31 @@ const Card *ChoosePlayerSkill::viewAs() const
 }
 
 TransferSkill::TransferSkill()
-    : OneCardViewAsSkill("transfer")
+    : ViewAsSkill("transfer")
 {
 }
 
-bool TransferSkill::viewFilter(const Card *to_select) const
+bool TransferSkill::viewFilter(const QList<const Card *> &selected, const Card *to_select) const
 {
-    return to_select->getId() == _toSelect;
+    QStringList hongyuan_ids;
+    if (!Self->property("view_as_transferable").isNull())
+        hongyuan_ids = Self->property("view_as_transferable").toString().split("+");
+    if (!to_select->isTransferable() && !hongyuan_ids.contains(QString::number(to_select->getEffectiveId()))) return false;
+    return selected.length() < 3 && Self->getHandcards().contains(to_select);
 }
 
-const Card *TransferSkill::viewAs(const Card *originalCard) const
+const Card *TransferSkill::viewAs(const QList<const Card *> &cards) const
 {
+    if (cards.length() == 0) return NULL;
+
     TransferCard *transfer = new TransferCard;
-    transfer->addSubcard(originalCard);
+    transfer->addSubcards(cards);
     return transfer;
 }
 
-bool TransferSkill::isEnabledAtPlay(const Player *) const
+bool TransferSkill::isEnabledAtPlay(const Player *player) const
 {
-    return true;
+    return !player->hasUsed("TransferCard");
 }
 
 void TransferSkill::setToSelect(int toSelect)

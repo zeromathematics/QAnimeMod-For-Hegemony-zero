@@ -1539,7 +1539,8 @@ public:
             }
         }
         else if (triggerEvent == EventPhaseEnd){
-            if (TriggerSkill::triggerable(player) && player->getPhase() == Player::Discard){
+            if (TriggerSkill::triggerable(player) && player->getPhase() == Player::Discard && player->hasFlag("wuzhuang_max")){
+                room->setPlayerFlag(player, "-wuzhuang_max");
                 QString _type = "EquipCard|.|.|hand"; // Handcards only
                 room->removePlayerCardLimitation(player, "discard", _type);
             }
@@ -1586,8 +1587,9 @@ public:
             }
         }
         else if(triggerEvent==EventPhaseStart){
+            player->setFlags("wuzhuang_max");
             QString _type = "EquipCard|.|.|hand"; // Handcards only
-            room->setPlayerCardLimitation(player, "discard", _type, true);
+            room->setPlayerCardLimitation(player, "discard", _type, false);
         }
         return false;
     }
@@ -2096,7 +2098,7 @@ public:
             if (player->getPhase()==Player::Start){
                 QList<ServerPlayer *> mikus = room->findPlayersBySkillName(objectName());
                 foreach(auto miku, mikus){
-                    if (miku != player && !miku->isNude() && miku->canDiscard(miku, "he")){
+                    if (miku != player && !miku->isKongcheng() && miku->canDiscard(miku, "h")){
                         skill_list.insert(miku, QStringList(objectName()));
                     }
                 }
@@ -2720,13 +2722,27 @@ public:
         int x=2;
         QList<int> &drawPile = room->getDrawPile();
         int l=drawPile.length();
-        for (int i=1; i<= x; i++) {
+        /*for (int i=1; i<= x; i++) {
           if (l-i>=0) {
             list << drawPile.at(l-i);
             const Card *card = Sanguosha->getCard(drawPile.at(l-i));
             if (!card->isAvailable(eirin)) {
                 disabled_ids << drawPile.at(l-i);
             }
+          }
+        }*/
+        if (l > 0) {
+          list << drawPile.at(0);
+          const Card *card = Sanguosha->getCard(drawPile.at(0));
+          if (!card->isAvailable(eirin)) {
+              disabled_ids << drawPile.at(0);
+          }
+        }
+        if (l > 1) {
+          list << drawPile.at(l-1);
+          const Card *card = Sanguosha->getCard(drawPile.at(l-1));
+          if (!card->isAvailable(eirin)) {
+              disabled_ids << drawPile.at(l-1);
           }
         }
         if (!list.isEmpty()){
@@ -3347,6 +3363,7 @@ public:
             return true;
         }
         if (event == SlashProceed){
+            room->broadcastSkillInvoke(objectName(), player);
             return true;
         }
         return false;
@@ -3457,7 +3474,7 @@ public:
     {
         if (event==TargetConfirmed){
             CardUseStruct use = data.value<CardUseStruct>();
-            if (TriggerSkill::triggerable(player) && player==use.from && use.card && use.card->isKindOf("Slash") && player->getPhase()==Player::Play && !player->hasFlag("shenqiang_used")) {
+            if (TriggerSkill::triggerable(player) && player==use.from && use.card && use.card->isKindOf("Slash") && player->getPhase()==Player::Play && !player->hasFlag("shenqiang_used") && !player->isKongcheng()) {
                  return QStringList(objectName());
             }
         }
@@ -4059,7 +4076,7 @@ public:
                 room->sendLog(log);
                 return;
             }
-            if (player->getKingdom() == "idol" && player->getRole() != "careerist"){
+            if (player->hasShownOneGeneral() && player->getKingdom() == "idol" && player->getRole() != "careerist"){
                 foreach(auto p, room->getAlivePlayers()){
                     if (p->getTreasure() && p->getTreasure()->objectName()=="Idolyousei" && p->hasShownSkill("qingge")){
                         LogMessage log;

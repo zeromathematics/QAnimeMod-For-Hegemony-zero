@@ -2735,9 +2735,9 @@ zmqiji_skill.getTurnUseCard = function(self,room,player,data)
 end
 
 --saber
-local function add_different_kingdoms(self, target, targets)
-   for _,name in ipairs(targets) do
-     local p = findPlayerByObjectName(name)
+function add_different_kingdoms(target, targets)
+   for _,p in ipairs(targets) do
+     --local p = findPlayerByObjectName(name)
 	 if target:isFriendWith(p) then return false end
    end
    return true

@@ -419,6 +419,7 @@ void QSanInvokeSkillButton::paint(QPainter *painter, const QStyleOptionGraphicsI
         QString generalName = "";
         if (Self->getLord()) generalName = Self->getLord()->getGeneralName();
         if (_m_skill->objectName()=="reimugive") generalName = "Reimu";
+        if (_m_skill->objectName()=="daokegive") generalName = "Noora";
         if (generalName == "") return;
         QString path = G_ROOM_SKIN.getButtonPixmapPath(G_ROOM_SKIN.S_SKIN_KEY_BUTTON_SKILL, getSkillTypeString(_m_skillType), _m_state);
         int n = path.lastIndexOf("/");

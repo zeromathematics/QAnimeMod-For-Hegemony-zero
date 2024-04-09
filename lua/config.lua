@@ -22,7 +22,7 @@
 -- and it is a little different from config.ini
 
 config = {
-	kingdoms = {"science", "real", "magic", "game", "idol", "careerist", "god"--[["idol|real", "science|idol", "magic|science", "magic|real", "science|real", "real|game", "magic|game", "science|game",]] },
+	kingdoms = {"science", "real", "magic", "game", "idol", "careerist", "god"--[["idol|real", "science|idol", "magic|science", "magic|real", "science|real", "real|game", "magic|game", "science|game",]], "WOF", "Titan" },
 	kingdom_colors = {
 		god = "#96943D",
 		wei = "#615E5D",
@@ -101,65 +101,51 @@ config = {
 	},
 
 	robot_names = {
-		"無に帰ろう", --Moligaloo
-		"啦啦失恋过", --啦啦SLG
-		"【Pikachu】Fs", --Fsu0413
-		"凌电信", --凌天翼
-		"元嘉体",
-		"萌豚紙",  --豚紙
-		"女王神·Slob", --女王受·虫
-		"DBDBD！免费哟！", --Double_Bit？
-		"爱 上穹妹的 Jia", --爱上穹妹的某
-		"没驾照开不了车", --开不了车
-		"写书的独孤安河", --独孤安河
-		"百年东南西北风", --百年东风
-		"Paracel_00发", --Paracel_007
-		"haveago823" , --haveatry823
-		"离人泪026", --lrl026
-		"墨宣砚韵", --a late developer
-		"忧郁のlzxqqqq", --忧郁的月兔（lzxqqqq）
-		"卍brianのvong卍", --卍冰の羽卍
-		"五毛羽", --arrow羽
-		"大同人陈家祺" , --陈家祺大同中心
-		"叫什么啊我妹" , --你妹大神
-		"麦当劳" , --果然萝卜斩
-		"高调的富妮妮" , --低调的付尼玛
-		"☆№Ｌ36×李Ｊ№★" , --☆№Ｌ糾×結Ｊ№★
-		"老A呱呱呱", --hmqgg
-		"Nagisa乐意", --Nagisa_Willing
-		"0o叮咚咚叮o0", --0o叮咚Backup
-		"医治曙光", --医治永恒（曙光）
-		"甄姬真姬", --甄姬真妓（日月小辰）
-		"tangjs我爱你", --tangjs520
-		"帷幕之下问心云",
-		"普肉", --Procellarum
-		"大内总管KK", --KenKic
-		"叶落孤舟",
-		"晓月的微信", --晓月的泪痕
-		"Xasy-Po-Love", --Easy-To-Love（XPL）
-		"小修司V", --小休斯
-		"淫" , --银
-		"清风不屈一对五", --清风弄错流年
-		"非凡借刀秒大魏", --非凡神力
-		"高城和二", --takashiro
-		"tan∠ANY", --任意角的正切
-		"刘恒飞翔", --恒星飞翔
-		"寂镜Jnrio",
-		"人啊环境", --rahj
-		"良家大少", --祝家大少
-		"SB-禽受装逼佬张", --老张
-		"孝弯", --孝直
-		"鱼纸酱", --鱼
-		"凌乱_解锁", --铃兰_杰索
-		"凹凸", --ought~
-		"DJ ainomelody",
-		"shenglove82",
-		"怒喷数字", --1131561728
-		"氯丙嗪", --阿米拉嗪
-		"teyteym", --myetyet
-		"半圆", --半缘
-		"猪肉贩龙傲天", --龙傲天
-		"三国成双", --三国有单
-		"这王八" --thiswangba
+		"正義の味方",
+		"俺様最強！", 
+		"梨子是我的！！！", 
+		"真爱有颜色一定是蓝色",
+		"人被杀就会死",
+		"战斗力只有五的渣滓",
+		"你们都是我的翅膀",
+		"爱蜜莉雅紫",
+		"这个笑容由我来守护",
+		"绿皮杀杀杀",
+		"非凡铁索秒大现",
+		"红皮gogogo",
+		"现世的倔强",
+		"大偶像可兴" ,
+		"我们画风不一样",
+		"我不是蓝皮",
+		"男人变态有什么错",
+		"自古枪兵幸运E",
+		"我不做人啦JOJO！",
+		"这腿我能玩一年" ,
+		"我变秃了，也变强了" ,
+		"比博燃" ,
+		"教练，我想学篮球" ,
+		"世界线收束" ,
+		"快按住老虚" ,
+		"自古红蓝出cp" ,
+		"都是时辰的错" ,
+		"真相只有一个" ,
+		"小哥，买苹果吗" ,
+		"龙王的狱友" ,
+		"遇事不决，量子力学" ,
+		"你为什么这么熟练啊" ,
+		"茉纳你坐啊" ,
+		"橘里橘气" ,
+		"为王的诞生献上礼炮" ,
+		"可爱即正义" ,
+		"诸君，我喜欢战争" ,
+		"一切都是世界的错" ,
+		"烧死那对异性恋" ,
+		"这么可爱一定是" ,
+		"还能再战500年" ,
+		"自带bgm的男人" ,
+		"欠夏娜一个萌王" ,
+		"EX咖喱棒" ,
+		"不要停下来啊团长" ,
+		"你已经死了" ,
 	},
 }

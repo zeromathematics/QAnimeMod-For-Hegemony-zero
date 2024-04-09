@@ -821,7 +821,7 @@ public:
     {
         CardUseStruct use = data.value<CardUseStruct>();
         chitanda->setProperty("haoqi_card", QVariant::fromValue(use.card));
-        if(chitanda->askForSkillInvoke(this, QVariant::fromValue(use.from))){      
+        if(chitanda->askForSkillInvoke(this, QVariant::fromValue(use.from))){
             chitanda->setProperty("haoqi_card", QVariant());
             return true;          
         }
@@ -1873,10 +1873,10 @@ void ZhouliCard::use(Room *room, ServerPlayer *player, QList<ServerPlayer *> &ta
     ServerPlayer *dest = room->askForPlayerChosen(player, list, objectName(), QString());
     QStringList choices;
     QStringList skills;
-    if (dest->hasShownGeneral1()){
+    if (dest->hasShownGeneral1() && player->canShowGeneral("h")){
         choices << dest->getActualGeneral1Name();
     }
-    if (dest->hasShownGeneral2()){
+    if (dest->hasShownGeneral2() && player->canShowGeneral("d")){
         choices << dest->getActualGeneral2Name();
     }
     QString general="";
@@ -2372,7 +2372,7 @@ public:
 
             foreach (ServerPlayer *asagi, asagis)
             {
-                if (!asagi->isNude())
+                if (!asagi->isKongcheng())
                 {
                     skill_list.insert(asagi, QStringList(objectName()));
                 }
@@ -2905,6 +2905,7 @@ public:
    {
         DamageStruct damage = data.value<DamageStruct>();
         if (ai->askForSkillInvoke(this, QVariant::fromValue(damage.from))) {
+            room->broadcastSkillInvoke(objectName(), ai);
             return true;
         }
         return false;
@@ -5434,7 +5435,7 @@ public:
     {
         if (event==TargetConfirmed){
             CardUseStruct use = data.value<CardUseStruct>();
-            if (TriggerSkill::triggerable(player) && player==use.from && use.card && use.card->isKindOf("Slash")) {
+            if (TriggerSkill::triggerable(player) && player==use.from && use.card && use.card->isKindOf("Slash") && !player->isNude()) {
                  return QStringList(objectName());
             }
         }
@@ -5633,7 +5634,7 @@ public:
 
             QList<ServerPlayer *> setsunas = room->findPlayersBySkillName(objectName());
             foreach(ServerPlayer *setsuna, setsunas)
-                if (setsuna->canDiscard(setsuna, "he") && setsuna->getHandcardNum()%2 == 1 && (!room->getCurrent() || !room->getCurrent()->hasFlag(setsuna->objectName()+"shengmu_used")))
+                if (setsuna->canDiscard(setsuna, "he") && setsuna->getHandcardNum()%2 == 1 && (!room->getCurrent() || !room->getCurrent()->hasFlag(setsuna->objectName()+"shengmu_used")) && !setsuna->isNude())
                     skill_list.insert(setsuna, QStringList(objectName()));
             return skill_list;
         }

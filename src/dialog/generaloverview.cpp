@@ -518,6 +518,14 @@ void GeneralOverview::addLines(const General *general, const Skill *skill)
                     sources_copy << source;
             }
         }
+        if (sources_copy.isEmpty()) {
+            pattern = ".+/(" + skill->objectName() + ")(\\d?).ogg";
+            QRegExp rx(pattern);
+            foreach (QString source, sources) {
+                if (rx.exactMatch(source))
+                    sources_copy << source;
+            }
+        }
         sources = sources_copy;
 
         for (int i = 0; i < sources.length(); i++) {
