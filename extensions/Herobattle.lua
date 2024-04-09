@@ -6827,7 +6827,7 @@ XieyuCard = sgs.CreateSkillCard{
 Xieyuvs = sgs.CreateZeroCardViewAsSkill{
 	name = "xieyu",
 	view_as = function(self)
-		local vs = JilanCard:clone()
+		local vs = XieyuCard:clone()
 		vs:setShowSkill(self:objectName())	
 		vs:setSkillName(self:objectName())		
 		return vs 	
