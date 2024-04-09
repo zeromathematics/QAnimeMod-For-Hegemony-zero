@@ -372,6 +372,8 @@ sgs.ai_skill_invoke.xunjiRin = function(self, data)
 	return self:willShowForAttack() and self:getCardsNum("Slash") > 1
 end
 
+
+
 --西木野真姬
 sgs.ai_skill_invoke.ciqiang = function(self, data)
 	local target = data:toPlayer()
@@ -745,7 +747,39 @@ end
 --绚濑绘里
 sgs.ai_skill_invoke.xianju = true
 
---另外两个核心技能怎么写？
+shouwu_skill={}
+shouwu_skill.name="shouwu"
+table.insert(sgs.ai_skills,shouwu_skill)
+shouwu_skill.getTurnUseCard=function(self,inclusive)
+	if not self:willShowForAttack() and not self:willShowForDefence() then return end
+	if self.player:hasUsed("ViewAsSkill_shouwuCard") then return end
+	return sgs.Card_Parse("#shouwuCard:.:&shouwu")
+end
+
+sgs.ai_skill_use_func["#shouwuCard"] = function(card,use,self)
+	local targets = sgs.SPlayerList()
+	local n = math.min(self.player:getHp(), #self.friends)
+    local needed = {}
+	local names = {}
+	for _,c in sgs.qlist(self.player:getCards("h")) do
+       if c:isBlack() and #needed < n and not table.contains(names, c:objectName()) then
+		  table.insert(names, c:objectName())
+		  table.insert(needed, c:getEffectiveId())
+	   end		   
+	end
+	for _,p in ipairs(self.friends) do
+		if targets:length() < #needed then
+			targets:append(p)
+		end
+	end
+	if #needed >0 and targets:length() == #needed then
+		use.card = sgs.Card_Parse("#shouwuCard:"..table.concat(needed, "+")..":&shouwu")
+		if use.to then use.to = targets end
+		return
+	end
+end
+
+sgs.ai_use_priority.shouwuCard = 6
 
 --宫下爱
 sgs.ai_skill_invoke.lamei = true
