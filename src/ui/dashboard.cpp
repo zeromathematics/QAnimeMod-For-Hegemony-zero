@@ -1596,11 +1596,14 @@ void Dashboard::onCardItemClicked()
     CardItem *card_item = qobject_cast<CardItem *>(sender());
     if (!card_item) return;
 
+    if (card_item->getTransferButton())
+        card_item->getTransferButton()->hide();
+
     if (viewAsSkill) {
         if (card_item->isSelected()) {
             selectCard(card_item, false);
             pendings.removeOne(card_item);
-            if (viewAsSkill->inherits("TransferSkill"))
+            if (viewAsSkill->inherits("TransferSkill") && pendings.isEmpty())
                 RoomSceneInstance->doCancelButton();
         } else {
             if (viewAsSkill->inherits("OneCardViewAsSkill"))
@@ -1614,7 +1617,7 @@ void Dashboard::onCardItemClicked()
         if (card_item->isSelected()) {
             unselectAll();
             emit card_selected(NULL);
-        } else {
+        }else {
             unselectAll();
             selectCard(card_item, true);
             selected = card_item;

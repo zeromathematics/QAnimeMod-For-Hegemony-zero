@@ -848,81 +848,45 @@ bool AwaitExhausted::isAvailable(const Player *player) const
     return canUse && TrickCard::isAvailable(player);
 }
 
+bool AwaitExhausted::targetRated(const Player *to_select, const Player *Self) const
+{
+    return Self->isFriendWith(to_select);
+}
+
 void AwaitExhausted::onUse(Room *room, const CardUseStruct &card_use) const
 {
     CardUseStruct new_use = card_use;
-    if (!card_use.from->isProhibited(card_use.from, this))
-        new_use.to << new_use.from;
-    foreach (ServerPlayer *p, room->getOtherPlayers(new_use.from)) {
-        if (p->isFriendWith(new_use.from)) {
-            const ProhibitSkill *skill = room->isProhibited(card_use.from, p, this);
-            if (skill) {
-                LogMessage log;
-                log.type = "#SkillAvoid";
-                log.from = p;
-                log.arg = skill->objectName();
-                log.arg2 = objectName();
-                room->sendLog(log);
 
-                room->broadcastSkillInvoke(skill->objectName(), p);
-            } else {
-                new_use.to << p;
+    if (card_use.to.isEmpty()) {
+        if (!card_use.from->isProhibited(card_use.from, this))
+            new_use.to << new_use.from;
+        foreach (ServerPlayer *p, room->getOtherPlayers(new_use.from)) {
+            if (p->isFriendWith(new_use.from)) {
+                const Skill *skill = room->isProhibited(card_use.from, p, this);
+                if (skill) {
+                    if (skill->isVisible()) {
+                        LogMessage log;
+                        log.type = "#SkillAvoid";
+                        log.from = p;
+                        log.arg = skill->objectName();
+                        log.arg2 = objectName();
+                        room->sendLog(log);
+
+                        room->broadcastSkillInvoke(skill->objectName());
+                    }
+                } else
+                    new_use.to << p;
             }
         }
     }
 
-    if (!card_use.to.isEmpty()){
-       TrickCard::onUse(room, card_use);
-    }
-    else {
-        TrickCard::onUse(room, new_use);
-    }
-}
-
-void AwaitExhausted::use(Room *room, ServerPlayer *source, QList<ServerPlayer *> &targets) const
-{
-    QStringList nullified_list = room->getTag("CardUseNullifiedList").toStringList();
-    bool all_nullified = nullified_list.contains("_ALL_TARGETS");
-    foreach (ServerPlayer *target, targets) {
-        CardEffectStruct effect;
-        effect.card = this;
-        effect.from = source;
-        effect.to = target;
-        effect.multiple = (targets.length() > 1);
-        effect.nullified = (all_nullified || nullified_list.contains(target->objectName()));
-
-        QVariantList players;
-        for (int i = targets.indexOf(target); i < targets.length(); i++) {
-            if (!nullified_list.contains(targets.at(i)->objectName()) && !all_nullified)
-                players.append(QVariant::fromValue(targets.at(i)));
-        }
-        room->setTag("targets" + this->toString(), QVariant::fromValue(players));
-
-        room->cardEffect(effect);
-    }
-
-    room->removeTag("targets" + this->toString());
-
-    foreach (ServerPlayer *target, targets) {
-        if (target->hasFlag("AwaitExhaustedEffected")) {
-            room->setPlayerFlag(target, "-AwaitExhaustedEffected");
-            room->askForDiscard(target, objectName(), 2, 2, false, true);
-        }
-    }
-
-    QList<int> table_cardids = room->getCardIdsOnTable(this);
-    if (!table_cardids.isEmpty()) {
-        DummyCard dummy(table_cardids);
-        CardMoveReason reason(CardMoveReason::S_REASON_USE, source->objectName(), QString(), this->getSkillName(), QString());
-        if (targets.size() == 1) reason.m_targetId = targets.first()->objectName();
-        room->moveCardTo(&dummy, source, NULL, Player::DiscardPile, reason, true);
-    }
+    TrickCard::onUse(room, new_use);
 }
 
 void AwaitExhausted::onEffect(const CardEffectStruct &effect) const
 {
     effect.to->drawCards(2);
-    effect.to->getRoom()->setPlayerFlag(effect.to, "AwaitExhaustedEffected");
+    effect.to->getRoom()->askForDiscard(effect.to, objectName(), 2, 2, false, true);
 }
 
 KnownBoth::KnownBoth(Card::Suit suit, int number)

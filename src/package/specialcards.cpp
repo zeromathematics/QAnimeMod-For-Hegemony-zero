@@ -370,7 +370,7 @@ public:
 
     virtual bool cost(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *yukihira) const
     {
-        if (yukihira->askForSkillInvoke(this, data)){
+        if (yukihira->askForSkillInvoke(this, QVariant::fromValue(player))){
             room->broadcastSkillInvoke(objectName(), yukihira);
             return true;
         }
@@ -418,7 +418,8 @@ public:
 
     virtual bool cost(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *f) const
     {
-        if (f->askForSkillInvoke(this, data)){
+        DamageStruct damage = data.value<DamageStruct>();
+        if (f->askForSkillInvoke(this, QVariant::fromValue(damage.to))){
             room->broadcastSkillInvoke(objectName(), rand()%2+1, f);
             f->loseMark("@revival");
             return true;
@@ -591,7 +592,8 @@ public:
 
     virtual bool cost(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *ask_who) const
     {
-        if (ask_who->askForSkillInvoke(this, data)){
+        DamageStruct damage = data.value<DamageStruct>();
+        if (ask_who->askForSkillInvoke(this, QVariant::fromValue(damage.to))){
             if (!ask_who->hasShownSkill(this) && ask_who->getMark("huamingtri")==0){
                 room->broadcastSkillInvoke(objectName(), 1, player);
                 room->setPlayerMark(ask_who, "huamingtri", 1);
@@ -775,7 +777,8 @@ public:
     }
     virtual bool cost(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *) const
     {
-        if (player->askForSkillInvoke(this, data) ) {
+        DyingStruct dying = data.value<DyingStruct>();
+        if (player->askForSkillInvoke(this, QVariant::fromValue(dying.who)) ) {
             room->setPlayerFlag(room->getCurrent(), "mishi_used");
             room->broadcastSkillInvoke(objectName(), player);
             return true;
@@ -895,7 +898,8 @@ public:
 
     virtual bool cost(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *) const
     {
-        if (player->askForSkillInvoke(this, data)) {
+        DamageStruct damage = data.value<DamageStruct>();
+        if (player->askForSkillInvoke(this, QVariant::fromValue(damage.to))) {
             return true;
         }
         return false;
@@ -1535,7 +1539,8 @@ public:
             }
         }
         else if (triggerEvent == EventPhaseEnd){
-            if (TriggerSkill::triggerable(player) && player->getPhase() == Player::Discard){
+            if (TriggerSkill::triggerable(player) && player->getPhase() == Player::Discard && player->hasFlag("wuzhuang_max")){
+                room->setPlayerFlag(player, "-wuzhuang_max");
                 QString _type = "EquipCard|.|.|hand"; // Handcards only
                 room->removePlayerCardLimitation(player, "discard", _type);
             }
@@ -1582,8 +1587,9 @@ public:
             }
         }
         else if(triggerEvent==EventPhaseStart){
+            player->setFlags("wuzhuang_max");
             QString _type = "EquipCard|.|.|hand"; // Handcards only
-            room->setPlayerCardLimitation(player, "discard", _type, true);
+            room->setPlayerCardLimitation(player, "discard", _type, false);
         }
         return false;
     }
@@ -1906,9 +1912,9 @@ public:
 
     virtual bool cost(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *) const
     {
-        if (player->askForSkillInvoke(this, data)) {
+        DamageStruct damage = data.value<DamageStruct>();
+        if (player->askForSkillInvoke(this, QVariant::fromValue(damage.to))) {
             room->broadcastSkillInvoke(objectName(), player);
-            DamageStruct damage = data.value<DamageStruct>();
             room->setPlayerFlag(player, damage.to->objectName()+"caoxue_used");
             return true;
         }
@@ -2092,7 +2098,7 @@ public:
             if (player->getPhase()==Player::Start){
                 QList<ServerPlayer *> mikus = room->findPlayersBySkillName(objectName());
                 foreach(auto miku, mikus){
-                    if (miku != player && !miku->isNude() && miku->canDiscard(miku, "he")){
+                    if (miku != player && !miku->isKongcheng() && miku->canDiscard(miku, "h")){
                         skill_list.insert(miku, QStringList(objectName()));
                     }
                 }
@@ -2552,7 +2558,7 @@ public:
 
     virtual bool cost(TriggerEvent, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *ask_who) const
     {
-        if(ask_who->askForSkillInvoke(this, data) && room->askForDiscard(ask_who,objectName(),1,1,true,true)){
+        if(ask_who->askForSkillInvoke(this, QVariant::fromValue(player)) && room->askForDiscard(ask_who,objectName(),1,1,true,true)){
             room->broadcastSkillInvoke(objectName(), ask_who);
             return true;
         }
@@ -2716,13 +2722,27 @@ public:
         int x=2;
         QList<int> &drawPile = room->getDrawPile();
         int l=drawPile.length();
-        for (int i=1; i<= x; i++) {
+        /*for (int i=1; i<= x; i++) {
           if (l-i>=0) {
             list << drawPile.at(l-i);
             const Card *card = Sanguosha->getCard(drawPile.at(l-i));
             if (!card->isAvailable(eirin)) {
                 disabled_ids << drawPile.at(l-i);
             }
+          }
+        }*/
+        if (l > 0) {
+          list << drawPile.at(0);
+          const Card *card = Sanguosha->getCard(drawPile.at(0));
+          if (!card->isAvailable(eirin)) {
+              disabled_ids << drawPile.at(0);
+          }
+        }
+        if (l > 1) {
+          list << drawPile.at(l-1);
+          const Card *card = Sanguosha->getCard(drawPile.at(l-1));
+          if (!card->isAvailable(eirin)) {
+              disabled_ids << drawPile.at(l-1);
           }
         }
         if (!list.isEmpty()){
@@ -3343,6 +3363,7 @@ public:
             return true;
         }
         if (event == SlashProceed){
+            room->broadcastSkillInvoke(objectName(), player);
             return true;
         }
         return false;
@@ -3453,7 +3474,7 @@ public:
     {
         if (event==TargetConfirmed){
             CardUseStruct use = data.value<CardUseStruct>();
-            if (TriggerSkill::triggerable(player) && player==use.from && use.card && use.card->isKindOf("Slash") && player->getPhase()==Player::Play && !player->hasFlag("shenqiang_used")) {
+            if (TriggerSkill::triggerable(player) && player==use.from && use.card && use.card->isKindOf("Slash") && player->getPhase()==Player::Play && !player->hasFlag("shenqiang_used") && !player->isKongcheng()) {
                  return QStringList(objectName());
             }
         }
@@ -4054,6 +4075,18 @@ public:
                 log.type = "#IdolyouseiEffect";
                 room->sendLog(log);
                 return;
+            }
+            if (player->hasShownOneGeneral() && player->getKingdom() == "idol" && player->getRole() != "careerist"){
+                foreach(auto p, room->getAlivePlayers()){
+                    if (p->getTreasure() && p->getTreasure()->objectName()=="Idolyousei" && p->hasShownSkill("qingge")){
+                        LogMessage log;
+                        log.from = p;
+                        log.to << player;
+                        log.type = "#QinggeEffect";
+                        room->sendLog(log);
+                        return;
+                    }
+                }
             }
             room->setPlayerMark(player, "#musicmaxh", 0);
             room->setPlayerMark(player, "#musicrange", 0);

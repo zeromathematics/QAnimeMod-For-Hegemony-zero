@@ -628,19 +628,18 @@ sgs.ai_skill_choice["GameRule:TriggerOrder"] = function(self, choices, data)
 		if table.contains(skillnames, "yiji") then return "yiji" end
 		if table.contains(skillnames, "haoshi") then return "haoshi" end
 
+		--[[同时触发的函数不一定是askForSkillInvoke
 		local except = {}
 		for _, skillname in ipairs(skillnames) do
-			local invoke = self:askForSkillInvoke(skillname, data)
+			local invoke = self:askForSkillInvoke(skillname, data)--data和invoke的data不一致？？
 			if invoke == true then
 				return skillname
 			elseif invoke == false then
 				table.insert(except, skillname)
 			end
 		end
-		if string.find(choices, "cancel") and not canShowHead and not canShowDeputy and not self.player:hasShownOneGeneral() then
-			return "cancel"
-		end
 		table.removeTable(skillnames, except)
+]]
 
 		if #skillnames > 0 then return skillnames[math.random(1, #skillnames)] end
 	end

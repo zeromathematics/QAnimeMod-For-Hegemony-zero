@@ -211,6 +211,21 @@ bool Player::canShowGeneral(const QString &flags) const
     return false;
 }
 
+bool Player::canShowHidedGeneral(const QString &flags) const
+{
+    bool head = true, deputy = true;
+    foreach (const QString &dis_str, disable_show) {
+        QStringList dis_list = dis_str.split(',');
+        if (dis_list.at(0).contains("h")) head = false;
+        if (dis_list.at(0).contains("d")) deputy = false;
+    }
+    if (flags.isEmpty()) return (head && !hasShownGeneral1()) || (deputy && !hasShownGeneral2());
+    if (flags == "h") return head && !hasShownGeneral1();
+    if (flags == "d") return deputy && !hasShownGeneral2();
+    if (flags == "hd") return (deputy && !hasShownGeneral2()) && (head && !hasShownGeneral1());
+    return false;
+}
+
 bool Player::isAdjacentTo(const Player *another) const
 {
     return getNextAlive() == another

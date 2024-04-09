@@ -233,6 +233,7 @@ end
 sgs.ai_skill_choice["shining_concert"] = function(self, choices, data)
 	local player = data:toPlayer()
 	if self:isEnemy(player) then
+	    if self.player:isNude() and self.player:isWounded() then return "sc_recover" end
 		sgs.updateIntention(self.player, player, 50)
 		return "cancel"
 	end

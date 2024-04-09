@@ -1940,7 +1940,7 @@ function sgs.updateAlivePlayerRoles()
 end
 
 function findPlayerByObjectName(name, include_death, except)
-	local player = global_room:findPlayerByObjectName(name, include_death)
+	local player = global_room:findPlayerbyobjectName(name, include_death)
 
 	if player and not except or except:objectName() ~= player:objectName() then
 		return player
@@ -3117,8 +3117,14 @@ function SmartAI:askForAG(card_ids, refusable, reason)
 
 	local ids = card_ids
 	local cards = {}
+	local dis_list = self.player:property("ag_disable_ids"):toList()
+    local dis_ids = {}
+	for _,s in sgs.qlist(dis_list) do
+		local id = s:toInt()
+		table.insert(dis_ids, id)
+	end
 	for _, id in ipairs(ids) do
-		table.insert(cards, sgs.Sanguosha:getCard(id))
+		if not table.contains(dis_ids, id) then table.insert(cards, sgs.Sanguosha:getCard(id)) end
 	end
 	for _, card in ipairs(cards) do
 		if card:isKindOf("Peach") then return card:getEffectiveId() end
@@ -3991,7 +3997,7 @@ function SmartAI:damageIsEffective_(damageStruct)
 		if damage < 1 then return false end
 	end
 
-	if to:hasShownSkill("huansha") and nature ~= sgs.DamageStruct_Normal then
+        if to:hasShownSkill("huansha") and nature ~= sgs.DamageStruct_Normal then
 		damage = damage - 1
 		if damage < 1 then return false end
 	end
@@ -4003,6 +4009,10 @@ function SmartAI:damageIsEffective_(damageStruct)
 	if to:hasShownSkill("xuecheng") and from:getMark("@xue") then
 		return false
 	end
+
+        if to:hasShownSkill("tianhuo") and nature == sgs.DamageStruct_Fire then
+                return false
+        end
 
 	if to:hasArmorEffect("PeaceSpell") and not from:hasWeapon("IceSword") and not from:hasShownSkill("zhiman") and nature ~= sgs.DamageStruct_Normal then return false end
 	if to:hasShownSkills("jgyuhuo_pangtong|jgyuhuo_zhuque") and nature == sgs.DamageStruct_Fire then return false end

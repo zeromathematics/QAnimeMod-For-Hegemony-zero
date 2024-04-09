@@ -2102,6 +2102,12 @@ void ServerPlayer::hideGeneral(bool head_general)
 
     if (head_general) {
         if (getGeneralName() == "anjiang") return;
+        if (getActualGeneral1()->isLord()){
+            LogMessage log;
+            log.type = "#LordHideRule";
+            room->sendLog(log);
+            return;
+        }
 
         setSkillsPreshowed("h", false);
         // dirty hack for temporary convenience.
@@ -2204,6 +2210,12 @@ void ServerPlayer::hideGeneralWithoutChangingRole(bool head_general)
 
     if (head_general) {
         if (getGeneralName() == "anjiang") return;
+        if (getActualGeneral1()->isLord()){
+            LogMessage log;
+            log.type = "#LordHideRule";
+            room->sendLog(log);
+            return;
+        }
 
         setSkillsPreshowed("h", false);
         // dirty hack for temporary convenience.
@@ -2327,6 +2339,9 @@ void ServerPlayer::removeGeneral(bool head_general)
             if (skill)
                 room->detachSkillFromPlayer(this, skill->objectName(), false, false, true);
         }
+        QList<QVariant> list = room->getTag("removed_general").value<QList<QVariant>>();
+        if (!list.contains(QVariant::fromValue(from_general))) list << QVariant::fromValue(from_general);
+        room->setTag("removed_general", QVariant::fromValue(list));
     } else {
         if (!hasShownGeneral2())
             showGeneral(false); //zoushi?
@@ -2355,6 +2370,9 @@ void ServerPlayer::removeGeneral(bool head_general)
             if (skill)
                 room->detachSkillFromPlayer(this, skill->objectName(), false, false, false);
         }
+        QList<QVariant> list = room->getTag("removed_general").value<QList<QVariant>>();
+        if (!list.contains(QVariant::fromValue(from_general))) list << QVariant::fromValue(from_general);
+        room->setTag("removed_general", QVariant::fromValue(list));
     }
 
     LogMessage log;

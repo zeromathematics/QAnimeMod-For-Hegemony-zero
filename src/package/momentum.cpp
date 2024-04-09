@@ -1729,9 +1729,6 @@ public:
 
     virtual int getExtra(const ServerPlayer *target, MaxCardsType::MaxCardsCount type) const
     {
-        if (!target->hasShownOneGeneral())
-            return 0;
-
         QList<ServerPlayer *> targets = target->getRoom()->getAlivePlayers();
 
         ServerPlayer *ps_owner = NULL;
@@ -1745,7 +1742,7 @@ public:
         if (ps_owner == NULL)
             return 0;
 
-        if (target->isFriendWith(ps_owner)){
+        if (target == ps_owner){
             int n = 0;
             foreach (ServerPlayer *p, targets) {
                 if (target->isFriendWith(p)) {

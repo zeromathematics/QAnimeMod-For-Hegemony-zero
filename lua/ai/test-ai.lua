@@ -94,7 +94,7 @@ sgs.ai_skill_use_func.ZhurenCard = function(card,use,self)
 		end
 	end
 	
-	for _,p in sgs.qlist(self.room:getOtherPlayers(source)) do
+	--[[for _,p in sgs.qlist(self.room:getOtherPlayers(source)) do
 	
 	if source:isFriendWith(p) then
 	for _,card in sgs.qlist(p:getJudgingArea()) do
@@ -106,7 +106,7 @@ sgs.ai_skill_use_func.ZhurenCard = function(card,use,self)
 	
 	end
 	
-	local max_num = source:getMaxHp() - source:getHp() + keys
+	local max_num = source:getMaxHp() - source:getHp() + keys]]
 	local max_x = 0
 	for _,friend in ipairs(self.friends) do
 		local x = 5 - friend:getHandcardNum()
@@ -116,6 +116,15 @@ sgs.ai_skill_use_func.ZhurenCard = function(card,use,self)
 			target = friend
 		end
 	end
+
+	if not target then return end
+    for _,card in sgs.qlist(target:getJudgingArea()) do
+		if card:isKindOf("Key") then
+			keys = keys + 1
+		end
+	end
+
+	local max_num = source:getMaxHp() - source:getHp() + keys
 	local cards=sgs.QList2Table(self.player:getHandcards())
 	local equips=sgs.QList2Table(self.player:getEquips())
 	local needed = {}
@@ -184,22 +193,13 @@ sgs.ai_use_value.GonglueCard = 8
 sgs.ai_use_priority.GonglueCard = 8
 sgs.ai_card_intention.GonglueCard = 60
 
-sgs.ai_skill_invoke.lichang = function(self, data)
-	return true
-end
+sgs.ai_skill_invoke.lichang = true
 
-sgs.ai_skill_invoke.kongni = function(self, data)
-	return true
-end
+sgs.ai_skill_invoke.kongni = true
 
 sgs.ai_skill_invoke.wucun = function(self, data)
-	if self:willShowForDefence() then 
-		return true 
-	end
-	return false
+	return self:willShowForDefence()
 end
-
-
 
 --手刃实验
 
@@ -306,28 +306,28 @@ sgs.ai_skill_playerchosen.Laiyuan = function(self, targets)
 
 	if not source:getArmor() then
 		for _,player in ipairs(self.enemies) do
-			if player:isAlive() and player:getArmor() and not player:hasShownSkill("xuanfeng|xiaoji") then
+			if player:isAlive() and player:getArmor() and not player:hasSkills(sgs.lose_equip_skill) then
 				return player
 			end
 		end
 	end
 	if not source:getDefensiveHorse() then
 		for _,player in ipairs(self.enemies) do
-			if player:isAlive() and player:getDefensiveHorse() and not player:hasShownSkill("xuanfeng|xiaoji") then
+			if player:isAlive() and player:getDefensiveHorse() and not player:hasSkills(sgs.lose_equip_skill) then
 				return player
 			end
 		end
 	end
 	if not source:getWeapon() then
 		for _,player in ipairs(self.enemies) do
-			if player:isAlive() and player:getWeapon() and not player:hasShownSkill("xuanfeng|xiaoji") then
+			if player:isAlive() and player:getWeapon() and not player:hasSkills(sgs.lose_equip_skill) then
 				return player
 			end
 		end
 	end
 	if not source:getOffensiveHorse() then
 		for _,player in ipairs(self.enemies) do
-			if player:isAlive() and player:getOffensiveHorse() and not player:hasShownSkill("xuanfeng|xiaoji") then
+			if player:isAlive() and player:getOffensiveHorse() and not player:hasSkills(sgs.lose_equip_skill) then
 				return player
 			end
 		end
@@ -395,7 +395,7 @@ sgs.ai_skill_cardchosen.zhudao = function(self, who, flags)
 		return cards[1]
 	end
 
-	if self:isEnemy(who) and who:hasShownSkill("liegong|Zhena") and who:isAlive() and who:getWeapon() and not who:hasShownSkill("xuanfeng|xiaoji") then
+	if self:isEnemy(who) and who:hasShownSkill("liegong|Zhena") and who:isAlive() and who:getWeapon() and not who:hasSkills(sgs.lose_equip_skill) then
 		for _,player in ipairs(self.friends) do
 			if player:isAlive() and not player:getWeapon() then
 				local card = who:getWeapon()
@@ -413,7 +413,7 @@ sgs.ai_skill_cardchosen.zhudao = function(self, who, flags)
 
 
 
-	if self:isEnemy(who) and who:isAlive() and who:getArmor() and not who:hasShownSkill("xuanfeng|xiaoji") then
+	if self:isEnemy(who) and who:isAlive() and who:getArmor() and not who:hasSkills(sgs.lose_equip_skill) then
 		for _,player in ipairs(self.friends) do
 			if player:isAlive() and not player:getArmor() then
 				local card = who:getArmor()
@@ -421,7 +421,7 @@ sgs.ai_skill_cardchosen.zhudao = function(self, who, flags)
 			end
 		end
 	end
-	if self:isEnemy(who) and who:isAlive() and who:getTreasure() and not who:hasShownSkill("xuanfeng|xiaoji") then
+	if self:isEnemy(who) and who:isAlive() and who:getTreasure() and not who:hasSkills(sgs.lose_equip_skill) then
 		for _,player in ipairs(self.friends) do
 			if player:isAlive() and not player:getTreasure() then
 				local card = who:getTreasure()
@@ -429,7 +429,7 @@ sgs.ai_skill_cardchosen.zhudao = function(self, who, flags)
 			end
 		end
 	end
-	if self:isEnemy(who) and who:isAlive() and who:getDefensiveHorse() and not who:hasShownSkill("xuanfeng|xiaoji") then
+	if self:isEnemy(who) and who:isAlive() and who:getDefensiveHorse() and not who:hasSkills(sgs.lose_equip_skill) then
 		for _,player in ipairs(self.friends) do
 			if player:isAlive() and not player:getDefensiveHorse() then
 				local card = who:getDefensiveHorse()
@@ -437,7 +437,7 @@ sgs.ai_skill_cardchosen.zhudao = function(self, who, flags)
 			end
 		end
 	end
-	if self:isEnemy(who) and who:isAlive() and who:getWeapon() and not who:hasShownSkill("xuanfeng|xiaoji") then
+	if self:isEnemy(who) and who:isAlive() and who:getWeapon() and not who:hasSkills(sgs.lose_equip_skill) then
 		for _,player in ipairs(self.friends) do
 			if player:isAlive() and not player:getWeapon() then
 				local card = who:getWeapon()
@@ -445,7 +445,7 @@ sgs.ai_skill_cardchosen.zhudao = function(self, who, flags)
 			end
 		end
 	end
-	if self:isEnemy(who) and who:isAlive() and who:getOffensiveHorse() and not who:hasShownSkill("xuanfeng|xiaoji") then
+	if self:isEnemy(who) and who:isAlive() and who:getOffensiveHorse() and not who:hasSkills(sgs.lose_equip_skill) then
 		for _,player in ipairs(self.friends) do
 			if player:isAlive() and not player:getOffensiveHorse() then
 				local card = who:getOffensiveHorse()
@@ -487,35 +487,35 @@ sgs.ai_skill_playerchosen.Quxiang = function(self, targets)
 
 	if not source:getArmor() then
 		for _,player in sgs.qlist(targets) do
-			if self:isEnemy(player) and player:getArmor() and not player:hasShownSkill("xuanfeng|xiaoji") then
+			if self:isEnemy(player) and player:getArmor() and not player:hasSkills(sgs.lose_equip_skill) then
 				return source
 			end
 		end
 	end
 	if not source:getTreasure() then
 		for _,player in sgs.qlist(targets) do
-			if self:isEnemy(player) and player:getTreasure() and not player:hasShownSkill("xuanfeng|xiaoji") then
+			if self:isEnemy(player) and player:getTreasure() and not player:hasSkills(sgs.lose_equip_skill) then
 				return source
 			end
 		end
 	end
 	if not source:getDefensiveHorse() then
 		for _,player in sgs.qlist(targets) do
-			if self:isEnemy(player) and player:getDefensiveHorse() and not player:hasShownSkill("xuanfeng|xiaoji") then
+			if self:isEnemy(player) and player:getDefensiveHorse() and not player:hasSkills(sgs.lose_equip_skill) then
 				return source
 			end
 		end
 	end
 	if not source:getWeapon() then
 		for _,player in sgs.qlist(targets) do
-			if self:isEnemy(player) and player:getWeapon() and not player:hasShownSkill("xuanfeng|xiaoji") then
+			if self:isEnemy(player) and player:getWeapon() and not player:hasSkills(sgs.lose_equip_skill) then
 				return source
 			end
 		end
 	end
 	if not source:getOffensiveHorse() then
 		for _,player in sgs.qlist(targets) do
-			if self:isEnemy(player) and player:getOffensiveHorse() and not player:hasShownSkill("xuanfeng|xiaoji") then
+			if self:isEnemy(player) and player:getOffensiveHorse() and not player:hasSkills(sgs.lose_equip_skill) then
 				return source
 			end
 		end
@@ -622,7 +622,7 @@ sgs.ai_skill_cardchosen.sixu = function(self, who, flags)
 		return cards[1]
 	end
 
-	if self:isEnemy(who) and who:hasShownSkill("liegong|Zhena") and who:isAlive() and who:getWeapon() and not who:hasShownSkill("xuanfeng|xiaoji") then
+	if self:isEnemy(who) and who:hasShownSkill("liegong|Zhena") and who:isAlive() and who:getWeapon() and not who:hasSkills(sgs.lose_equip_skill) then
 		for _,player in ipairs(self.friends) do
 			if player:isAlive() and not player:getWeapon() then
 				local card = who:getWeapon()
@@ -640,7 +640,7 @@ sgs.ai_skill_cardchosen.sixu = function(self, who, flags)
 
 
 
-	if self:isEnemy(who) and who:isAlive() and who:getArmor() and not who:hasShownSkill("xuanfeng|xiaoji") then
+	if self:isEnemy(who) and who:isAlive() and who:getArmor() and not who:hasSkills(sgs.lose_equip_skill) then
 		for _,player in ipairs(self.friends) do
 			if player:isAlive() and not player:getArmor() then
 				local card = who:getArmor()
@@ -648,7 +648,7 @@ sgs.ai_skill_cardchosen.sixu = function(self, who, flags)
 			end
 		end
 	end
-	if self:isEnemy(who) and who:isAlive() and who:getTreasure() and not who:hasShownSkill("xuanfeng|xiaoji") then
+	if self:isEnemy(who) and who:isAlive() and who:getTreasure() and not who:hasSkills(sgs.lose_equip_skill) then
 		for _,player in ipairs(self.friends) do
 			if player:isAlive() and not player:getTreasure() then
 				local card = who:getTreasure()
@@ -656,7 +656,7 @@ sgs.ai_skill_cardchosen.sixu = function(self, who, flags)
 			end
 		end
 	end
-	if self:isEnemy(who) and who:isAlive() and who:getDefensiveHorse() and not who:hasShownSkill("xuanfeng|xiaoji") then
+	if self:isEnemy(who) and who:isAlive() and who:getDefensiveHorse() and not who:hasSkills(sgs.lose_equip_skill) then
 		for _,player in ipairs(self.friends) do
 			if player:isAlive() and not player:getDefensiveHorse() then
 				local card = who:getDefensiveHorse()
@@ -664,7 +664,7 @@ sgs.ai_skill_cardchosen.sixu = function(self, who, flags)
 			end
 		end
 	end
-	if self:isEnemy(who) and who:isAlive() and who:getWeapon() and not who:hasShownSkill("xuanfeng|xiaoji") then
+	if self:isEnemy(who) and who:isAlive() and who:getWeapon() and not who:hasSkills(sgs.lose_equip_skill) then
 		for _,player in ipairs(self.friends) do
 			if player:isAlive() and not player:getWeapon() then
 				local card = who:getWeapon()
@@ -672,7 +672,7 @@ sgs.ai_skill_cardchosen.sixu = function(self, who, flags)
 			end
 		end
 	end
-	if self:isEnemy(who) and who:isAlive() and who:getOffensiveHorse() and not who:hasShownSkill("xuanfeng|xiaoji") then
+	if self:isEnemy(who) and who:isAlive() and who:getOffensiveHorse() and not who:hasSkills(sgs.lose_equip_skill) then
 		for _,player in ipairs(self.friends) do
 			if player:isAlive() and not player:getOffensiveHorse() then
 				local card = who:getOffensiveHorse()
@@ -1072,11 +1072,11 @@ sgs.ai_skill_choice["toushe"] = function(self, choices, data)
 end
 
 sgs.ai_skill_invoke.lixiangjianqiao = function(self, data)
-	return data:toDamage().to:isWounded()
+	return data:toPlayer():isWounded()
 end
 
 sgs.ai_skill_invoke.zishang = function(self, data)
-	return self:isFriend(data:toDamage().to) and self.player:getHp()>=data:toDamage().to:getHp()
+	return self:isFriend(data:toPlayer()) and self.player:getHp()>=data:toPlayer():getHp()
 end
 
 sgs.ai_skill_playerchosen.zishang = function(self, targets, max_num, min_num)
@@ -1107,7 +1107,7 @@ sgs.ai_skill_discard["wenchang"] = function(self, discard_num, min_num, optional
 end
 
 sgs.ai_skill_invoke.yuanxin = function(self, data)
-	return self:isFriend(data:toDamage().to)
+	return self:isFriend(data:toPlayer())
 end
 
 local duanzui_skill={}
@@ -1179,12 +1179,7 @@ sgs.ai_skill_use_func.DuanzuiCard = function(card,use,self)
 end
 
 sgs.ai_skill_invoke.buwu = function(self, data)
-	local damage = data:toDamage()
-	local dest = damage.to
-	if self:isEnemy(dest) and self:willShowForAttack() then
-		return true
-	end
-	return false
+	return self:isEnemy(data:toPlayer()) and self:willShowForAttack()
 end
 
 sgs.ai_skill_invoke.chigui = function(self, data)
@@ -1269,8 +1264,8 @@ sgs.ai_skill_choice["jinghua"] = function(self, choices, data)
 end
 
 sgs.ai_skill_invoke["jiushu"] = function(self, data)
-	local dying_data = data:toDying()
-	local source = dying_data.who
+	--local dying_data = data:toDying()
+	local source = data:toPlayer()
 	for _,player in ipairs(self.friends) do
 		if player:isAlive() and source:objectName() == player:objectName() then
 			return true
@@ -1309,9 +1304,7 @@ sgs.ai_use_value["BoxueCard"] = 8
 sgs.ai_use_priority["BoxueCard"]  = 10
 sgs.ai_card_intention.BoxueCard = -60
 
-sgs.ai_skill_choice.BoxueCard = function(self, choices, data)
-	return "gx"
-end
+sgs.ai_skill_choice.BoxueCard = "gx"
 
 sgs.ai_view_as.cangshan = function(card, player, card_place)
 	local suit = card:getSuitString()
@@ -1424,7 +1417,7 @@ end
 
 --绫波丽
 sgs.ai_skill_invoke.chidun = function(self, data)
-	return self:isFriend(data:toDamage().to) and self.player:getHp()>=data:toDamage().to:getHp() and (self.player:getHp()>1 or self.player:getHandcardNum()<=data:toDamage().to:getHandcardNum())
+	return self:isFriend(data:toPlayer()) and self.player:getHp()>=data:toPlayer():getHp() and (self.player:getHp()>1 or self.player:getHandcardNum()<=data:toPlayer():getHandcardNum())
 end
 
 sgs.ai_skill_invoke.weixiao = function(self, data)
@@ -1466,14 +1459,12 @@ sgs.ai_skill_invoke.huansha = function(self, data)
 end
 
 sgs.ai_skill_invoke.dapo = function(self, data)
-    if data:toDamage().to then
-	  return self:isFriend(data:toDamage().to) and (self:willShowForAttack() or self:isWeak(data:toDamage().to))
+    if data:toPlayer() then
+	  return self:isFriend(data:toPlayer()) and (self:willShowForAttack() or self:isWeak(data:toPlayer()))
 	end
 end
 
-sgs.ai_skill_invoke.wujie = function(self, data)
-	return true
-end
+sgs.ai_skill_invoke.wujie = true
 
 sgs.ai_skill_invoke.shuangqiang = function(self, data)
 	local use=data:toCardUse()
@@ -1496,8 +1487,8 @@ end
 
 --友利奈绪
 sgs.ai_skill_invoke.huanxing = function(self, data)
-  local use = data:toCardUse()
-  return self:isEnemy(use.from) and self:willShowForDefence() and self:getCardsNum("Slash")>0
+  --local use = data:toCardUse()
+  return self:isEnemy(data:toPlayer()) and self:willShowForDefence() --[[and self:getCardsNum("Slash")>0]]
 end
 
 sgs.ai_skill_invoke.fushang = function(self, data)
@@ -1521,12 +1512,12 @@ sgs.ai_skill_invoke.gaoxiao = function(self, data)
 end
 
 sgs.ai_skill_invoke.gaokang = function(self, data)
-  local damage = data:toDamage()
+  --local damage = data:toDamage()
   local can
   for _,c in sgs.qlist(self.player:getHandcards()) do
     if c:isBlack() then can = true end
   end
-  return damage.damage > 0 and self:isFriend(damage.to) and can
+  return --[[damage.damage > 0 and]] self:isFriend(data:toPlayer()) and can
 end
 
 --玛茵
@@ -1648,8 +1639,8 @@ sgs.ai_card_intention.NuequCard = function(self, card, from, tos)
 end
 
 sgs.ai_skill_invoke["BurningLove"] = function(self, data)
-	local damage = data:toDamage()
-	return self:isEnemy(damage.to)
+	--local damage = data:toDamage()
+	return self:isEnemy(data:toPlayer())
 end
 
 sgs.ai_skill_choice.BurningLove = function(self, choices, data)
@@ -2182,8 +2173,8 @@ end
 
 --夕立
 sgs.ai_skill_invoke.kuangquan = function(self, data)
-  local damage = data:toDamage()
-  return self:willShowForAttack() and self:isEnemy(damage.to) and (not damage.to:hasShownSkill("rennai") or damage.to:getMark("@Patience") > 0)
+  --local damage = data:toDamage()
+  return self:willShowForAttack() and self:isEnemy(data:toPlayer()) and (not data:toPlayer():hasShownSkill("rennai") or data:toPlayer():getMark("@Patience") > 0)
 end
 
 --黑雪姬
@@ -2744,9 +2735,9 @@ zmqiji_skill.getTurnUseCard = function(self,room,player,data)
 end
 
 --saber
-local function add_different_kingdoms(self, target, targets)
-   for _,name in ipairs(targets) do
-     local p = findPlayerByObjectName(name)
+function add_different_kingdoms(target, targets)
+   for _,p in ipairs(targets) do
+     --local p = findPlayerByObjectName(name)
 	 if target:isFriendWith(p) then return false end
    end
    return true
@@ -2851,9 +2842,9 @@ end
 
 sgs.ai_skill_invoke.azuyizhi = function(self, data)
 	local source = self.player
-	local damage = data:toDamage()
+	--local damage = data:toDamage()
 	if source:getHp()<=1 and self:getCardsNum("Peach") == 0 and self:getCardsNum("Analeptic") == 0 and self:getCardsNum("GuangyuCard") == 0 then return false end
-	return damage.from ~= nil and self:isEnemy(damage.from) 
+	return data:toPlayer() ~= nil and self:isEnemy(data:toPlayer()) 
 end
 
 sgs.ai_skill_choice.azuyizhi = function(self, choices, data)
@@ -2948,11 +2939,7 @@ sgs.ai_skill_invoke.qiubang= function(self, data)
 end
 
 sgs.ai_skill_invoke.randong= function(self, data)
-  local use = data:toCardUse()
-  local dest = use.to:at(0)
-  if self:isEnemy(use.from) then
-     return true  
-  end
+  return self:isEnemy(self.player:property("randong_from"):toPlayer())
 end
 
 --koromo
@@ -3406,28 +3393,28 @@ sgs.ai_skill_invoke.tucao = function(self, data)
   if not self:willShowForAttack() and not self:willShowForDefence() then
     return false
   end
-  local use = data:toCardUse()
-  local card = use.card
+  --local use = data:toCardUse()
+  local card = self.player:property("tucao_card"):toCard()
   
-  if not use then return false end
+  if not data:toPlayer() then return false end
   
-  if self:isFriend(use.from)then
+  if self:isFriend(data:toPlayer())then
     for _,c in sgs.qlist(self.player:getHandcards()) do
-	  if c:isRed() and c:getTypeId()~= use.card:getTypeId() then
+	  if c:isRed() and c:getTypeId()~= card:getTypeId() then
 	     return true 
 	  end
 	end
   end
   
-  if self:isEnemy(use.from) then
-    local can
-    for _,f in ipairs(self.friends) do
+  if self:isEnemy(data:toPlayer()) then
+    local can = true
+    --[[for _,f in ipairs(self.friends) do
 		if use.to:contains(f) then
 			can = true
 		end
-	end
+	end]]
 	for _,c in sgs.qlist(self.player:getHandcards()) do
-	  if can and c:isBlack() and c:getTypeId()~= use.card:getTypeId() then
+	  if can and c:isBlack() and c:getTypeId()~= card:getTypeId() then
 	     return true 
 	  end
 	end
@@ -3529,10 +3516,10 @@ sgs.ai_use_priority.TiaoyueCard  = 7
 
 --Fubuki
 sgs.ai_skill_invoke.qianlei = function(self, data)
-	local dying_data = data:toDying()
-	local damage = dying_data.damage
-	local der = dying_data.who
-	return self:isEnemy(der) or self:isEnemy(damage.from)
+	--local dying_data = data:toDying()
+	--local damage = dying_data.damage
+	local der = data:toPlayer()
+	return self:isEnemy(data:toPlayer()) or self:isEnemy(self.player:property("qianlei_from"):toPlayer())
 end
 
 sgs.ai_skill_choice["qianlei"] = function(self, choices, data)

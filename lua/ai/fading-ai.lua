@@ -81,39 +81,28 @@ sgs.ai_skill_use["@@pengtiao"] = function(self, prompt)
 end
 
 sgs.ai_skill_invoke.shiji = function(self, data)
-	local use = data:toCardUse()
-	local cards=sgs.QList2Table(self.player:getHandcards())
+	local cards = sgs.QList2Table(self.player:getHandcards())
 	local OK = false
 	for _,card in ipairs(cards) do
 		if card:getNumber() > 6 then
 			OK =true
 		end
 	end
-	if (self:isEnemy(use.from)) then
-        return OK or self.player:getHp() <= use.from:getHp()     
+	if self:isEnemy(data:toPlayer()) then
+        return OK or self.player:getHp() <= data:toPlayer():getHp()     
     end
-
-    return false	
+    return false
 end
 
-sgs.ai_skill_invoke.shiji_recover = function(self, data)
-	return true
-end
+sgs.ai_skill_invoke.shiji_recover = true
 
 sgs.ai_skill_invoke.pengtiao_recover = function(self, data)
-	local dest = data:toPlayer()
-	if (dest and self:isFriend(dest)) then
-       return true	
-	end
-	return false
+	return self:isFriend(data:toPlayer())
 end
 
 --间宫明里
 sgs.ai_skill_invoke.Takamakuri = function(self, data)
-	local damage = data:toDamage()
-	if not damage or not damage.to then return false end
-	if self:isEnemy(damage.to) and not damage.to:hasSkills(sgs.lose_equip_skill) then return true end
-	return false
+	return self:isEnemy(data:toPlayer()) and not data:toPlayer():hasSkills(sgs.lose_equip_skill)
 end
 
 sgs.ai_skill_invoke.Tobiugachi = function(self, data)
@@ -131,13 +120,10 @@ sgs.ai_skill_playerchosen.Tobiugachi = function(self, targets)
 	return self.enemies[1]
 end
 
-sgs.ai_skill_invoke.Fukurouza = function(self, data)
-	return true
-end
+sgs.ai_skill_invoke.Fukurouza = true
 
 sgs.ai_skill_invoke.FukurouzaTobi = function(self, data)
-	if self:isEnemy(self.room:getCurrent()) and not self.room:getCurrent():hasSkills(sgs.immune_skill) then return true end
-	return false
+	return self:isEnemy(self.room:getCurrent()) and not self.room:getCurrent():hasSkills(sgs.immune_skill)
 end
 
 sgs.ai_skill_invoke.FukurouzaTaka = true
@@ -188,13 +174,10 @@ sgs.ai_skill_use_func.XiangsuiCard = function(card,use,self)
 end
 
 --未来
-sgs.ai_skill_invoke.zhouxue = function(self, data)
-	return true
-end
+sgs.ai_skill_invoke.zhouxue = true
 
 sgs.ai_skill_invoke.caoxue = function(self, data)
-    local damage = data:toDamage()
-	return (self:isEnemy(damage.to) and not damage.to:isNude()) or (self:isFriend(damage.to) and damage.to:getJudgingArea():length()>0) 
+	return (self:isEnemy(data:toPlayer()) and not data:toPlayer():isNude()) or (self:isFriend(data:toPlayer()) and data:toPlayer():getJudgingArea():length()>0) 
 end
 
 local xueren_skill = {}
@@ -248,9 +231,7 @@ sgs.ai_view_as.xueren = function(card, player, card_place)
 	end
 end
 
-sgs.ai_skill_choice["zhouxue"] = function(self, choices, data)
-	return "zhouxue_yes"
-end
+sgs.ai_skill_choice["zhouxue"] = "zhouxue_yes"
 
 --艾露莎
 sgs.ai_skill_invoke.huanzhuang = function(self, data)
@@ -468,13 +449,10 @@ end
 
 --悟
 sgs.ai_skill_invoke.revival = function(self, data)
-    local damage = data:toDamage()
-	return self:isFriend(damage.to)
+	return self:isFriend(data:toPlayer())
 end
 
-sgs.ai_skill_invoke.fhuanxing = function(self, data)
-	return true
-end
+sgs.ai_skill_invoke.fhuanxing = true
 
 sgs.ai_skill_playerchosen.fhuanxing = function(self, targets)
 	for _,p in sgs.qlist(targets) do
@@ -489,14 +467,10 @@ sgs.ai_skill_choice.revival = function(self, choices, data)
 	end
 end
 
-sgs.ai_skill_choice.fhuanxing = function(self, choices, data)
-	return "revival_recover"
-end
+sgs.ai_skill_choice.fhuanxing = "revival_recover"
 
 --爱丽丝
-sgs.ai_skill_invoke.zhenghe = function(self, data)
-	return true
-end
+sgs.ai_skill_invoke.zhenghe = true
 
 zhenghe_skill={}
 zhenghe_skill.name="zhenghe"
@@ -747,13 +721,11 @@ sgs.ai_use_priority.YingxianCard = 9
 
 --芽衣子
 sgs.ai_skill_invoke.huaming = function(self, data)
-    local damage = data:toDamage()
-	return self:isFriend(damage.to)
+	return self:isFriend(data:toPlayer())
 end
 
 sgs.ai_skill_choice.huaming= function(self, choices, data)
-	local player = data:toPlayer()
-	if self:isFriend(player) then
+	if self:isFriend(data:toPlayer()) then
 	   return "huaming_show"
 	else
 	   return "cancel"
@@ -783,13 +755,9 @@ sgs.ai_skill_playerchosen.xinyuan = function(self, targets)
 end
 
 --安
-sgs.ai_skill_invoke.zhuangjia = function(self, data)
-    return true
-end 
+sgs.ai_skill_invoke.zhuangjia = true
 
-sgs.ai_skill_invoke.wuzhuang = function(self, data)
-    return true
-end
+sgs.ai_skill_invoke.wuzhuang = true
 
 --妖梦
 sgs.ai_skill_invoke.shuangreny = function(self, data)
@@ -829,9 +797,7 @@ sgs.ai_skill_playerchosen.louguan = function(self, targets)
 end
 
 --时雨
-sgs.ai_skill_invoke.dstp = function(self, data)
-    return true
-end
+sgs.ai_skill_invoke.dstp = true
 
 sgs.ai_skill_invoke.zhongquan = function(self, data)
     for _,p in sgs.qlist(self.room:getOtherPlayers(self.player)) do
@@ -970,9 +936,8 @@ sgs.ai_skill_playerchosen.qifen = function(self, targets)
 end
 
 sgs.ai_skill_invoke.mishi = function(self, data)
-	local dying_data = data:toDying()
-	local source = dying_data.who
-	local mygod= self.player
+	local source = data:toPlayer()
+	local mygod = self.player
 	local good
 	if (self:isFriend(source) and not self:isFriend(mygod)) or (not self:isFriend(source) and self:isFriend(mygod)) then
 		good = true
@@ -1043,10 +1008,10 @@ end
 
 --威尔艾米娜
 sgs.ai_skill_invoke.qiaoshou = function(self, data)
-   if (data:toDamage().to == self.player) then
+   if (data:toPlayer() == self.player) then
       return self.player:hasSkill("tianhuo")
    end
-   return self:isEnemy(data:toDamage().to) and not data:toDamage().to:hasSkill("tianhuo") and not data:toDamage().to:hasSkill("huansha") and (not data:toDamage().to:getArmor() or data:toDamage().to:getArmor():objectName()~="IronArmor") and (not data:toDamage().to:getArmor() or data:toDamage().to:getArmor():objectName()~="PeaceSpell")
+   return self:isEnemy(data:toPlayer()) and not data:toPlayer():hasSkill("tianhuo") and not data:toPlayer():hasSkill("huansha") and (not data:toPlayer():getArmor() or data:toPlayer():getArmor():objectName()~="IronArmor") and (not data:toPlayer():getArmor() or data:toPlayer():getArmor():objectName()~="PeaceSpell")
 end
 
 sgs.ai_skill_discard["qiaoshou"] = function(self, discard_num, min_num, optional, include_equip)
@@ -1058,9 +1023,7 @@ sgs.ai_skill_invoke.guandai = function(self, data)
    return self:willShowForAttack() or self:willShowForDefence()
 end
 
-sgs.ai_skill_invoke.guandai_draw = function(self, data)
-   return true
-end
+sgs.ai_skill_invoke.guandai_draw = true
 
 sgs.ai_skill_use["@@guandai"] = function(self, prompt)
 	local needed = {}
