@@ -773,7 +773,7 @@ wangxiang_skill.getTurnUseCard = function(self,room,player,data)
 	local parsed_card = {}
     table.insert(parsed_card, sgs.Card_Parse("drowning:wangxiang[to_be_decided:"..card1:getNumberString().."]=" .. id .."&wangxiang"))				--水淹七军
 	table.insert(parsed_card, sgs.Card_Parse("threaten_emperor:wangxiang[to_be_decided:"..card1:getNumberString().."]=" .. id .."&wangxiang"))		--挟天子以令诸侯
-	table.insert(parsed_card, sgs.Card_Parse("_exhausted:wangxiang[to_be_decided:"..card1:getNumberString().."]=" .. id .."&wangxiang"))			--以逸待劳
+	table.insert(parsed_card, sgs.Card_Parse("await_exhausted:wangxiang[to_be_decided:"..card1:getNumberString().."]=" .. id .."&wangxiang"))			--以逸待劳
 	table.insert(parsed_card, sgs.Card_Parse("befriend_attacking:wangxiang[to_be_decided:"..card1:getNumberString().."]=" .. id .."&wangxiang"))		--远交近攻
 	table.insert(parsed_card, sgs.Card_Parse("duel:wangxiang[to_be_decided:"..card1:getNumberString().."]=" .. id .."&wangxiang"))				--决斗
 	table.insert(parsed_card, sgs.Card_Parse("dismantlement:wangxiang[to_be_decided:"..card1:getNumberString().."]=" .. id .."&wangxiang"))		--过河拆桥
@@ -2529,7 +2529,7 @@ sgs.ai_skill_invoke.vector= function(self, data)
 	if effect.card:isKindOf("AmazingGrace") then return false end
 	if effect.card:isKindOf("GodSalvation") then return false end
 	if effect.card:isKindOf("ExNihilo") then return false end
-	if effect.card:isKindOf("Exhausted") then return false end]]
+	if effect.card:isKindOf("AwaitExhausted") then return false end]]
 	local n = getTrickIntention(effect.card:getClassName(), self.player)
    return (self:willShowForDefence() or self:willShowForAttack()) and n>0
 end
@@ -2557,7 +2557,7 @@ sgs.ai_skill_cardask["@vector-discard"] = function(self, data)
 	if effect.card:isKindOf("AmazingGrace") then return "." end
 	if effect.card:isKindOf("GodSalvation") then return "." end
 	if effect.card:isKindOf("ExNihilo") then return "." end
-	if effect.card:isKindOf("Exhausted") then return "." end]]
+	if effect.card:isKindOf("AwaitExhausted") then return "." end]]
 	local n = getTrickIntention(effect.card:getClassName(), self.player)
 	if n < 0 then return "." end
 	local power = self.player:getHp() * 2 + self.player:getHandcardNum()
@@ -3153,7 +3153,7 @@ end
 
 sgs.ai_skill_invoke.shoushi = function(self, data)
 	local use = data:toCardUse()
-	return (not use.card:isKindOf("ExNihilo") and not use.card:isKindOf("AmazingGrace") and not use.card:isKindOf("GodSalvation") and not use.card:isKindOf("Exhausted")) 
+	return (not use.card:isKindOf("ExNihilo") and not use.card:isKindOf("AmazingGrace") and not use.card:isKindOf("GodSalvation") and not use.card:isKindOf("AwaitExhausted")) 
 end
 
 sgs.ai_skill_invoke.jicheng = function(self, data)

@@ -3997,7 +3997,7 @@ function SmartAI:damageIsEffective_(damageStruct)
 		if damage < 1 then return false end
 	end
 
-	if to:hasShownSkill("huansha") and nature ~= sgs.DamageStruct_Normal then
+        if to:hasShownSkill("huansha") and nature ~= sgs.DamageStruct_Normal then
 		damage = damage - 1
 		if damage < 1 then return false end
 	end
@@ -4009,6 +4009,10 @@ function SmartAI:damageIsEffective_(damageStruct)
 	if to:hasShownSkill("xuecheng") and from:getMark("@xue") then
 		return false
 	end
+
+        if to:hasShownSkill("tianhuo") and nature == sgs.DamageStruct_Fire then
+                return false
+        end
 
 	if to:hasArmorEffect("PeaceSpell") and not from:hasWeapon("IceSword") and not from:hasShownSkill("zhiman") and nature ~= sgs.DamageStruct_Normal then return false end
 	if to:hasShownSkills("jgyuhuo_pangtong|jgyuhuo_zhuque") and nature == sgs.DamageStruct_Fire then return false end
