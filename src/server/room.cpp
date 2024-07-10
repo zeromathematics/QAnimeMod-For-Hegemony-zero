@@ -3588,8 +3588,8 @@ void Room::exchangeDeputyGeneralTo(ServerPlayer *player, QString general_name)
     names << player->getActualGeneral1Name() << player->getActualGeneral2Name();
 
 
-    //room->handleUsedGeneral("-" + player->getActualGeneral2Name());
-    //room->handleUsedGeneral(general_name);
+    room->handleUsedGeneral("-" + player->getActualGeneral2Name());
+    room->handleUsedGeneral(general_name);
 
     player->removeGeneral(false);
 
@@ -3645,8 +3645,8 @@ void Room::exchangeHeadGeneralTo(ServerPlayer *player, QString general_name)
     QStringList names;
     names << player->getActualGeneral1Name() << player->getActualGeneral2Name();
 
-    //room->handleUsedGeneral("-" + player->getActualGeneral1Name());
-    //room->handleUsedGeneral(general_name);
+    room->handleUsedGeneral("-" + player->getActualGeneral1Name());
+    room->handleUsedGeneral(general_name);
 
     player->removeGeneral(true);
 

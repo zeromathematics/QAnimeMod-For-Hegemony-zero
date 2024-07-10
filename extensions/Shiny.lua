@@ -6028,7 +6028,7 @@ sgs.LoadTranslationTable{
   ["$tonghua"] = "把我们的力量集中到Cure Heart的身上！",
   ["@yaojian"] = "你可以发动一次无距离限制的“耀剑”",
   ["~yaojian"] = "选择任意张手牌→选择【杀】的目标→点击“确定”",
-  ["~tonghua"] = "选择一名角色对其造成伤害",
+  ["&tonghua"] = "选择一名角色对其造成伤害",
 
   ["Eli"] = "绚濑绘里",
   ["@Eli"] = "Love Live系列",
