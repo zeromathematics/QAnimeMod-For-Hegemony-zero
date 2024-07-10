@@ -1284,6 +1284,7 @@ sgs.ai_skill_invoke.lunpo = function(self, data)
 end
 
 sgs.ai_view_as.zizheng = function(card, player, card_place)
+	if player:getMark("zizheng_used") > 0 then return end
     local list = player:getPile("yandan")
 	if list:length()<2 then return end
 	local card1
