@@ -861,6 +861,24 @@ void MainWindow::on_actionGeneral_Overview_triggered()
     GeneralOverview *overview = GeneralOverview::getInstance(this);
     QList<const General *> generals = Sanguosha->getGeneralList();
     QList<const General *> generals_copy = Sanguosha->getGeneralList();
+
+    QStringList customPackageOrder = {"newtest", "revolution", "fading", "herobattle", "Shiny", "hikarikage"};
+
+    foreach (QString package, customPackageOrder){
+        foreach(auto g, generals_copy){
+            if (g->getPackage() == package){
+                generals.removeOne(g);
+                generals << g;
+            }
+        }
+    }
+    foreach(auto g, generals_copy){
+        if (!customPackageOrder.contains(g->getPackage())){
+            generals.removeOne(g);
+            generals << g;
+        }
+    }
+
     foreach(auto g, generals_copy){
         if (g->getPackage() == "selfavatar"){
             generals.removeOne(g);
@@ -935,7 +953,7 @@ void MainWindow::on_actionAbout_triggered()
         const char *time = __TIME__;
         content.append(tr("Compilation time: %1 %2 <br/>").arg(date).arg(time));
 
-        QString project_url = "https://github.com/Mogara/QSanguosha-For-Hegemony";
+        QString project_url = "https://github.com/zeromathematics/QAnimeMod-For-Hegemony-zero";
         content.append(tr("Source code: <a href='%1' style = \"color:#0072c1; \">%1</a> <br/>").arg(project_url));
 
         QString forum_url = "http://qsanguosha.org";

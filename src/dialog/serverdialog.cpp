@@ -184,9 +184,45 @@ QWidget *ServerDialog::createPackageTab()
 
     int i = 0, j = 0;
     int row = 0, column = 0;
-    const QList<const Package *> &packages = Sanguosha->getPackages();
+    QList<const Package *> packages = Sanguosha->getPackages();
+
+    QStringList customPackageOrder = {"newtest", "revolution", "fading", "herobattle", "Shiny", "hikarikage"};
+    QList<const Package *> packages_copy = packages;
+    foreach (QString package, customPackageOrder){
+       foreach (const Package *p, packages_copy) {
+           if (p->objectName() == package){
+               packages.removeOne(p);
+               packages << p;
+           }
+       }
+    }
+
     foreach (const Package *package, packages) {
         if (package->inherits("Scenario"))
+            continue;
+
+        if (package->objectName() == "mariabattleskill")
+            continue;
+
+        if (package->objectName() == "selfavatar")
+            continue;
+
+        if (package->objectName() == "standard")
+            continue;
+
+        if (package->objectName() == "maria-battle")
+            continue;
+
+        if (package->objectName() == "formation")
+            continue;
+
+        if (package->objectName() == "transformation")
+            continue;
+
+        if (package->objectName() == "momentum")
+            continue;
+
+        if (package->objectName() == "test")
             continue;
 
         const QString &extension = package->objectName();
