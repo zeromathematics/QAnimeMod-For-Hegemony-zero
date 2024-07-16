@@ -5295,6 +5295,7 @@ end
 
 function SmartAI:useEquipCard(card, use)
 	if not card then global_room:writeToConsole(debug.traceback()) return end
+	if not card:isAvailable(self.player) then return end
 
     if card:isKindOf("Shinai") then
         for _,p in ipairs(self.enemies) do
