@@ -855,6 +855,24 @@ void GeneralOverview::fillAllGenerals()
     setWindowTitle(origin_window_title);
     QList<const General *> generals = all_generals->keys();
     QList<const General *> generals_copy = all_generals->keys();
+
+    QStringList customPackageOrder = {"newtest", "revolution", "fading", "herobattle", "Shiny", "hikarikage"};
+
+    foreach (QString package, customPackageOrder){
+        foreach(auto g, generals_copy){
+            if (g->getPackage() == package){
+                generals.removeOne(g);
+                generals << g;
+            }
+        }
+    }
+    foreach(auto g, generals_copy){
+        if (!customPackageOrder.contains(g->getPackage())){
+            generals.removeOne(g);
+            generals << g;
+        }
+    }
+
     foreach(auto g, generals_copy){
         if (g->getPackage() == "selfavatar"){
             generals.removeOne(g);
