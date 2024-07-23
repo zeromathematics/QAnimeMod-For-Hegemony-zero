@@ -174,8 +174,8 @@ void StartScene::switchToServer(Server *server)
 void StartScene::showOrganization()
 {
 #ifdef AUDIO_SUPPORT
-    if (shouldMourn)
-        Audio::playAudioOfKyoani();
+    /*if (shouldMourn)
+        Audio::playAudioOfKyoani();*/
 #endif
     QSanSelectableItem *title = new QSanSelectableItem("image/system/dongmansha.png", true);
     if (shouldMourn)

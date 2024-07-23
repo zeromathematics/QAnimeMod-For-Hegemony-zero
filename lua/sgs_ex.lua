@@ -39,6 +39,9 @@ function sgs.CreateTriggerSkill(spec)
 		if type(spec.can_preshow) == "boolean" then
 			skill:setCanPreshow(spec.can_preshow)
 		end
+		if type(spec.attached_lord_skill) == "boolean" then
+			skill:setAttachLord(spec.attached_lord_skill)
+		end
 	else
 		skill = sgs.LuaTriggerSkill(spec.name, frequency, limit_mark, club_name)
 		if type(spec.can_preshow) == "boolean" then
@@ -52,6 +55,9 @@ function sgs.CreateTriggerSkill(spec)
 		end
 		if type(spec.guhuo_type) == "string" and spec.guhuo_type ~= ""then
 			skill:setGuhuoType(spec.guhuo_type)
+		end
+		if type(spec.attached_lord_skill) == "boolean" then
+			skill:setAttachLord(spec.attached_lord_skill)
 		end
 	end
 
@@ -576,6 +582,10 @@ function sgs.CreateViewAsSkill(spec)
 	local limit_mark = spec.limit_mark or ""
 
 	local skill = sgs.LuaViewAsSkill(spec.name, response_pattern, response_or_use, expand_pile, limit_mark)
+
+	if type(spec.attached_lord_skill) == "boolean" then
+		skill:setAttachLord(spec.attached_lord_skill)
+	end
 
 	if type(spec.guhuo_type) == "string" and spec.guhuo_type ~= ""then
 		skill:setGuhuoType(spec.guhuo_type)

@@ -4828,7 +4828,7 @@ void MemberRecruitment::onEffect(const CardEffectStruct &effect) const
         }
     }
     else{
-
+        effect.to->drawCards(1);
     }
 }
 

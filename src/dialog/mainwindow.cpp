@@ -201,6 +201,25 @@ MainWindow::MainWindow(QWidget *parent)
         Audio::playBGM(bgm);
         Audio::setBGMVolume(Config.BGMVolume);
     }
+    else if(Config.EnableBgMusic && shouldMourn){
+        int k = 0;
+        for (int i = 1; i < 1000; i++){
+            if (QFile::exists(QString("audio/system/kyoani%1.ogg").arg(QString::number(i))) && QFile::exists(QString("image/backdrop/main%1.jpg").arg(QString::number(i)))){
+                k = k+1;
+            }
+        }
+        int x = rand()%(k+1);
+        QString bgm;
+        if (x > 0){
+            bgm = QString("audio/system/kyoani%1.ogg").arg(QString::number(x));
+        }
+        else{
+            bgm = QString("audio/system/kyoani.ogg");
+        }
+        Audio::stopBGM();
+        Audio::playBGM(bgm);
+        Audio::setBGMVolume(Config.BGMVolume);
+    }
 
     QList<QAction *> actions;
     actions << ui->actionStart_Game

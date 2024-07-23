@@ -82574,6 +82574,30 @@ fail:
   return SWIG_arg;
 }
 
+static int _wrap_LuaTriggerSkill_setAttachLord(lua_State* L) {
+  int SWIG_arg = 0;
+  LuaTriggerSkill *arg1 = (LuaTriggerSkill *) 0 ;
+  bool arg2 ;
+
+  SWIG_check_num_args("LuaTriggerSkill::setAttachLord",2,2)
+  if(!SWIG_isptrtype(L,1)) SWIG_fail_arg("LuaTriggerSkill::setAttachLord",1,"LuaTriggerSkill *");
+  if(!lua_isboolean(L,2)) SWIG_fail_arg("LuaTriggerSkill::setAttachLord",2,"bool");
+
+  if (!SWIG_IsOK(SWIG_ConvertPtr(L,1,(void**)&arg1,SWIGTYPE_p_LuaTriggerSkill,0))){
+    SWIG_fail_ptr("LuaTriggerSkill_setAttachLord",1,SWIGTYPE_p_LuaTriggerSkill);
+  }
+
+  arg2 = (lua_toboolean(L, 2)!=0);
+  (arg1)->setAttachLord(arg2);
+
+  return SWIG_arg;
+
+  if(0) SWIG_fail;
+
+fail:
+  lua_error(L);
+  return SWIG_arg;
+}
 
 static int _wrap_LuaTriggerSkill_setGuhuoType(lua_State* L) {
   int SWIG_arg = 0;
@@ -83840,6 +83864,7 @@ static swig_lua_method swig_LuaTriggerSkill_methods[]= {
     { "setViewAsSkill", _wrap_LuaTriggerSkill_setViewAsSkill},
     { "setGlobal", _wrap_LuaTriggerSkill_setGlobal},
     { "setCanPreshow", _wrap_LuaTriggerSkill_setCanPreshow},
+    { "setAttachLord", _wrap_LuaTriggerSkill_setAttachLord},
     { "setGuhuoType", _wrap_LuaTriggerSkill_setGuhuoType},
     { "getPriority", _wrap_LuaTriggerSkill_getPriority},
     { "triggerable", _wrap_LuaTriggerSkill_triggerable},
@@ -84937,6 +84962,31 @@ fail:
   return SWIG_arg;
 }
 
+static int _wrap_LuaBattleArraySkill_setAttachLord(lua_State* L) {
+  int SWIG_arg = 0;
+  LuaBattleArraySkill *arg1 = (LuaBattleArraySkill *) 0 ;
+  bool arg2 ;
+
+  SWIG_check_num_args("LuaBattleArraySkill::setAttachLord",2,2)
+  if(!SWIG_isptrtype(L,1)) SWIG_fail_arg("LuaBattleArraySkill::setAttachLord",1,"LuaBattleArraySkill *");
+  if(!lua_isboolean(L,2)) SWIG_fail_arg("LuaBattleArraySkill::setAttachLord",2,"bool");
+
+  if (!SWIG_IsOK(SWIG_ConvertPtr(L,1,(void**)&arg1,SWIGTYPE_p_LuaBattleArraySkill,0))){
+    SWIG_fail_ptr("LuaBattleArraySkill_setAttachLord",1,SWIGTYPE_p_LuaBattleArraySkill);
+  }
+
+  arg2 = (lua_toboolean(L, 2)!=0);
+  (arg1)->setAttachLord(arg2);
+
+  return SWIG_arg;
+
+  if(0) SWIG_fail;
+
+fail:
+  lua_error(L);
+  return SWIG_arg;
+}
+
 static int _wrap_LuaBattleArraySkill_on_record_set(lua_State* L) {
   int SWIG_arg = 0;
   LuaBattleArraySkill *arg1 = (LuaBattleArraySkill *) 0 ;
@@ -85313,6 +85363,7 @@ static swig_lua_method swig_LuaBattleArraySkill_methods[]= {
     { "onTurnBroken", _wrap_LuaBattleArraySkill_onTurnBroken},
     { "record", _wrap_LuaBattleArraySkill_record},
     { "setCanPreshow", _wrap_LuaBattleArraySkill_setCanPreshow},
+    { "setAttachLord", _wrap_LuaBattleArraySkill_setAttachLord},
     {0,0}
 };
 static swig_lua_method swig_LuaBattleArraySkill_meta[] = {
@@ -87402,6 +87453,30 @@ fail:
   return SWIG_arg;
 }
 
+static int _wrap_LuaViewAsSkill_setAttachLord(lua_State* L) {
+  int SWIG_arg = 0;
+  LuaViewAsSkill *arg1 = (LuaViewAsSkill *) 0 ;
+  bool arg2 ;
+
+  SWIG_check_num_args("LuaViewAsSkill::setAttachLord",2,2)
+  if(!SWIG_isptrtype(L,1)) SWIG_fail_arg("LuaViewAsSkill::setAttachLord",1,"LuaViewAsSkill *");
+  if(!lua_isboolean(L,2)) SWIG_fail_arg("LuaViewAsSkill::setAttachLord",2,"bool");
+
+  if (!SWIG_IsOK(SWIG_ConvertPtr(L,1,(void**)&arg1,SWIGTYPE_p_LuaViewAsSkill,0))){
+    SWIG_fail_ptr("LuaViewAsSkill_setAttachLord",1,SWIGTYPE_p_LuaViewAsSkill);
+  }
+
+   arg2 = (lua_toboolean(L, 2)!=0);
+  (arg1)->setAttachLord((char const *)arg2);
+
+  return SWIG_arg;
+
+  if(0) SWIG_fail;
+
+fail:
+  lua_error(L);
+  return SWIG_arg;
+}
 
 static int _wrap_LuaViewAsSkill_viewFilter(lua_State* L) {
   int SWIG_arg = 0;
@@ -88023,6 +88098,7 @@ static swig_lua_method swig_LuaViewAsSkill_methods[]= {
     { "setGuhuoType", _wrap_LuaViewAsSkill_setGuhuoType},
     { "viewFilter", _wrap_LuaViewAsSkill_viewFilter},
     { "viewAs", _wrap_LuaViewAsSkill_viewAs},
+    { "setAttachLord", _wrap_LuaViewAsSkill_setAttachLord},
     {0,0}
 };
 static swig_lua_method swig_LuaViewAsSkill_meta[] = {
@@ -98206,6 +98282,8 @@ static swig_lua_const_info swig_SwigModule_constants[]= {
     {SWIG_LUA_CONSTTAB_INT("GeneralShown", GeneralShown)},
     {SWIG_LUA_CONSTTAB_INT("GeneralHidden", GeneralHidden)},
     {SWIG_LUA_CONSTTAB_INT("GeneralRemoved", GeneralRemoved)},
+    {SWIG_LUA_CONSTTAB_INT("GeneralTransformed", GeneralTransformed)},
+    {SWIG_LUA_CONSTTAB_INT("GeneralRevived", GeneralRevived)},
     {SWIG_LUA_CONSTTAB_INT("DFDebut", DFDebut)},
     {SWIG_LUA_CONSTTAB_INT("NumOfEvents", NumOfEvents)},
     {SWIG_LUA_CONSTTAB_INT("Card_Spade", Card::Spade)},

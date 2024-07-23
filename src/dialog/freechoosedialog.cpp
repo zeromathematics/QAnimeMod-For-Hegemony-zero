@@ -73,6 +73,26 @@ FreeChooseDialog::FreeChooseDialog(QWidget *parent, ButtonGroupType type)
     group->setExclusive(type == Exclusive);
 
     QList<const General *> all_generals = Sanguosha->getGeneralList();
+    QList<const General *> all_generals_copy = Sanguosha->getGeneralList();
+
+    QStringList customPackageOrder = {"newtest", "revolution", "fading", "herobattle", "Shiny", "hikarikage"};
+
+    foreach (QString package, customPackageOrder){
+        foreach(auto g, all_generals_copy){
+            if (g->getPackage() == package){
+                all_generals.removeOne(g);
+                all_generals << g;
+            }
+        }
+    }
+    foreach(auto g, all_generals_copy){
+        if (!customPackageOrder.contains(g->getPackage())){
+            all_generals.removeOne(g);
+            all_generals << g;
+        }
+    }
+
+
     QMap<QString, QList<const General *> > map;
     foreach (const General *general, all_generals) {
         if (general->isTotallyHidden())

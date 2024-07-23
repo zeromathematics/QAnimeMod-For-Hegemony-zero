@@ -54,6 +54,10 @@ public:
     {
         this->guhuo_type = type;
     }
+    inline void setAttachLord(bool type)
+    {
+        this->attached_lord_skill = type;
+    }
     virtual QString getGuhuoBox() const;
 
     virtual int getPriority() const;
@@ -93,6 +97,10 @@ public:
     inline void setCanPreshow(bool preshow)
     {
         this->can_preshow = preshow;
+    }
+    inline void setAttachLord(bool type)
+    {
+        this->attached_lord_skill = type;
     }
 
     virtual int getPriority() const;
@@ -147,6 +155,10 @@ public:
     inline void setGuhuoType(const char *type)
     {
         this->guhuo_type = type;
+    }
+    inline void setAttachLord(bool type)
+    {
+        this->attached_lord_skill = type;
     }
     virtual QString getGuhuoBox() const;
 
