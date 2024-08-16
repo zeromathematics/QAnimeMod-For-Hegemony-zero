@@ -1003,7 +1003,7 @@ bool Room::getResult(ServerPlayer *player, time_t timeOut)
         // Also note that lock can be released when a player switch to trust or offline status.
         // It is ensured by trustCommand and reportDisconnection that the player reports these status
         // is the player waiting the lock. In these cases, the serial number and command type doesn't matter.
-        //player->acquireLock(ServerPlayer::SEMA_MUTEX);
+        player->acquireLock(ServerPlayer::SEMA_MUTEX);
         validResult = player->m_isClientResponseReady;
     }
     player->m_expectedReplyCommand = S_COMMAND_UNKNOWN;
@@ -1110,7 +1110,6 @@ bool Room::askForSkillInvoke(ServerPlayer *player, const QString &skill_name, co
             if (mainskill && !getTag(mainskill->objectName() + player->objectName()).toStringList().isEmpty())
                 skillCommand << getTag(mainskill->objectName() + player->objectName()).toStringList().last();
         }
-        //doRequest(player, S_COMMAND_ASK_PEACH, skillCommand, true);
         if (!doRequest(player, S_COMMAND_INVOKE_SKILL, skillCommand, true) || skill_name.endsWith("!"))
             invoked = false;
         else {
