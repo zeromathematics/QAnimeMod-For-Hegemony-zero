@@ -192,6 +192,7 @@ public slots:
     void removePlayer(const QString &player_name);
     void loseCards(int moveId, QList<CardsMoveStruct> moves);
     void getCards(int moveId, QList<CardsMoveStruct> moves);
+    void updateHandPile(const QString &pile_name, bool add, QList<int> card_ids);
     void keepLoseCardLog(const CardsMoveStruct &move);
     void keepGetCardLog(const CardsMoveStruct &move);
     // choice dialog
@@ -471,6 +472,7 @@ private slots:
     void removeLightBox();
 
     void showCard(const QString &player_name, int card_id);
+    void moveCardToPile(const QString &player_name, QList<int> card_ids, const QString &skill_name);
 
     void speak();
 

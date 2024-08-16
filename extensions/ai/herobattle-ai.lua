@@ -1252,7 +1252,7 @@ sgs.ai_skill_use_func["#guilingCard"] = function(card,use,self)
 	local enemies = self.enemies
 	self:sort(enemies, "defense")
 	for _,e in ipairs(enemies) do
-		if targets:length() < n and not e:hasShownSkill("huansha") then
+		if targets:length() < n and not e:hasShownSkill("huansha") and add_different_kingdoms(e, targets) then
 			targets:append(e)
 		end
 	end
@@ -1260,7 +1260,7 @@ sgs.ai_skill_use_func["#guilingCard"] = function(card,use,self)
 	   local a = targets:length()
        local x = math.min(n - a, self.player:getLostHp())
        for _,p in sgs.qlist(self.room:getOtherPlayers(self.player)) do
-		  if targets:length() < a+x and not targets:contains(p) then
+		  if targets:length() < a+x and not targets:contains(p) and add_different_kingdoms(p, targets) then
 			targets:append(p)
 		  end
 	   end
@@ -1712,13 +1712,12 @@ sgs.ai_skill_invoke["#zhiliansShown"] = true
 
 sgs.ai_skill_playerchosen["#zhiliansShown"] = function(self)
 	local result = {}
-	for _,name in ipairs(self.friends) do
-		if #name >1 then
-	       table.insert(result, name[1])
-		elseif #name == 1 then
-	       table.insert(result, name[1])   
-		end
-	end
+	local names = self.friends_noself
+	if #names >1 then
+		table.insert(result, names[1])
+	 elseif #name == 1 then
+		table.insert(result, names[1])   
+	 end
 	return result
 end
 

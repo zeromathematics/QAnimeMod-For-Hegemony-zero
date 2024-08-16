@@ -140,6 +140,10 @@ void CardItem::onTransferEnabledChanged()
 
 const Card *CardItem::getCard() const
 {
+    if (m_cardId != Card::S_UNKNOWN_CARD_ID)
+        return Sanguosha->getCard(m_cardId);
+    if (Vcard)
+        return Vcard;
     return Sanguosha->getCard(m_cardId);
 }
 
@@ -444,14 +448,19 @@ void CardItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidge
         if (_m_showFootnote)
             painter->drawImage(rect, _m_footnoteImage);
     } else if (Vcard != NULL && Vcard->isVirtualCard()) {
-        painter->drawPixmap(G_COMMON_LAYOUT.m_cardSuitArea, G_ROOM_SKIN.getCardSuitPixmap(Vcard->getSuit()));
+        if (Vcard->isKindOf("SkillCard"))
+            painter->drawPixmap(G_COMMON_LAYOUT.m_cardMainArea, G_ROOM_SKIN.getCardMainPixmap(Vcard->getClassName()));
+        else {
+            painter->drawPixmap(G_COMMON_LAYOUT.m_cardMainArea, G_ROOM_SKIN.getCardMainPixmap(Vcard->objectName()));
+            painter->drawPixmap(G_COMMON_LAYOUT.m_cardSuitArea, G_ROOM_SKIN.getCardSuitPixmap(Vcard->getSuit()));
 
-        if (Vcard->getNumber() > 0)
-            painter->drawPixmap(G_COMMON_LAYOUT.m_cardNumberArea, G_ROOM_SKIN.getCardNumberPixmap(Vcard->getNumber(), !Vcard->isRed()));
+            if (Vcard->getNumber() > 0)
+                painter->drawPixmap(G_COMMON_LAYOUT.m_cardNumberArea, G_ROOM_SKIN.getCardNumberPixmap(Vcard->getNumber(), !Vcard->isRed()));
 
-        if (Vcard->isTransferable())
-            painter->drawPixmap(G_COMMON_LAYOUT.m_cardTransferableIconArea,
-            G_ROOM_SKIN.getPixmap(QSanRoomSkin::S_SKIN_KEY_CARD_TRANSFERABLE_ICON));
+            if (Vcard->isTransferable())
+                painter->drawPixmap(G_COMMON_LAYOUT.m_cardTransferableIconArea,
+                G_ROOM_SKIN.getPixmap(QSanRoomSkin::S_SKIN_KEY_CARD_TRANSFERABLE_ICON));
+        }
     }
 
     if (!_m_avatarName.isEmpty()) {

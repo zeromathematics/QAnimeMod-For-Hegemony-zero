@@ -1031,19 +1031,19 @@ bool GameRule::effect(TriggerEvent triggerEvent, Room *room, ServerPlayer *playe
             if (player->getMark("CompanionEffect") > 0) {
                 //room->removePlayerMark(player, "CompanionEffect");
                 room->addPlayerMark(player, "@companion");
-                room->attachSkillToPlayer(player, "companion");
+                //room->attachSkillToPlayer(player, "companion");
             }
             if (player->getMark("HalfMaxHpLeft") > 0) {
                 room->removePlayerMark(player, "HalfMaxHpLeft");
                 room->addPlayerMark(player, "@halfmaxhp");
-                room->attachSkillToPlayer(player, "halfmaxhp");
+                //room->attachSkillToPlayer(player, "halfmaxhp");
             }
         }
         if (player->isAlive() && data.toBool()) {
             if (player->getGeneral()->getKingdom() == "careerist" && !room->getTag(player->objectName()+"careerfirstshow").toBool()){
                 room->setTag(player->objectName()+"careerfirstshow", QVariant(true));
                 room->addPlayerMark(player, "@careerist");
-                room->attachSkillToPlayer(player, "careerman");
+                //room->attachSkillToPlayer(player, "careerman");
             }
         }
 

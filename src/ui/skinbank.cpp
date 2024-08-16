@@ -426,6 +426,15 @@ QPixmap QSanRoomSkin::getGeneralPixmap(const QString &generalName, GeneralIconSi
     QString id = QString::number(skinId);
     QString key = QString(S_SKIN_KEY_PLAYER_GENERAL_ICON)
         .arg(size).arg(id).arg(name);
+
+    //for avatar simplification
+    if (size == S_GENERAL_ICON_SIZE_TINY || size == S_GENERAL_ICON_SIZE_DASHBOARD_SECONDARY || size == S_GENERAL_ICON_SIZE_DASHBOARD_PRIMARY || size == S_GENERAL_ICON_SIZE_KOF){
+        bool exist =  QFile::exists(QString("hero-skin/%1/%2/avatar.png").arg(name).arg(id));
+        if (!exist){
+            id = QString::number(0);
+        }
+    }
+
     if (isImageKeyDefined(key)) //exactly match
         return getPixmap(key);
 
@@ -441,6 +450,7 @@ QPixmap QSanRoomSkin::getGeneralPixmap(const QString &generalName, GeneralIconSi
 
     key = QString(S_SKIN_KEY_PLAYER_GENERAL_ICON) //try the default match
         .arg(size);
+
     return getPixmap(key, name, id, true);
 }
 

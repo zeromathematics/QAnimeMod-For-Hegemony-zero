@@ -50244,6 +50244,34 @@ fail:
   return SWIG_arg;
 }
 
+static int _wrap_Package_insertRelatedAttachSkill(lua_State* L) {
+  int SWIG_arg = 0;
+  Package *arg1 = (Package *) 0 ;
+  char *arg2 = (char *) 0 ;
+  char *arg3 = (char *) 0 ;
+
+  SWIG_check_num_args("Package::insertCompanionSkill",3,3)
+  if(!SWIG_isptrtype(L,1)) SWIG_fail_arg("Package::insertRelatedAttachSkill",1,"Package *");
+  if(!SWIG_lua_isnilstring(L,2)) SWIG_fail_arg("Package::insertRelatedAttachSkill",2,"char const *");
+  if(!SWIG_lua_isnilstring(L,3)) SWIG_fail_arg("Package::insertRelatedAttachSkill",3,"char const *");
+
+  if (!SWIG_IsOK(SWIG_ConvertPtr(L,1,(void**)&arg1,SWIGTYPE_p_Package,0))){
+    SWIG_fail_ptr("Package_insertRelatedAttachSkill",1,SWIGTYPE_p_Package);
+  }
+
+  arg2 = (char *)lua_tostring(L, 2);
+  arg3 = (char *)lua_tostring(L, 3);
+
+  (arg1)->insertRelatedAttachSkill((char const *)arg2,(char const *)arg3);
+
+  return SWIG_arg;
+
+  if(0) SWIG_fail;
+
+fail:
+  lua_error(L);
+  return SWIG_arg;
+}
 
 static void swig_delete_Package(void *obj) {
 Package *arg1 = (Package *) obj;
@@ -50264,6 +50292,7 @@ static swig_lua_method swig_Package_methods[]= {
     { "insertRelatedSkills", _wrap_Package_insertRelatedSkills},
     { "insertCompanionSkill", _wrap_Package_insertCompanionSkill},
     { "insertConvertPairs", _wrap_Package_insertConvertPairs},
+    { "insertRelatedAttachSkill", _wrap_Package_insertRelatedAttachSkill},
     {0,0}
 };
 static swig_lua_method swig_Package_meta[] = {

@@ -8997,11 +8997,7 @@ public:
 
     virtual bool viewFilter(const QList<const Card *> &selected, const Card *to_select) const
     {
-        if (selected.length() >= Self->getMaxHp())
-            return !Self->isJilei(to_select) && Self->getTreasure() && Self->getTreasure()->isKindOf("Luminouspearl")
-                    && to_select != Self->getTreasure() && !selected.contains(Self->getTreasure());
-
-        return !Self->isJilei(to_select) && selected.length() < Self->getMaxHp();
+        return selected.length() < Self->getMaxHp();
     }
 
     virtual const Card *viewAs(const QList<const Card *> &cards) const

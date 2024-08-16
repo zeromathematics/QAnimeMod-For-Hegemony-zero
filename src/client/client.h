@@ -385,6 +385,7 @@ signals:
     void player_revived(const QString &who);
     void dashboard_death(const QString &who);
     void card_shown(const QString &player_name, int card_id);
+    void pile_shown(const QString &player_name, QList<int> card_ids, const QString &skill_name);
     void log_received(const QStringList &log_str);
     void guanxing(const QList<int> &card_ids, bool single_side);
     void cardchoose(const QList<int> &upcard_ids, const QList<int> &downcard_ids, const QString &reason, const QString &pattern, bool moverestricted, int min_num, int max_num);
@@ -411,6 +412,8 @@ signals:
 
     void move_cards_lost(int moveId, QList<CardsMoveStruct> moves);
     void move_cards_got(int moveId, QList<CardsMoveStruct> moves);
+
+    void handpile_changed(const QString &pile_name, bool add, QList<int> card_ids);
 
     void skill_attached(const QString &skill_name, bool from_left);
     void skill_detached(const QString &skill_name, bool head = true);

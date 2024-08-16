@@ -600,6 +600,25 @@ void Client::getCards(const QVariant &arg)
             ClientPlayer *to = qobject_cast<ClientPlayer *>(move.to);
             if (to != NULL)
                 to->changePile(move.to_pile_name, true, move.card_ids);
+
+            const QString &pile_name = move.to_pile_name;
+
+            if (move.to && move.to->getHandPileList(false).contains(pile_name)) {
+                if (Self == move.to)
+                    emit handpile_changed(pile_name, true, move.card_ids);
+            } else if (move.from_place != Player::PlaceTable && move.from_place != Player::PlaceJudge) {
+                QList<int> card_ids;
+                foreach(int card_id, move.card_ids) {
+                    if (card_id != Card::S_UNKNOWN_CARD_ID)
+                    card_ids << card_id;
+                }
+                if (!card_ids.isEmpty())
+                    emit pile_shown(move.to_player_name, card_ids, pile_name);
+
+            }
+
+            if (move.from_place == Player::PlaceSpecial)
+                continue;
         } else {
             foreach(int card_id, move.card_ids)
                 _getSingleCard(card_id, move); // DDHEJ->DDHEJ, DDH/EJ->EJ
@@ -627,6 +646,11 @@ void Client::loseCards(const QVariant &arg)
             ClientPlayer *from = qobject_cast<ClientPlayer *>(move.from);
             if (from != NULL)
                 from->changePile(move.from_pile_name, false, move.card_ids);
+            const QString &pile_name = move.from_pile_name;
+            if ((pile_name.startsWith("&") || pile_name == "wooden_ox") && move.from && Self == move.from)
+                emit handpile_changed(pile_name, false, move.card_ids);
+            if (move.to_place == Player::PlaceSpecial)
+                continue;
         } else {
             foreach(int card_id, move.card_ids)
                 _loseSingleCard(card_id, move); // DDHEJ->DDHEJ, DDH/EJ->EJ
@@ -731,7 +755,7 @@ void Client::onPlayerResponseCard(const Card *card, const QList<const Player *> 
             notifyServer(S_COMMAND_PINDIAN, JsonArray() << S_GUANXING_MOVE << QVariant::fromValue(Self->objectName()) << card->getEffectiveId());
         }
 
-        if (card->isVirtualCard() && !card->parent()&& !card->isKindOf("CompanionCard") && !card->isKindOf("HalfMaxHpCard") && !card->isKindOf("FirstShowCard") && !card->isKindOf("AnimeShanaCard"))
+        if (card->isVirtualCard() && !card->parent()&& !card->isKindOf("CompanionCard") && !card->isKindOf("HalfMaxHpCard") && !card->isKindOf("FirstShowCard") && !card->isKindOf("CareermanCard") && !card->isKindOf("AnimeShanaCard"))
             delete card;
     }
 

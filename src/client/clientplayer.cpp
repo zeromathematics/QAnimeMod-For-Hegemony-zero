@@ -285,7 +285,7 @@ void ClientPlayer::setMark(const QString &mark, int value, bool is_tip)
         emit duanchang_invoked();
 
     if (mark == "@companion" || mark == "@halfmaxhp" || mark == "@firstshow" || mark == "@careerist" || mark.startsWith("anime")) // for event cards
-        emit update_markcard();
+       emit update_markcard();
 }
 
 QStringList ClientPlayer::getBigKingdoms(const QString &, MaxCardsType::MaxCardsCount type) const

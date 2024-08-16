@@ -194,6 +194,7 @@ RoomScene::RoomScene(QMainWindow *main_window)
     connect(ClientInstance, &Client::player_revived, this, &RoomScene::revivePlayer);
     connect(ClientInstance, &Client::dashboard_death, this, &RoomScene::setDashboardShadow);
     connect(ClientInstance, &Client::card_shown, this, &RoomScene::showCard);
+    connect(ClientInstance, &Client::pile_shown, this, &RoomScene::moveCardToPile);
     connect(ClientInstance, &Client::gongxin, this, &RoomScene::doGongxin);
     connect(ClientInstance, &Client::focus_moved, this, &RoomScene::moveFocus);
     connect(ClientInstance, &Client::emotion_set, this, (void (RoomScene::*)(const QString &, const QString &, bool, int))(&RoomScene::setEmotion));
@@ -206,6 +207,7 @@ RoomScene::RoomScene(QMainWindow *main_window)
     connect(ClientInstance, &Client::standoff, this, &RoomScene::onStandoff);
     connect(ClientInstance, &Client::move_cards_lost, this, &RoomScene::loseCards);
     connect(ClientInstance, &Client::move_cards_got, this, &RoomScene::getCards);
+    connect(ClientInstance, &Client::handpile_changed, this, &RoomScene::updateHandPile);
     connect(ClientInstance, &Client::nullification_asked, dashboard, &Dashboard::controlNullificationButton);
     connect(ClientInstance, &Client::start_in_xs, this, &RoomScene::startInXs);
 
@@ -2096,6 +2098,11 @@ void RoomScene::loseCards(int moveId, QList<CardsMoveStruct> card_moves)
     }
 }
 
+void RoomScene::updateHandPile(const QString &pile_name, bool add, QList<int> card_ids)
+{
+    dashboard->updateHandPile(pile_name, add, card_ids);
+}
+
 QString RoomScene::_translateMovement(const CardsMoveStruct &move)
 {
     CardMoveReason reason = move.reason;
@@ -2494,10 +2501,10 @@ void RoomScene::useSelectedCard()
     const ViewAsSkill *skill = dashboard->currentSkill();
     if (skill)
         dashboard->stopPending();
-    else {
+    /*else {
         foreach (const QString &pile, Self->getHandPileList(false))
             dashboard->retractPileCards(pile);
-    }
+    }*/
 }
 
 void RoomScene::onEnabledChange()
@@ -4162,6 +4169,30 @@ void RoomScene::showCard(const QString &player_name, int card_id)
 
     QString card_str = QString::number(card_id);
     log_box->appendLog("$ShowCard", player->objectName(), QStringList(), card_str);
+}
+
+void RoomScene::moveCardToPile(const QString &player_name, QList<int> card_ids, const QString &skill_name)
+{
+    const ClientPlayer *player = ClientInstance->getPlayer(player_name);
+
+    QList<CardItem *> card_items;
+    foreach (int card_id, card_ids) {
+        const Card *card = Sanguosha->getCard(card_id);
+        CardItem *item = new CardItem(card);
+        item->setOpacity(0.0);
+        card_items.append(item);
+    }
+
+    CardMoveReason reason(CardMoveReason::S_REASON_DEMONSTRATE, player->objectName(), QString(), skill_name, QString());
+    bringToFront(m_tablePile);
+    CardsMoveStruct move;
+    move.from_place = Player::DrawPile;
+    move.to_place = Player::PlaceTable;
+    move.reason = reason;
+    foreach (CardItem *card_item, card_items) {
+        card_item->setFootnote(_translateMovement(move));
+    }
+    m_tablePile->addCardItems(card_items, move);
 }
 
 void RoomScene::chooseSkillButton()

@@ -401,6 +401,8 @@ void PlayerCardContainer::updatePile(const QString &pile_name)
     if (!shownpilename.isEmpty() && shownpilename == pile_name)
         hidePile();
 
+    if (Self == player && Self->getHandPileList(false).contains(pile_name)) return;
+
     if (pile.size() == 0) {
         if (_m_privatePiles.contains(pile_name)) {
             delete _m_privatePiles[pile_name];
