@@ -808,9 +808,19 @@ qiesheng = sgs.CreateTriggerSkill{
 		return ""
 	end ,
 	on_cost = function(self, event, room, player, data)
-		if player:hasShownSkill(self:objectName()) or player:askForSkillInvoke(self, data) then
-			room:broadcastSkillInvoke(self:objectName(), player)
-			return true
+		if event == sgs.Damaged then
+			local damage = data:toDamage()
+			local who = sgs.QVariant()
+			who:setValue(damage.from)
+			if player:hasShownSkill(self:objectName()) or player:askForSkillInvoke(self, who) then
+				room:broadcastSkillInvoke(self:objectName(), player)
+				return true
+			end
+		else
+			if player:hasShownSkill(self:objectName()) or player:askForSkillInvoke(self, data) then
+				room:broadcastSkillInvoke(self:objectName(), player)
+				return true
+			end
 		end
 		return false
 	end ,
@@ -4067,7 +4077,7 @@ chaoshi = sgs.CreateTriggerSkill{
 	can_trigger = function(self, event, room, player, data)
 		if event == sgs.CardFinished then
 		   local use = data:toCardUse()
-		   if player and player:isAlive() and player:hasSkill(self:objectName()) and not use.card:isKindOf("SkillCard")and player:getMark("&chaoshi_js") < 2 then
+		   if player and player:isAlive() and player:hasSkill(self:objectName()) and (use.card:isKindOf("BasicCard") or use.card:isKindOf("TrickCard") or use.card:isKindOf("EquipCard")) and player:getMark("&chaoshi_js") < 2 then
 				for _,c in sgs.qlist(player:getCards("h")) do
 					if c:getSuit() == use.card:getSuit() then
 						return self:objectName()     
