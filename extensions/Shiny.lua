@@ -7085,7 +7085,7 @@ sgs.LoadTranslationTable{
   ["designer:Kozue"] = "花宫瑞业",
   ["cv:Kozue"] = "花宫初奈",
   ["illustrator:Kozue"] = "在下是子龙",
-  ["%Kozue"] = "“”",
+  ["%Kozue"] = "“立如芍药，坐若牡丹，行犹百合。”",
   
   ["huaqian"] = "花牵",
   ["KozueHuaqian$"] = "image=image/animate/KozueHuaqian.png",
