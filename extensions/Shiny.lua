@@ -745,7 +745,7 @@ heyix = sgs.CreateViewAsSkill{
 		return vs
 	end,
 	enabled_at_play = function(self, player)
-		return player:usedTimes("#heyixCard") < 1
+		return not player:hasUsed("ViewAsSkill_heyixCard")
 	end,
 }
 
@@ -1363,7 +1363,7 @@ weiji = sgs.CreateOneCardViewAsSkill{
 		return vs
 	end,
 	enabled_at_play = function(self, player)
-		return player:getHandcardNum() < player:getMaxHp() and player:getPile("heritage"):length()> 0
+		return player:getHandcardNum() < player:getMaxHp() and player:getPile("heritage"):length() > 0 and player:usedTimes("#weijiCard") < math.max(1, player:getLostHp())
 	end,
 }
 
@@ -3939,7 +3939,7 @@ xiuxing = sgs.CreateZeroCardViewAsSkill{
 		return new_card		
 	end,	
 	enabled_at_play = function(self, player)
-		return player:usedTimes("#xiuxingCard") < 1
+		return not player:hasUsed("ViewAsSkill_xiuxingCard")
 	end,
 }
 
@@ -4835,7 +4835,7 @@ baoshix = sgs.CreateViewAsSkill{
 	n = 999 ,
 	guhuo_type = "b",
     view_filter = function(self, selected, to_select)
-	   local n = 1 + sgs.Self:getMark("#baoshix_jishu")------local n = math.max(1, sgs.Self:getMark("#baoshix_jishu"))
+	   local n = 1 + sgs.Self:getMark("#baoshix_jishu")
 	   if sgs.Self:getMark("baoshix_analeptic_used") > 0 and sgs.Self:getMark("baoshix_peach_used") > 0 and sgs.Self:getMark("baoshix_tacos_used") > 0 and sgs.Self:getMark("baoshix_mapo_tofu_used") > 0then
 	   return false end
 	   if #selected >= n then return false end
@@ -6481,13 +6481,13 @@ sgs.LoadTranslationTable{
   ["%Ren"] = "“秋叶红，歌踌躇，叶月恋。”",
   
   ["jichan"] = "继产",
-  [":jichan"] = "锁定技，当你明置此人物牌时/其他角色死亡时，你将牌堆顶两张牌背面朝上置于人物牌上，称为“产”。你的手牌上限+X（X为“产”数）。",
-  ["chan"] = "产",
+  [":jichan"] = "锁定技，当你明置此人物牌时，或其他角色死亡时，你将牌堆顶两张牌背面朝上置于人物牌上，称为“产”。你的手牌上限+X（X为“产”数）。",
+  ["heritage"] = "产",
   ["$jichan1"] = "受到妈妈的影响，我从小就与音乐结缘。",
   ["$jichan2"] = "结丘是我妈妈创立的学校。",
   ["RenJichan$"] = "image=image/animate/RenJichan.png",
   ["weiji"] = "危计",
-  [":weiji"] = "出牌阶段，若你的手牌数＜体力上限，则你可以将一张“产”收入手牌，然后重铸任意张手牌。",
+  [":weiji"] = "<font color=\"green\"><b>出牌阶段限X次（X为你已损失的体力值且至少为1），</b></font>若你的手牌数＜体力上限，则你可以将一张“产”收入手牌，然后重铸任意张手牌。",
   ["$weiji1"] = "我想继续唱歌！希望你能帮忙恢复……",
   ["$weiji2"] = "那个……冒昧打扰下，我还想参加live！",
   ["@weijiglobal"] = "继产",
@@ -6640,7 +6640,7 @@ sgs.LoadTranslationTable{
   ["%Eli"] = "“哈啦咻！”",
   
   ["shouwu"] = "授舞",
-  [":shouwu"] = "出牌阶段限一次，你可以展示任意张不同牌名的黑色手牌并选择等量名没有技能“雪晕”的角色，这些角色获得技能“雪晕”直到其回合结束",
+  [":shouwu"] = "出牌阶段限一次，你可以展示任意张不同牌名的黑色手牌并选择等量名没有技能“雪晕”的角色，这些角色获得技能“雪晕”直到其回合结束。",
   ["$shouwu1"] = "能获邀在校庆上演出，真是荣幸之至。我们一定要加紧练习才行。",
   ["$shouwu2"] = "为了不输给这些竞争对手，我们一定要继续勇攀高峰。",
   ["xianju"] = "先举",
@@ -6876,7 +6876,7 @@ sgs.LoadTranslationTable{
   ["$jiaoxin1"] = "诶，有没有信赖……是说信赖制作人吗？嗯……",
   ["$jiaoxin2"] = "今天，相互夸奖对方努力的地方吧。制作人先开始。",
   ["xiuxing"] = "修性",
-  [":xiuxing"] = "<font color=\"green\"><b>出牌阶段限一次，</b></font>你可以令一名角色记录其此时手牌数，然后出牌阶段结束时，其将手牌摸或弃置至记录值（最多摸至5张、弃5张牌）。",
+  [":xiuxing"] = "出牌阶段限一次，你可以令一名角色记录其此时手牌数，然后出牌阶段结束时，其将手牌摸或弃置至记录值（最多摸至5张、弃5张牌）。",
   ["$xiuxing1"] = "各种事情都辛苦了——诶？是还要我再说点什么吗？",
   ["$xiuxing2"] = "命运，会相信吗？我……我或许不明白呢。",
   ---["&xiuxing"] = "你可以发动“修性”，选择一名角色记录其手牌数",
@@ -7014,7 +7014,7 @@ sgs.LoadTranslationTable{
   ["%Umi"] = "“Love Arrow Shoot!”",
 
   ["lixun"] = "厉训",
-  [":lixun"] = "每回合限一次，准备或结束阶段开始时，你可以将装备区或判定区内的一张牌当目标上限为X的冰【杀】使用（X为你场上的牌数，最少为1），然后你摸一张牌且攻击范围永久+1（最多+4）。",
+  [":lixun"] = "<font color=\"green\"><b>每回合限一次，</b></font>，准备或结束阶段开始时，你可以将装备区或判定区内的一张牌当目标上限为X的冰【杀】使用（X为你场上的牌数，最少为1），然后你摸一张牌且攻击范围永久+1（最多+4）。",
   ["@lixun"] = "厉训",
   ["~lixun"] = "选择目标",
   ["lixun_weapon"] = "攻击范围+",
@@ -7046,7 +7046,7 @@ sgs.LoadTranslationTable{
   ["$baoshix2"] = "既然来到了函馆，当然要享尽当地美食zura～♪",
   ["changyue"] = "常阅",
   ["#changyues"] = "常阅",
-  [":changyue"] = "每回合限一次，其他角色使用普通锦囊牌结算后，你可以交给其一张相同花色的牌获得之；你使用普通锦囊牌结算后，你可以获得一名其他角色场上一张相同花色的牌，令其获得之。",
+  [":changyue"] = "<font color=\"green\"><b>每回合限一次，</b></font>其他角色使用普通锦囊牌结算后，你可以交给其一张相同花色的牌获得之；你使用普通锦囊牌结算后，你可以获得一名其他角色场上一张相同花色的牌，令其获得之。",
   ["@changyue"] = "选择一张与此牌花色相同的牌",
   ["changyue-invoke"] = "选择一名其他角色获得其区域内与此牌花色相同的牌",
   ["$changyue1"] = "咱非常喜爱图书委员的工作。能待在书本环绕的空间里，真是一种幸福zura。",
@@ -7110,7 +7110,7 @@ sgs.LoadTranslationTable{
   ["jianxing"] = "践行",
   ["jianxing1$"] = "image=image/animate/jianxing1.png",
   ["jianxing2$"] = "image=image/animate/jianxing2.png",
-  [":jianxing"] = "每回合限一次，当一名角色使用基本牌指定其他角色为目标时，你可以重铸任意张牌名互相相同的牌并根据数量令其执行：1，将目标场上一张牌移至对应目标手牌区；2，其他角色不能使用牌直到此牌生效；3，取消所有目标。",
+  [":jianxing"] = "<font color=\"green\"><b>每回合限一次，</b></font>当一名角色使用基本牌指定其他角色为目标时，你可以重铸任意张牌名互相相同的牌并根据数量令其执行：1，将目标场上一张牌移至对应目标手牌区；2，其他角色不能使用牌直到此牌生效；3，取消所有目标。",
   ["@jianxing"] = "践行：重铸",
   ["~jianxing"] = "选择任意张同名牌",
   ["jianxing_recastnum"] = "践行",
@@ -7139,7 +7139,7 @@ sgs.LoadTranslationTable{
   ["$yinni"] = "语音",
   ["yinni$"] = "image=image/animate/yinni.png",
   ["yongwang"] = "庸望",
-  [":yongwang"] = "每回合限一次，当牌因弃置而进入弃牌堆时，若其中存在点数比你的每一张手牌都大的牌，则你可以展示手牌，获得其中一张符合条件的牌。",
+  [":yongwang"] = "<font color=\"green\"><b>每回合限一次，</b></font>当牌因弃置而进入弃牌堆时，若其中存在点数比你的每一张手牌都大的牌，则你可以展示手牌，获得其中一张符合条件的牌。",
   ["yongwang_obtain"] = "庸望：获得其中一张",
   ["yongwang$"] = "image=image/animate/yongwang.png",
   ["$yongwang"] = "语音",
