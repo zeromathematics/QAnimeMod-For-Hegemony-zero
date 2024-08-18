@@ -4110,7 +4110,7 @@ chaoshist = sgs.CreateTriggerSkill{
 			local players = room:findPlayersBySkillName(self:objectName())
 			for _,p in sgs.qlist(players) do
 				if p:isAlive() and p:hasSkill("chaoshi") then 
-				    if (move.to and move.to:objectName() == player:objectName() and player:objectName() == p:objectName() and (move.to_place == sgs.Player_PlaceHand)) and room:getCurrent():objectName() ~= p:objectName() and not getCurrent():hasFlag("chaoshist_used") then
+				    if (move.to and move.to:objectName() == player:objectName() and player:objectName() == p:objectName() and (move.to_place == sgs.Player_PlaceHand)) and room:getCurrent():objectName() ~= p:objectName() and not room:getCurrent():hasFlag("chaoshist_used") then
 					    local handcard_has_spade = false  local handcard_has_club = false  local handcard_has_heart = false	local handcard_has_diamond = false
 						for _, c in sgs.qlist(p:getCards("hej")) do
 							if c:getSuit() == sgs.Card_Spade then handcard_has_spade = true end if c:getSuit() == sgs.Card_Club then handcard_has_club = true end
@@ -6491,17 +6491,18 @@ sgs.LoadTranslationTable{
   ["%Ren"] = "“秋叶红，歌踌躇，叶月恋。”",
   
   ["jichan"] = "继产",
-  [":jichan"] = "锁定技，当你明置此人物牌时，或其他角色死亡时，你将牌堆顶两张牌背面朝上置于人物牌上，称为“产”。你的手牌上限+X（X为“产”数）。",
-  ["heritage"] = "产",
+  [":jichan"] = "锁定技，当你明置此人物牌时，或其他角色死亡时，你将牌堆顶两张牌背面朝上置于人物牌上，称为“遗产”。你的手牌上限+X（X为“遗产”数）。",
+  ["heritage"] = "遗产",
   ["$jichan1"] = "受到妈妈的影响，我从小就与音乐结缘。",
   ["$jichan2"] = "结丘是我妈妈创立的学校。",
   ["RenJichan$"] = "image=image/animate/RenJichan.png",
   ["weiji"] = "危计",
-  [":weiji"] = "<font color=\"green\"><b>出牌阶段限X次（X为你已损失的体力值且至少为1），</b></font>若你的手牌数＜体力上限，则你可以将一张“产”收入手牌，然后重铸任意张手牌。",
+  [":weiji"] = "<font color=\"green\"><b>出牌阶段限X次（X为你已损失的体力值且至少为1），</b></font>若你的手牌数＜体力上限，则你可以将一张“遗产”收入手牌，然后重铸任意张手牌。",
   ["$weiji1"] = "我想继续唱歌！希望你能帮忙恢复……",
   ["$weiji2"] = "那个……冒昧打扰下，我还想参加live！",
-  ["@weijiglobal"] = "继产",
-  ["~weijiglobal"] = "选择重铸的手牌",
+  ["weijiglobal"] = "危计",
+  ["@weijiglobal"] = "你可以重铸任意张手牌",
+  ["~weijiglobal"] = "选择任意张手牌→点击“确定”",
   
   ["TokaiTeio"] = "东海帝王",
   ["@TokaiTeio"] = "赛马娘",
@@ -6696,9 +6697,10 @@ sgs.LoadTranslationTable{
   ["designer:Miku"] = "clannad最爱",
   ["cv:Miku"] = "藤田咲",
   ["%Miku"] = "“把你mikumiku掉~”",
+  ["illustrator:Miku"] = "フカヒレ",
 
   ["geji"] = "歌姬",
-  [":geji"] = "①你可以将手牌当【音】使用，此牌花色须与你本回合使用过的牌花色均不同。此牌结算后，本回合你不能使用此花色的牌。②你使用的【音】结算后，你可以令一名与你势力相同的角色摸一张牌。",
+  [":geji"] = "①你可以将一张手牌当【音】使用，此牌花色须与你本回合使用过的牌花色均不同。此牌结算后，本回合你不能使用此花色的牌。②你使用的【音】结算后，你可以令一名与你势力相同的角色摸一张牌。",
   ["gongzhu"] = "公主",
   [":gongzhu"] = "①当你成为【杀】的目标时，与你势力相同的其他角色可以将此【杀】转移给其。②锁定技，你的手牌上限+X（X为与你势力相同的角色数）。",
   ["&geji"] = "选择一名与你势力相同的角色摸一张牌",
@@ -6827,10 +6829,10 @@ sgs.LoadTranslationTable{
   ["~Asahina"] = "嗯，再见啦！",
 
   ["yinfa"] = "银法",
-  [":yinfa"] = " <font color=\"green\"><b>每回合限一次，</b></font>当目标包含你的锦囊牌结算后，你可以令一名角色选择一项执行：1、使用一张与此牌花色相同的非锦囊牌（不计入次数）。2、将手牌调整至X，X为你的体力上限-1。 ",---------（“迹见”已发动则改为‘当你使用锦囊牌后'）
+  [":yinfa"] = " <font color=\"green\"><b>每回合限一次，</b></font>当目标包含你的锦囊牌结算后，你可以令一名角色选择一项执行：1、使用一张与此牌花色相同的基本牌或装备牌（不计入次数）。2、将手牌调整至X，X为你的体力上限-1。 ",---------（“迹见”已发动则改为‘当你使用锦囊牌后'）
  --- ["@yinfa1"] = "其视为使用以其为唯一目标的【魔法变身】",
   ["&yinfa"] = "选择执行“银法”效果的角色",
-  ["@yinfa_use"] = "银法：使用一张该花色非锦囊牌（不计次数），否则将手牌调整至其体力上限-1",
+  ["@yinfa_use"] = "银法：使用一张该花色基本牌或装备牌（不计次数），否则将手牌调整至其体力上限-1",
   ["$yinfa1"] = "Diamond！Miracle Magical Jewelry！",
   ["yinfa1$"] = "image=image/animate/yinfa1.png",
   ---["@yinfa2"] = "其弃置三张牌，然后将手牌摸至X（X为你的体力上限-1）",
@@ -6880,8 +6882,8 @@ sgs.LoadTranslationTable{
   ["%Tooru"] = "“能像这样相遇……我，很开心。”",
 
   ["jiaoxin"] = "交心",
-  [":jiaoxin"] = "当你受到其他角色的伤害后，你可以令其选择一项：1.弃置所有黑色非装备牌（没有则不弃）；2.令你与其交换手牌，然后其中手牌唯一较少的角色摸两张牌。 ",
-  ["jiaoxinDiscard"] = "弃置所有黑色非装备牌",
+  [":jiaoxin"] = "当你受到其他角色的伤害后，你可以令其选择一项：1.弃置所有黑色基本牌或锦囊牌（没有则不弃）；2.令你与其交换手牌，然后其中手牌唯一较少的角色摸两张牌。 ",
+  ["jiaoxinDiscard"] = "弃置所有黑色基本牌或锦囊牌",
   ["jiaoxinExchange"] = "交换手牌，然后其中手牌唯一较少的角色摸两张牌",
   ["$jiaoxin1"] = "诶，有没有信赖……是说信赖制作人吗？嗯……",
   ["$jiaoxin2"] = "今天，相互夸奖对方努力的地方吧。制作人先开始。",
@@ -6991,7 +6993,7 @@ sgs.LoadTranslationTable{
   ["%Nozomi"] = "“来吧，演唱会要开始了！”",
 
   ["yueyin"] = "悦音",
-  [":yueyin"] = "<font color=\"green\"><b>每回合限一次，</b></font>一名角色成为【杀】的目标时，若使用者和当前回合角色均不为你，则你可以选择一项：1.锦囊牌或装备牌当【音】对自己使用，若为装备牌，则你成为此【杀】的目标并取消其他所有目标；2.将手牌摸至体力值，然后交给其一张手牌。",
+  [":yueyin"] = "<font color=\"green\"><b>每回合限一次，</b></font>一名角色成为【杀】的目标时，若使用者和当前回合角色均不为你，则你可以选择一项：1.将一张锦囊牌或装备牌当【音】对自己使用，若为装备牌，则你成为此【杀】的目标并取消其他所有目标；2.将手牌摸至体力值，然后交给其一张手牌。",
   ["@yueyin"] = "你可以转化【音】，或者点击“取消”将手牌摸至体力值",
   ["~yueyin"] = "选择一张锦囊牌或装备牌→点击“确定”",
   ["@yueyin_give"] = "请交给 %src 一张手牌",
@@ -7070,7 +7072,7 @@ sgs.LoadTranslationTable{
   ["%Vodka"] = "“目标，只有成为帅气的赛马娘！”",
 
   ["jiazhen"] = "假斟",
-  [":jiazhen"] = "<font color=\"green\"><b>每回合限一次，</b></font>你可以将一张黑色非装备牌当【酒】使用并摸一张牌。", 
+  [":jiazhen"] = "<font color=\"green\"><b>每回合限一次，</b></font>你可以将一张黑色基本牌或锦囊牌当【酒】使用并摸一张牌。", 
   ["lieju"] = "烈驹",
   [":lieju"] = "当你使用【杀】指定目标后，你可以失去1点体力，展示目标之一X张手牌（X为你与其已损失体力值之和），弃置其中所有与此【杀】颜色相同的牌。（触发次数等于此杀目标数） ",
   ["@liejus"] = "选择其中一个目标",
