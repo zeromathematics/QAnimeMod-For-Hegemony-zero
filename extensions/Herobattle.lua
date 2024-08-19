@@ -2918,12 +2918,12 @@ Tongyu = sgs.CreateTriggerSkill{
 		end
 	end,
 	on_cost = function(self, event, room, player, data)
-		if player:askForSkillInvoke(self, data) and room:askForCard(player, ".|.|.|hand", "@tongyu-discard", data, self:objectName()) then
+                if player:askForSkillInvoke(self, data) and room:askForCard(player, ".|.|.|.", "@tongyu-discard", data, self:objectName()) then
 			return true
 		end
 	end,
 	on_effect = function(self, event, room, player, data)
-		local targets = room:askForPlayersChosen(player, room:getOtherPlayers(player), self:objectName(), 1, 2, "@tongyu")
+                local targets = room:askForPlayersChosen(player, room:getAlivePlayers(), self:objectName(), 1, 2, "@tongyu")
 		room:broadcastSkillInvoke(self:objectName(), player)
 		for _,p in sgs.qlist(targets) do
             if not room:askForUseSlashTo(p, room:getAlivePlayers(), "@tongyu-slash", true) then p:drawCards(1) end
@@ -8941,7 +8941,7 @@ sgs.LoadTranslationTable{
 ["zhuogui"] = "灼鬼",
 [":zhuogui"] = "出牌阶段限一次，你可以弃置任意张非基本牌并选择等量其他角色，视为对其使用一张不计入次数，对应实体牌为你弃置牌的火【杀】，然后此杀造成伤害后，你可以选择摸一张牌或弃置目标一张牌。",
 ["tongyu"] = "统御",
-[":tongyu"] = "结束阶段开始时，你可以弃置一张手牌并指定1～2名其他角色，其选择使用一张杀或摸一张牌。",
+[":tongyu"] = "结束阶段开始时，你可以弃置一张牌并指定1～2名角色，其选择使用一张杀或摸一张牌。",
 ["se_jiangui$"] = "image=image/animate/se_jiangui.png",
 ["zhuogui_draw"] = "摸一张牌",
 ["zhuogui_discard"] = "弃置目标一张牌",
@@ -8949,8 +8949,8 @@ sgs.LoadTranslationTable{
 ["$zhuogui2"] = "灼烂歼鬼（Camael）·炮（Megiddo）！",
 ["$tongyu1"] = "拿起枪来。战斗还没结束呢。战争还没结束呢。",
 ["$tongyu2"] = "来吧，我们还能继续厮杀呢。这可是你期盼的战斗，是你希望的争斗啊！",
-["@tongyu-discard"] = "统御：弃置一张手牌",
-["@tongyu"] = "选择1~2名其他角色",
+["@tongyu-discard"] = "统御：弃置一张牌",
+["@tongyu"] = "选择1~2名角色",
 ["@tongyu-slash"] = "使用一张杀，否则摸一张牌",
 ["%Kotori"] = "“神威灵装·五番（Elohim Gibor）！”",
 

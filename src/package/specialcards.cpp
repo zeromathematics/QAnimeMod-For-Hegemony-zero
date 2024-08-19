@@ -346,10 +346,21 @@ public:
             if (pindian->reason == objectName()){
                 ServerPlayer *winner = pindian->isSuccess() ? pindian->from : pindian->to;
                 ServerPlayer *loser = pindian->isSuccess() ? pindian->to : pindian->from;
-                if (winner->getHp() < loser->getHp() && winner->isWounded() && winner->askForSkillInvoke("shiji_recover", data)){
+                QString choices = "cancel";
+                if (winner->getHp() < loser->getHp() && winner->isWounded()){
+                   choices = "shiji_recover+"+choices;
+                }
+                if (winner->getHandcardNum() < loser->getHandcardNum()){
+                   choices = "shiji_draw+"+choices;
+                }
+                QString choice = room->askForChoice(winner, objectName(), choices, data);
+                if (choice == "shiji_recover"){
                     RecoverStruct recover;
                     recover.recover = 1;
                     room->recover(winner, recover, true);
+                }
+                if (choice == "shiji_draw"){
+                    winner->drawCards(1);
                 }
             }
         }
@@ -408,9 +419,10 @@ public:
     {
         TriggerList skill_list;
         if (event == DamageInflicted) {
+            DamageStruct damage = data.value<DamageStruct>();
             QList<ServerPlayer *> fs = room->findPlayersBySkillName(objectName());
             foreach(ServerPlayer *f, fs)
-                if (player!=f && f->getMark("@revival")>0)
+                if (f->getMark("@revival")>0 && f->getPhase() == Player::NotActive && f->isFriendWith(damage.to))
                     skill_list.insert(f, QStringList(objectName()));
         }
         return skill_list;
@@ -431,7 +443,7 @@ public:
     {
         DamageStruct damage = data.value<DamageStruct>();
         room->setTag(f->objectName()+"revival"+damage.to->objectName(), QVariant(true));
-        QList<int> list = room->getDiscardPile();
+        /*QList<int> list = room->getDiscardPile();
         QList<int> id_list;
         while(id_list.length()<5 && list.length()>0){
             int id = list.at(rand()%list.length());
@@ -440,7 +452,17 @@ public:
         }
         if (id_list.length() > 0){
             room->askForGuanxing(f, id_list);
-        }
+        }*/
+
+        QList<int> revival = room->getNCards(5, false);
+
+        LogMessage log;
+        log.type = "$ViewDrawPile";
+        log.from = f;
+        log.card_str = IntList2StringList(revival).join("+");
+        room->doNotify(f, QSanProtocol::S_COMMAND_LOG_SKILL, log.toVariant());
+        room->askForGuanxing(f, revival);
+
         QString choice = room->askForChoice(f, objectName(), "revival_prevent+revival_back");
         if (choice == "revival_prevent"){
             JudgeStruct judge;
@@ -458,7 +480,7 @@ public:
         else{
             room->broadcastSkillInvoke(objectName(), 3, f);
             room->loseMaxHp(f);
-            if (f->isAlive() && f->getPhase() == Player::NotActive){
+            if (f->isAlive()){
                 f->gainAnInstantExtraTurn();
             }
         }
@@ -482,7 +504,7 @@ public:
 
     virtual QStringList triggerable(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer * &) const
     {
-        if (event == EventPhaseStart && player->getPhase()==Player::Finish && TriggerSkill::triggerable(player)){
+        if (event == EventPhaseStart && player->getPhase()==Player::Finish && TriggerSkill::triggerable(player) && !player->hasFlag("Point_ExtraTurn")){
             QList<ServerPlayer *> list;
             int n = 998;
             foreach(auto p, room->getAlivePlayers()){
@@ -491,7 +513,7 @@ public:
                 }
             }
             foreach(auto p, room->getAlivePlayers()){
-                if (p->getHp() == n && p->isFriendWith(player) && p!=player){
+                if (p->getHp() <= player->getHp() && p->isFriendWith(player) && p!=player){
                     list << p;
                 }
             }
@@ -500,12 +522,12 @@ public:
                 return QStringList(objectName());
             }
         }
-        else if(event == Dying){
+        /*else if(event == Dying){
             DyingStruct dying = data.value<DyingStruct>();
             if (dying.who->isFriendWith(player) && TriggerSkill::triggerable(player) && player->getMaxHp()<4){
                 return QStringList(objectName());
             }
-        }
+        }*/
         return QStringList();
     }
     virtual bool cost(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *) const
@@ -533,6 +555,9 @@ public:
             if (dest && !player->isNude()){
                 int id = room->askForCardChosen(player,player,"he",objectName());
                 room->obtainCard(dest, id, false);
+                if (player->getMaxHp()<4){
+                    room->setPlayerProperty(player, "maxhp", QVariant(player->getMaxHp()+1));
+                }
                 room->setPlayerMark(player,"@revival", 1);
             }
         }

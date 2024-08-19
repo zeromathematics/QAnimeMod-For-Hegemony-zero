@@ -2219,7 +2219,7 @@ public:
             foreach(int id, damage.to->getPile("zhui")){
                 room->throwCard(id, damage.to, player);
             }
-            damage.damage=damage.damage+n;
+            damage.damage=damage.damage+1;
             data.setValue(damage);
         }
         return false;
@@ -4999,7 +4999,7 @@ public:
     XuexiTri() : TriggerSkill("#xuexitri")
     {
         frequency = NotFrequent;
-        events << CardUsed;
+        events << CardUsed << TurnStart;
         //view_as_skill = new Xuexivs;
     }
 
@@ -5007,6 +5007,15 @@ public:
     {
         return true;
     }
+
+    virtual void record(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data) const
+   {
+       if (event == TurnStart) {
+           if (player->getMark("xuexi_used")>0 && !player->hasFlag("Point_ExtraTurn")){
+               room->setPlayerMark(player, "xuexi_used", 0);
+           }
+       }
+   }
 
     virtual TriggerList triggerable(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data) const
     {
@@ -5016,7 +5025,7 @@ public:
             if (use.from && (use.card->isKindOf("BasicCard")|| use.card->isNDTrick())){
                 QList<ServerPlayer *> premieres = room->findPlayersBySkillName(objectName());
                 foreach (ServerPlayer *premiere, premieres) {
-                    if (premiere->isFriendWith(use.from) && premiere != use.from && !premiere->property("xuexi_card").toStringList().contains(use.card->objectName())&&(!room->getCurrent()||!room->getCurrent()->hasFlag(premiere->objectName()+"xuexi_used"))){
+                    if (premiere->getMark("xuexi_used") == 0 && premiere->isFriendWith(use.from) && premiere != use.from && !premiere->property("xuexi_card").toStringList().contains(use.card->objectName())&&(!room->getCurrent()||!room->getCurrent()->hasFlag(premiere->objectName()+"xuexi_used"))){
                        skill_list.insert(premiere, QStringList(objectName()));
                     }
                     else if(premiere == use.from && !premiere->property("xuexi_card").toStringList().contains(use.card->objectName())){
@@ -5036,6 +5045,7 @@ public:
             if (player->askForSkillInvoke("xuexi", data)){
               if (room->getCurrent()){
                 room->setPlayerFlag(room->getCurrent(), premiere->objectName()+"xuexi_used");
+                room->setPlayerMark(premiere, "xuexi_used", 1);
               }
               return true;
             }
@@ -5654,7 +5664,7 @@ public:
                 if (room->getCurrent()){
                     room->setPlayerFlag(room->getCurrent(), setsuna->objectName()+"shengmu_used");
                 }
-                if (card->isRed()){
+                if (card->getSuitString() == "heart"){
                     room->setPlayerFlag(setsuna, "shengmu_red");
                 }
                 room->doAnimate(QSanProtocol::S_ANIMATE_INDICATE, setsuna->objectName(), data.value<DamageStruct>().to->objectName());

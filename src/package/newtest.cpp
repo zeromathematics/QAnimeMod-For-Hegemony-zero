@@ -4069,7 +4069,7 @@ void BadanCard::use(Room *room, ServerPlayer *player, QList<ServerPlayer *> &tar
     if (n == 0)
         return;
     RecoverStruct recover;
-    recover.recover = n-1;
+    recover.recover = n;
     recover.who=player;
     room->recover(player, recover);
 }
@@ -4524,11 +4524,11 @@ public:
         player->drawCards(hp);;
         room->setPlayerMark(kurisu,"zhushou_used",1);
         if (!room->askForCard(player,"TrickCard", "@zhushou")){
-           if (player->getHandcardNum()>=player->getHp()){
-               room->askForDiscard(player, objectName(), player->getHp(), player->getHp());
+           if (player->getCards("he").length()>=player->getHp()){
+               room->askForDiscard(player, objectName(), player->getHp(), player->getHp(), false, true);
            }
            else{
-               player->throwAllHandCards();
+               player->throwAllHandCardsAndEquips();
            }
         }
     }

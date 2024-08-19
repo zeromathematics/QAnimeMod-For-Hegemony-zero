@@ -1525,7 +1525,7 @@ sgs.ai_skill_cardask["@shengmu"] = function(self, data)
 	 end
   end
   for _, c in sgs.qlist(self.player:getCards("he")) do
-	 if c:isRed() and can then
+         if c:getSuitString() == "heart" and can then
 		return "$" .. c:getEffectiveId()
 	 end
   end

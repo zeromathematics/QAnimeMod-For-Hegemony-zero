@@ -865,7 +865,7 @@ end
 
 sgs.ai_skill_playerchosen.tongyu = function(self, targets)
    local result = {}
-   local friends = self.friends_noself
+   local friends = self.friends
    self:sort(friends, "handcard")
    if #friends >1 then
 	  table.insert(result, friends[1])
