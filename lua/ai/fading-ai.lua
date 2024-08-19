@@ -96,8 +96,8 @@ end
 
 --sgs.ai_skill_invoke.shiji_recover = true
 sgs.ai_skill_choice.shiji = function(self, choices, data)
-   if self.player:isWounded() and choices:split("+"):contains("shiji_recover") then return "shiji_recover" end
-   return "shiji_draw"
+   if self.player:isWounded() and table.contains(choices:split("+"), "shiji_recover") then return "shiji_recover" end
+   if table.contains(choices:split("+"), "shiji_draw") then return "shiji_draw" end
 end
 
 sgs.ai_skill_invoke.pengtiao_recover = function(self, data)
