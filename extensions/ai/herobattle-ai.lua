@@ -1252,7 +1252,8 @@ sgs.ai_skill_use_func["#guilingCard"] = function(card,use,self)
 	local enemies = self.enemies
 	self:sort(enemies, "defense")
 	for _,e in ipairs(enemies) do
-		if targets:length() < n and not e:hasShownSkill("huansha") and add_different_kingdoms(e, targets) then
+		local targets_table = sgs.QList2Table(targets)
+		if targets:length() < n and not e:hasShownSkill("huansha") and add_different_kingdoms(e, targets_table) then
 			targets:append(e)
 		end
 	end
@@ -1260,7 +1261,8 @@ sgs.ai_skill_use_func["#guilingCard"] = function(card,use,self)
 	   local a = targets:length()
        local x = math.min(n - a, self.player:getLostHp())
        for _,p in sgs.qlist(self.room:getOtherPlayers(self.player)) do
-		  if targets:length() < a+x and not targets:contains(p) and add_different_kingdoms(p, targets) then
+		  local targets_table = sgs.QList2Table(targets)
+		  if targets:length() < a+x and not targets:contains(p) and add_different_kingdoms(p, targets_table) then
 			targets:append(p)
 		  end
 	   end

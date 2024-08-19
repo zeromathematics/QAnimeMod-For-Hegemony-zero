@@ -410,8 +410,13 @@ bool GameRule::effect(TriggerEvent triggerEvent, Room *room, ServerPlayer *playe
                                 list << s;
                             }
                         }
-                        QString choice = room->askForChoice(player, "Revolution_AskForKingdom", list.join("+"));
-                        player->setKingdom(choice);
+                        //QString choice = room->askForChoice(player, "Revolution_AskForKingdom", list.join("+"));
+                        foreach(auto v, list){
+                            if (player->getMark("globalkingdom_"+v)>0){
+                                player->setKingdom(v);
+                                break;
+                            }
+                        }
                     }
                 }
                 else if (player->getActualGeneral1()->getKingdom() == "careerist" && !player->getActualGeneral2()->getKingdom().contains("|")){

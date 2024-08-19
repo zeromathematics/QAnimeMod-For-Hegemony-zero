@@ -411,10 +411,21 @@ void Player::setGeneral2Name(const QString &general_name)
             else if (!this->general->getKingdom().contains("|") && this->general2->getKingdom().contains("|")){
                 setKingdom(this->general->getKingdom());
             }
-
+            else if (this->general->getKingdom().contains("|") && this->general2->getKingdom().contains("|")){
+                QStringList list;
+                foreach(auto v, this->general2->getKingdom().split("|")){
+                    if (this->general->getKingdom().split("|").contains(v)){
+                        list << v;
+                    }
+                }
+                if (list.length() == 1){
+                    setKingdom(list.at(0));
+                }
+                /*else{
+                    setKingdom(HegemonyMode::GetMappedKingdom(getRole()));
+                }*/
+            }
         }
-
-
 
         emit general2_changed();
 

@@ -1021,7 +1021,7 @@ QList<int> Engine::getRandomCards() const
 QString Engine::getRandomGeneralName() const
 {
     const General *general = generalList.at(qrand() % generalList.size());
-    while (general->getKingdom() == "programmer")
+    while (general->getKingdom() == "programmer" || general->objectName() == "Beast_Titan" || general->objectName() == "Cart_Titan" || general->objectName() == "Pure_Titan")  //exclude unsightful pictures
         general = generalList.at(qrand() % generalList.size());
     return general->objectName();
 }

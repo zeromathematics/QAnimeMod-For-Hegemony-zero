@@ -258,7 +258,17 @@ void GeneralButton::paint(QPainter *painter, const QStyleOptionGraphicsItem *, Q
     const General *general = Sanguosha->getGeneral(generalName);
     Q_ASSERT(general);
 
-    QPixmap nameBg = G_ROOM_SKIN.getPixmap(QSanRoomSkin::S_SKIN_KEY_KINGDOM_COLOR_MASK, general->getKingdom());
+    QString kingdom = general->getKingdom();
+    if (kingdom.contains("|")){
+        foreach(auto v, kingdom.split("|")){
+            if (Self->getMark("globalkingdom_"+v)>0){
+                kingdom = v;
+                break;
+            }
+        }
+    }
+
+    QPixmap nameBg = G_ROOM_SKIN.getPixmap(QSanRoomSkin::S_SKIN_KEY_KINGDOM_COLOR_MASK, kingdom);
     painter->drawPixmap(0, 5, nameBg);
 
     if (Self->getGeneral() == general || Self->getGeneral2() == general) {

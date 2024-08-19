@@ -56,9 +56,19 @@ HeroSkinContainer::HeroSkinContainer(const QString &generalName,
     closeButton->setPos(387, 5);
     connect(closeButton, &QSanButton::clicked, this, &HeroSkinContainer::close);
 
+    QString gkingdom = kingdom;
+    if (gkingdom.contains("|")){
+        foreach(auto v, gkingdom.split("|")){
+            if (Self->getMark("globalkingdom_"+v)>0){
+                gkingdom = v;
+                break;
+            }
+        }
+    }
+
     QGraphicsPixmapItem *nameBgItem = NULL;
     PlayerCardContainer::_paintPixmap(nameBgItem, QRect(11, 6, 87, 18),
-        G_ROOM_SKIN.getPixmap(QSanRoomSkin::S_SKIN_KEY_KINGDOM_COLOR_MASK, kingdom), this);
+        G_ROOM_SKIN.getPixmap(QSanRoomSkin::S_SKIN_KEY_KINGDOM_COLOR_MASK, gkingdom), this);
 
     QGraphicsPixmapItem *positionIcon = NULL;
     QString key = (Self->getGeneralName() == m_generalName) ? QSanRoomSkin::S_SKIN_KEY_HEAD_ICON : QSanRoomSkin::S_SKIN_KEY_DEPUTY_ICON;
