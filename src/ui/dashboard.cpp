@@ -2032,6 +2032,8 @@ void Dashboard::updateAvatar()
         // this is just avatar general, perhaps game has not started yet.
         if (m_player->getGeneral() != NULL) {
             QString kingdom = m_player->getKingdom();
+            if (general->getKingdom() == "careerist")
+                kingdom = "careerist";
             _paintPixmap(_m_kingdomColorMaskIcon, _m_layout->m_kingdomMaskArea,
                 G_ROOM_SKIN.getPixmap(QSanRoomSkin::S_SKIN_KEY_KINGDOM_COLOR_MASK, kingdom), this->_getAvatarParent());
             _paintPixmap(_m_handCardBg, _m_layout->m_handCardArea,
@@ -2105,3 +2107,8 @@ void Dashboard::updateSmallAvatar()
     _adjustComponentZValues();
 }
 
+void Dashboard::updateKingdom(const QString &kingdom)
+{
+    updateAvatar();
+    updateSmallAvatar();
+}

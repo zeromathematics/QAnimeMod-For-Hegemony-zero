@@ -4374,7 +4374,7 @@ void Room::chooseGenerals(QList<ServerPlayer *> &to_assign, bool has_assign, boo
         return; // the following code need writing in Scenario::assien.
     //I consider writing a function to wrap it.
 
-    QList<ServerPlayer*> players = m_players;
+    /*QList<ServerPlayer*> players = m_players;
     QList<ServerPlayer*> players_copy = m_players;
     int random_seat = rand()%players.length();
     for (int i = 0; i <players.length(); i++){
@@ -4382,9 +4382,9 @@ void Room::chooseGenerals(QList<ServerPlayer *> &to_assign, bool has_assign, boo
             players.removeOne(players_copy.at(i));
             players << players_copy.at(i);
         }
-    }
+    }*/
 
-    foreach (ServerPlayer *player, players) {
+    foreach (ServerPlayer *player, m_players) {
         QStringList names;
         if (player->getGeneral()) {
             QString name = player->getGeneralName();
@@ -4394,117 +4394,15 @@ void Room::chooseGenerals(QList<ServerPlayer *> &to_assign, bool has_assign, boo
             if (kingdom.contains("|") && !player->getGeneral2()->getKingdom().contains("|"))
                 kingdom = player->getGeneral2()->getKingdom();
 
-            if (player->getGeneral()->getKingdom().contains("|") && player->getGeneral2()->getKingdom().contains("|")){
-                QStringList list;
-                foreach(auto v, player->getGeneral2()->getKingdom().split("|")){
-                    if (player->getGeneral()->getKingdom().split("|").contains(v)){
-                        list << v;
-                    }
-                }
-                if (list.length() == 1)
-                    kingdom = list.at(0);
-                else{
-                    QVariant data;
-                    tryPause();
-                    QString choices = list.join("+");
-                    QStringList validChoices;
-                    QString skill_name = "Revolution_AskForKingdom";
-                    foreach (const QString &choice, choices.split("|"))
-                        validChoices.append(choice.split("+"));
-                    QStringList titles = skill_name.split("%");
-                    QString skillname = titles.at(0);
-
-                    Q_ASSERT(!validChoices.isEmpty());
-
-                    QString answer;
-                    if (validChoices.length() == 1) {
-                        answer = validChoices.first();
-                    } else {
-                        notifyMoveFocus(player, S_COMMAND_MULTIPLE_CHOICE);
-
-                        AI *ai = player->getAI();
-                        if (ai) {
-                            answer = ai->askForChoice(skillname, choices, data);
-                            thread->delay();
-                        } else {
-                            bool success = doRequest(player, S_COMMAND_MULTIPLE_CHOICE, JsonArray() << skill_name << choices, true);
-                            const QVariant &clientReply = player->getClientReply();
-                            if (!success || !JsonUtils::isString(clientReply)) {
-                                answer = ".";
-                            } else
-                                answer = clientReply.toString();
-                        }
-                        bool check = false;
-                        foreach (const QString &c, validChoices) {
-                            if ((c == answer) || (c.split("%").at(0) == answer.split("%").at(0))) {
-                                check = true;
-                                break;
-                            }
-                        }
-                        if (!check)
-                            answer = validChoices[0];
-                    }
-                    kingdom = answer;
-                }
-            }
-            else{
-                    QVariant data;
-                    tryPause();
-                    QString choices = kingdom+"+cancel";
-                    QStringList validChoices;
-                    QString skill_name = "WaitOthers_AskForKingdom";
-                    foreach (const QString &choice, choices.split("|"))
-                        validChoices.append(choice.split("+"));
-                    QStringList titles = skill_name.split("%");
-                    QString skillname = titles.at(0);
-
-                    Q_ASSERT(!validChoices.isEmpty());
-
-                    QString answer;
-                    if (validChoices.length() == 1) {
-                        answer = validChoices.first();
-                    } else {
-                        notifyMoveFocus(player, S_COMMAND_MULTIPLE_CHOICE);
-
-                        AI *ai = player->getAI();
-                        if (ai) {
-                            answer = ai->askForChoice(skillname, choices, data);
-                            thread->delay();
-                        } else {
-                            bool success = doRequest(player, S_COMMAND_MULTIPLE_CHOICE, JsonArray() << skill_name << choices, true);
-                            const QVariant &clientReply = player->getClientReply();
-                            if (!success || !JsonUtils::isString(clientReply)) {
-                                answer = ".";
-                            } else
-                                answer = clientReply.toString();
-                        }
-                        bool check = false;
-                        foreach (const QString &c, validChoices) {
-                            if ((c == answer) || (c.split("%").at(0) == answer.split("%").at(0))) {
-                                check = true;
-                                break;
-                            }
-                        }
-                        if (!check)
-                            answer = validChoices[0];
-                    }
-
-            }
-
             setPlayerMark(player, "globalkingdom_"+kingdom,1);
 
-            QString role = HegemonyMode::GetMappedRole(kingdom);
-            if (role.isEmpty())
-                role = player->getGeneral()->getKingdom();
             names.append(name);
             player->setActualGeneral1Name(name);
-            player->setRole(role);
             player->setGeneralName("anjiang");
             notifyProperty(player, player, "actual_general1");
             foreach (ServerPlayer *p, getOtherPlayers(player))
                 notifyProperty(p, player, "general");
             notifyProperty(player, player, "general", name);
-            notifyProperty(player, player, "role", role);
         }
         if (player->getGeneral2()) {
             QString name = player->getGeneral2Name();
@@ -4518,6 +4416,57 @@ void Room::chooseGenerals(QList<ServerPlayer *> &to_assign, bool has_assign, boo
             notifyProperty(player, player, "general2", name);
         }
         this->setTag(player->objectName(), QVariant::fromValue(names));
+
+        if (player->getActualGeneral1()->getKingdom().contains("|") && player->getActualGeneral2()->getKingdom().contains("|")){
+            QStringList list;
+            foreach(auto v, player->getActualGeneral2()->getKingdom().split("|")){
+                if (player->getActualGeneral1()->getKingdom().split("|").contains(v)){
+                    list << v;
+                }
+            }
+            JsonArray arr;
+            arr << "Revolution_AskForKingdom" << list.join("+") ;
+            player->m_commandArgs = arr;
+        }
+        else{
+            QString kingdom;
+            foreach(auto v, Sanguosha->getKingdoms()){
+                if (player->getMark("globalkingdom_"+v)>0){
+                     kingdom = v;
+                     break;
+                }
+            }
+
+            JsonArray arr;
+            arr << "Revolution_AskForKingdom" << kingdom;
+            player->m_commandArgs = arr;
+        }
+    }
+    doBroadcastRequest(to_assign, S_COMMAND_MULTIPLE_CHOICE);
+
+    foreach (ServerPlayer *player, to_assign) {
+        QString kingdom;
+        const QVariant &kingdomName = player->getClientReply();
+        if (player->m_isClientResponseReady && JsonUtils::isString(kingdomName) && kingdomName.toString() != "cancel") {
+            kingdom = kingdomName.toString();
+        } else {
+            foreach(auto v, Sanguosha->getKingdoms()){
+                if (player->getMark("globalkingdom_"+v)>0){
+                     kingdom = v;
+                     break;
+                }
+            }
+        }
+
+        setPlayerMark(player, "globalkingdom_"+kingdom,1); // reset for multi-kingdom players
+
+        QString role = HegemonyMode::GetMappedRole(kingdom);
+        if (role.isEmpty())
+            role = kingdom;
+        player->setKingdom(kingdom);
+        notifyProperty(player, player, "kingdom", kingdom);
+        player->setRole(role);
+        notifyProperty(player, player, "role", role);
     }
 }
 

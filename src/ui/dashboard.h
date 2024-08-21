@@ -186,6 +186,8 @@ public slots:
 
     virtual void updateAvatar();
     virtual void updateSmallAvatar();
+    void updateKingdom(const QString &kingdom);
+
     void updateLeftHiddenMark();
     void updateRightHiddenMark();
 

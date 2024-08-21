@@ -109,25 +109,28 @@ sgs.shown_kingdom =         {
 sgs.ai_damage_effect =      {}
 sgs.ai_explicit =           {}
 sgs.ai_loyalty =            {
+	careerist = {},
 	science = {},
 	magic = {},
 	game = {},
 	real = {},
-	careerist = {}
+	idol = {}
 }
 sgs.RolesTable =            {
+	"careerist",
 	"lord",
 	"loyalist",
 	"renegade",
 	"rebel",
-	"careerist"
+	"animekingdomidol"
 }
 sgs.KingdomsTable =         {
-	--"careerist",   --第一个势力实战总是用魏狗打法，没弄明白原理。
+	"careerist",   --第一个势力实战总是用魏狗打法，没弄明白原理。
 	"science",
 	"magic",
 	"game",
-	"real"
+	"real",
+	"idol"
 }
 sgs.current_mode_players = {
 	science = 0,

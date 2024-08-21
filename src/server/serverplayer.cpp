@@ -2073,7 +2073,7 @@ void ServerPlayer::showGeneral(bool head_general, bool trigger_event, bool sendL
     }
 
     //test
-    if (getActualGeneral1()->getKingdom() == "careerist" && !getActualGeneral2()->getKingdom().contains("|")){
+    /*if (getActualGeneral1()->getKingdom() == "careerist" && !getActualGeneral2()->getKingdom().contains("|")){
         if (!head_general && !hasShownGeneral1()){
             //room->setPlayerProperty(this, "kingdom", QVariant("careerist"));
             setKingdom("careerist");
@@ -2083,7 +2083,7 @@ void ServerPlayer::showGeneral(bool head_general, bool trigger_event, bool sendL
                 setKingdom(getActualGeneral2()->getKingdom());
             }
         }
-    }
+    }*/
 
     if (trigger_event) {
         Q_ASSERT(room->getThread() != NULL);

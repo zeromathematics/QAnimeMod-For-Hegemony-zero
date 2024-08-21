@@ -430,10 +430,10 @@ void Player::setGeneral2Name(const QString &general_name)
         emit general2_changed();
 
         //test
-        if (general && general->getKingdom() == "careerist" && !new_general->getKingdom().contains("|") && !hasShownGeneral1()){
+        /*if (general && general->getKingdom() == "careerist" && !new_general->getKingdom().contains("|") && !hasShownGeneral1()){
             setKingdom("careerist");
             setRole(new_general->getKingdom());
-        }
+        }*/
     }
 }
 
