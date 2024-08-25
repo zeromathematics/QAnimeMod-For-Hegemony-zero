@@ -2572,7 +2572,7 @@ public:
 
             foreach (ServerPlayer *sp, sps)
             {
-                if ((!damage.from||sp!=damage.from) && sp->inMyAttackRange(damage.to) && !sp->isNude() && sp->getPhase() == Player::NotActive)
+                if ((!damage.from||sp!=damage.from) && sp->inMyAttackRange(damage.to) && (!sp->isNude() || !sp->getPile("duan").isEmpty()) && sp->getPhase() == Player::NotActive)
                 {
                     skill_list.insert(sp, QStringList(objectName()));
                 }
@@ -2583,9 +2583,18 @@ public:
 
     virtual bool cost(TriggerEvent, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *ask_who) const
     {
-        if(ask_who->askForSkillInvoke(this, QVariant::fromValue(player)) && room->askForDiscard(ask_who,objectName(),1,1,true,true)){
-            room->broadcastSkillInvoke(objectName(), ask_who);
-            return true;
+        if(ask_who->askForSkillInvoke(this, QVariant::fromValue(player)) /*&& room->askForDiscard(ask_who,objectName(),1,1,true,true)*/){
+            QList<int> list = ask_who->getPile("duan");
+            foreach(auto c, ask_who->getCards("he")){
+                list << c->getEffectiveId();
+            }
+            room->fillAG(list, ask_who);
+            int id = room->askForAG(ask_who, list, true, objectName());
+            room->clearAG(ask_who);
+            if (id > -1){
+                room->broadcastSkillInvoke(objectName(), ask_who);
+                return true;
+            }
         }
         return false;
     }

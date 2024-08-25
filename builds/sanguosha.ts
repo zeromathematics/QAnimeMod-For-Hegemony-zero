@@ -3800,7 +3800,7 @@ P = 你自己, R = 你所在的房间</translation>
     <message>
         <location filename="../src/dialog/serverdialog.cpp" line="331"/>
         <source>The first player to show general can draw 2 cards</source>
-        <translation>首亮摸2张牌作为奖励</translation>
+        <translation>启用首亮奖励</translation>
     </message>
 	<message>
         <location filename="../src/dialog/serverdialog.cpp" line="371"/>
@@ -3826,6 +3826,16 @@ P = 你自己, R = 你所在的房间</translation>
     <location filename="../src/dialog/serverdialog.cpp" line="371"/>
     <source>HumanChoose</source>
     <translation>手动选择</translation>
+    </message>
+	<message>
+    <location filename="../src/dialog/serverdialog.cpp" line="371"/>
+    <source>Draw2Cards</source>
+    <translation>摸2张牌</translation>
+    </message>
+	<message>
+    <location filename="../src/dialog/serverdialog.cpp" line="371"/>
+    <source>FirstShowMark</source>
+    <translation>获得先驱标记</translation>
     </message>
     <message>
         <location filename="../src/dialog/serverdialog.cpp" line="338"/>
@@ -4245,6 +4255,16 @@ P = 你自己, R = 你所在的房间</translation>
     <location filename="../src/ui/startscene.cpp" line="303"/>
     <source>HumanChoose</source>
     <translation>手动选择</translation>
+    </message>
+	<message>
+    <location filename="../src/dialog/serverdialog.cpp" line="371"/>
+    <source>Draw2Cards</source>
+    <translation>摸2张牌</translation>
+    </message>
+	<message>
+    <location filename="../src/dialog/serverdialog.cpp" line="371"/>
+    <source>FirstShowMark</source>
+    <translation>获得先驱标记</translation>
     </message>
     <message>
         <location filename="../src/ui/startscene.cpp" line="300"/>

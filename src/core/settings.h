@@ -94,6 +94,7 @@ public:
     bool ActivateSpecialCardMode;
     bool BanKingdomMode;
     QString BanKingdomModeDetail;
+    QString RewardTheFirstShowingPlayerDetail;
 
     // client side
     QString HostAddress;

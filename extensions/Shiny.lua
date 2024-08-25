@@ -408,7 +408,7 @@ tuibian = sgs.CreateTriggerSkill{
 	can_trigger = function(self, event, room, player, data)
 		if event == sgs.CardFinished then
 			local use = data:toCardUse()
-			if player and player:isAlive() and player:hasSkill(self:objectName()) and player:getMark("#tuibian") < 4 and room:getCurrent() == player and use.card:isKindOf("BasicCard") and not player:isAllNude() then
+			if player and player:isAlive() and player:hasSkill(self:objectName()) and player:getMark("#tuibian") < 4 and room:getCurrent() == player and use.card:isKindOf("BasicCard") and not player:isNude() then
 				return self:objectName()
 			end
 		end
@@ -2010,7 +2010,7 @@ jinfa = sgs.CreateTriggerSkill{
 			local use = data:toCardUse()
 			if use.card and use.card:getSkillName() == self:objectName() and use.card:isRed() then
 				for _, Liko in sgs.qlist(room:findPlayersBySkillName(self:objectName())) do
-					if not Liko:isNude() then -------and Liko:getMaxHp()< Liko:getHandcardNum() 
+					if not Liko:isNude() then
 						room:askForDiscard(Liko, self:objectName(), 1, 1, false, true)
 					end
 				end
@@ -3325,7 +3325,7 @@ neifan = sgs.CreateTriggerSkill{
 		if player:isAlive() and player:getPhase() == sgs.Player_Play then
 			local players = room:findPlayersBySkillName(self:objectName())
 			for _,Haru in sgs.qlist(players) do
-				if Haru:getPhase() == sgs.Player_NotActive and Haru:hasSkill("neifan") and (player:getHandcardNum() - Haru:getHandcardNum()) <= Haru:getMark("#yibing") then
+				if Haru:getPhase() == sgs.Player_NotActive and Haru:hasSkill("neifan") and (player:getHandcardNum() - Haru:getHandcardNum()) <= Haru:getMark("#yibing") and ((player:getHandcardNum() - Haru:getHandcardNum()) > 0) then
 					return self:objectName(), Haru
 				end
 			end
@@ -3646,7 +3646,7 @@ yinfa = sgs.CreateTriggerSkill{
 			local use = data:toCardUse()
 			local players = room:findPlayersBySkillName(self:objectName())
 			for _,sp in sgs.qlist(players) do
-				if sp:isAlive() and sp:hasSkill(self:objectName()) and use.card:isKindOf("TrickCard") then
+				if use.card:isKindOf("TrickCard") then
 					if sp:getMark("@jijian") > 0 and use.to:contains(sp) and not room:getCurrent():hasFlag("yinfa_used") then
 						return self:objectName(), sp
 					elseif sp:getMark("@jijian") == 0 and player:objectName() == sp:objectName() then
@@ -4109,21 +4109,39 @@ chaoshist = sgs.CreateTriggerSkill{
 			local move = data:toMoveOneTime()
 			local players = room:findPlayersBySkillName(self:objectName())
 			for _,p in sgs.qlist(players) do
-				if p:isAlive() and p:hasSkill("chaoshi") then 
-				    if (move.to and move.to:objectName() == player:objectName() and player:objectName() == p:objectName() and (move.to_place == sgs.Player_PlaceHand)) and room:getCurrent():objectName() ~= p:objectName() and not room:getCurrent():hasFlag("chaoshist_used") then
-					    local handcard_has_spade = false  local handcard_has_club = false  local handcard_has_heart = false	local handcard_has_diamond = false
-						for _, c in sgs.qlist(p:getCards("hej")) do
-							if c:getSuit() == sgs.Card_Spade then handcard_has_spade = true end if c:getSuit() == sgs.Card_Club then handcard_has_club = true end
-							if c:getSuit() == sgs.Card_Heart then handcard_has_heart = true end if c:getSuit() == sgs.Card_Diamond then handcard_has_diamond = true end
+				if (move.to and move.to:objectName() == player:objectName() and player:objectName() == p:objectName() and (move.to_place == sgs.Player_PlaceHand)) and room:getCurrent():objectName() ~= p:objectName() and not room:getCurrent():hasFlag("chaoshist_used") then
+					local handcard_has_spade = false  local handcard_has_club = false  local handcard_has_heart = false	local handcard_has_diamond = false
+					for _, c in sgs.qlist(p:getCards("hej")) do
+						if c:getSuit() == sgs.Card_Spade then
+							handcard_has_spade = true
 						end
-						local Tchaoshi_result = 0
-						if handcard_has_spade then Tchaoshi_result = Tchaoshi_result + 1 end if handcard_has_club then Tchaoshi_result = Tchaoshi_result + 1 end
-						if handcard_has_heart then Tchaoshi_result = Tchaoshi_result + 1 end if handcard_has_diamond then Tchaoshi_result = Tchaoshi_result + 1 end
-						if p:getHandcardNum() > Tchaoshi_result then
-						   return self:objectName(), p 
-						end  
+						if c:getSuit() == sgs.Card_Club then
+							handcard_has_club = true
+						end
+						if c:getSuit() == sgs.Card_Heart then
+							handcard_has_heart = true
+						end
+						if c:getSuit() == sgs.Card_Diamond then
+							handcard_has_diamond = true
+						end
 					end
-				end		
+					local Tchaoshi_result = 0
+					if handcard_has_spade then
+						Tchaoshi_result = Tchaoshi_result + 1
+					end
+					if handcard_has_club then
+						Tchaoshi_result = Tchaoshi_result + 1
+					end
+					if handcard_has_heart then
+						Tchaoshi_result = Tchaoshi_result + 1
+					end
+					if handcard_has_diamond then
+						Tchaoshi_result = Tchaoshi_result + 1
+					end
+					if p:getHandcardNum() > Tchaoshi_result then
+						return self:objectName(), p 
+					end  
+				end
 			end
 	    end
 		return ""
@@ -5180,7 +5198,7 @@ lieju = sgs.CreateTriggerSkill{
 			local use=data:toCardUse()
 			local players = room:findPlayersBySkillName(self:objectName())
 			for _,sp in sgs.qlist(players) do
-				if sp:isAlive() and sp:hasSkill("lieju") and player:objectName() == sp:objectName() and use.card:isKindOf("Slash") then
+				if player:objectName() == sp:objectName() and use.card:isKindOf("Slash") then
 					for _,p in sgs.qlist(room:getAlivePlayers()) do
 						room:setPlayerMark(p, "lieju_target", 0)
 					end 
@@ -5193,7 +5211,7 @@ lieju = sgs.CreateTriggerSkill{
 		   local use = data:toCardUse()
 		   local players = room:findPlayersBySkillName(self:objectName())
 			for _,sp in sgs.qlist(players) do
-				if sp and sp:isAlive() and sp:hasSkill("lieju") and use.from and sp:objectName() == use.from:objectName() and player:objectName() ~= sp:objectName() and use.card and use.card:isKindOf("Slash") then
+				if use.from and sp:objectName() == use.from:objectName() and player:objectName() ~= sp:objectName() and use.card and use.card:isKindOf("Slash") then
 				    local list = sgs.SPlayerList()
 					for _,l in sgs.qlist(use.to) do
 						if l:getMark("lieju_target") == 0 then 
@@ -5513,7 +5531,7 @@ huaqian = sgs.CreateTriggerSkill{
 			local use = data:toCardUse()
 			local players = room:findPlayersBySkillName(self:objectName())
 			for _,sp in sgs.qlist(players) do
-				if sp:isAlive() and sp:hasSkill(self:objectName()) and player:objectName() == use.from:objectName() and player:objectName() == room:getCurrent():objectName() and player:isFriendWith(sp) then
+				if player:objectName() == use.from:objectName() and player:objectName() == room:getCurrent():objectName() and player:isFriendWith(sp) then
 					if not (use.card:isKindOf("BasicCard") or use.card:isKindOf("TrickCard") or use.card:isKindOf("EquipCard")) or player:getPhase() == sgs.Player_NotActive then return end
 					if use.card:getSuit() == sgs.Card_Spade and not player:hasFlag("huaqian-Spade") then
 						room:setPlayerFlag(player, "huaqian-Spade")
@@ -5537,7 +5555,7 @@ huaqian = sgs.CreateTriggerSkill{
 			local use = data:toCardUse()
 			local players = room:findPlayersBySkillName(self:objectName())
 			for _,sp in sgs.qlist(players) do
-				if sp:isAlive() and sp:hasSkill(self:objectName()) and player:objectName() == use.from:objectName() and player:objectName() == room:getCurrent():objectName() and not room:getCurrent():hasFlag("huaqian_no") and player:isFriendWith(sp) then
+				if player:objectName() == use.from:objectName() and player:objectName() == room:getCurrent():objectName() and not room:getCurrent():hasFlag("huaqian_no") and player:isFriendWith(sp) then
 					if player:getMark("huaqian_suit") == 3 then
 						return self:objectName(), sp
 					end	
@@ -5709,7 +5727,7 @@ jianxing = sgs.CreateTriggerSkill{
 			local effect=data:toCardUse()
 			local players = room:findPlayersBySkillName(self:objectName())
 			for _,sp in sgs.qlist(players) do
-				if sp:isAlive() and sp:hasSkill(self:objectName()) and player:hasFlag("jianxing_bz") and effect.from and effect.from:objectName()==player:objectName() and effect.card:isKindOf("BasicCard") then
+				if player:hasFlag("jianxing_bz") and effect.from and effect.from:objectName() == player:objectName() and effect.card:isKindOf("BasicCard") then
 					for _,m in sgs.qlist(room:getOtherPlayers(player)) do
 					   room:removePlayerCardLimitation(m, "use", ".|.|.|.")
 					end
@@ -5721,10 +5739,8 @@ jianxing = sgs.CreateTriggerSkill{
 		    local dying = data:toDying()
 			local players = room:findPlayersBySkillName(self:objectName())
 			for _,pl in sgs.qlist(players) do
-				if pl:hasSkill(self:objectName()) then
-					for _,g in sgs.qlist(room:getAlivePlayers()) do
-						room:removePlayerCardLimitation(g, "use", ".|.|.|.")
-					end
+				for _,g in sgs.qlist(room:getAlivePlayers()) do
+					room:removePlayerCardLimitation(g, "use", ".|.|.|.")
 				end	
 			end
 		end
@@ -5734,7 +5750,7 @@ jianxing = sgs.CreateTriggerSkill{
 			local use = data:toCardUse()
 			local players = room:findPlayersBySkillName(self:objectName())
 			for _,sp in sgs.qlist(players) do
-				if sp:isAlive() and sp:hasSkill(self:objectName()) and sp:hasSkill("jianxing") and use.from and player:objectName() ~= use.from:objectName() and use.card:isKindOf("BasicCard") and not room:getCurrent():hasFlag("jianxing_used") and not sp:isNude() and not sp:isRemoved() then
+				if sp:hasSkill("jianxing") and use.from and player:objectName() ~= use.from:objectName() and use.card:isKindOf("BasicCard") and not room:getCurrent():hasFlag("jianxing_used") and not sp:isNude() and not sp:isRemoved() then
 					return self:objectName(), sp
 				end
 			end

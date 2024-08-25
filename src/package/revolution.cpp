@@ -2307,7 +2307,7 @@ public:
    {
         if (triggerEvent == DamageCaused){
             DamageStruct damage = data.value<DamageStruct>();
-            if (TriggerSkill::triggerable(player) && damage.card && damage.card->isBlack()){
+            if (TriggerSkill::triggerable(player) && damage.card && damage.card->isBlack() && !damage.to->isNude()){
                 return QStringList(objectName());
             }
         }

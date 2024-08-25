@@ -6010,7 +6010,7 @@ public:
                     list << p;
             }
             if (list.length()>0){
-                ServerPlayer *tar = room->askForPlayerChosen(player, list, objectName(), "@mengfeng", true);
+                ServerPlayer *tar = room->askForPlayerChosen(player, list, objectName()+"hide", "@mengfeng", true);
                 if (!tar) return false;
                 QStringList choices;
                 if (tar->hasShownGeneral1()){

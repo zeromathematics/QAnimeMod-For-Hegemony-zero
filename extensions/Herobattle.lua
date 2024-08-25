@@ -2203,11 +2203,11 @@ Caokai = sgs.CreateTriggerSkill{
     events = {sgs.EventPhaseStart, sgs.DamageCaused},
 	on_record = function(self, event, room, player, data)
         if event == sgs.EventPhaseStart and player:getPhase() == sgs.Player_RoundStart then
-			room:setPlayerMark(player, "#lizhan", 0)
+			room:setPlayerMark(player, "##caokai", 0)
 		end
 		if event == sgs.DamageCaused then
 			local damage = data:toDamage()
-			if damage.card and damage.card:isKindOf("Slash") and player:getMark("#lizhan")>0 and not damage.chain and not damage.transfer then
+			if damage.card and damage.card:isKindOf("Slash") and player:getMark("##caokai")>0 and not damage.chain and not damage.transfer then
 				damage.damage = damage.damage+1
 				data:setValue(damage)
 			end
@@ -2233,9 +2233,9 @@ Caokai = sgs.CreateTriggerSkill{
 			room:throwCard(id, player)
 		end
 		if player:getMark("longhua_used")>0 then 
-		    room:setPlayerMark(player, "#lizhan", 2)
+		    room:setPlayerMark(player, "##caokai", 2)
 		else
-			room:setPlayerMark(player, "#lizhan", 1)
+			room:setPlayerMark(player, "##caokai", 1)
 		end
 	end
 }
@@ -2244,7 +2244,7 @@ Caokaitr = sgs.CreateTargetModSkill{
 	name = "#caokaitr",
 	pattern = "Slash",
 	extra_target_func = function(self, player)
-		if player:getMark("#lizhan")>1 then
+		if player:getMark("##caokai")>1 then
 			return 1
 		end
 		return 0
@@ -4846,9 +4846,61 @@ Shenqi = sgs.CreateTriggerSkill{
 	end
 }
 
+HuojinCard = sgs.CreateSkillCard{
+	name = "HuojinCard",
+	will_throw = false,
+	mute = true,
+	filter = function(self, targets, to_select)
+         return #targets < 1 and sgs.Self:objectName() ~= to_select:objectName() and to_select:getMark("huojin_tar") > 0
+	end,
+	feasible = function(self, targets)
+		return #targets == 1
+	end,
+    on_use = function(self, room, player, targets)
+        local card = sgs.Sanguosha:cloneCard("slash")
+       card:setSkillName("huojin")
+	   for _,i in sgs.qlist(self:getSubcards()) do
+         card:addSubcard(i)
+	   end
+	   local use = sgs.CardUseStruct()
+	   use.card = card
+	   use.from = player
+	   for _,p in ipairs(targets) do
+		use.to:append(p)
+	   end
+       room:useCard(use, false)
+	end,
+}
+
+HuojinVS = sgs.CreateViewAsSkill{
+	name = "huojin",
+	n = 1,
+	view_filter = function(self,selected,to_select)
+		return #selected == 0
+	end,
+	view_as = function(self, cards)
+		if #cards == 0 then return nil end
+		local vs = HuojinCard:clone()
+		for var = 1, #cards, 1 do   
+            vs:addSubcard(cards[var])                
+        end  
+		vs:setSkillName(self:objectName())
+		vs:setShowSkill(self:objectName())
+		return vs
+	end,
+	enabled_at_play = function(self, player)
+		return false
+	end,
+	enabled_at_response = function(self, player, pattern)
+		return pattern == "@@huojin"
+	end,
+}
+
 Huojin = sgs.CreateTriggerSkill{
 	name = "huojin",
 	relate_to_place = "deputy",
+	can_preshow = true,
+	view_as_skill = HuojinVS,
 	events = {sgs.EventPhaseStart},
 	can_trigger = function(self, event, room, player, data)
 		if event == sgs.EventPhaseStart and player:getPhase() == sgs.Player_Start then
@@ -4873,7 +4925,7 @@ Huojin = sgs.CreateTriggerSkill{
 			end
             if target then
                 player:setProperty("huojin_target", sgs.QVariant(target:objectName()))
-				room:broadcastSkillInvoke(self:objectName(), player)
+				--room:broadcastSkillInvoke(self:objectName(), player)
 			    return true
 			end
 		end
@@ -4882,7 +4934,7 @@ Huojin = sgs.CreateTriggerSkill{
 		if event == sgs.EventPhaseStart then
             local target = findPlayerByObjectName(player:property("huojin_target"):toString())
 		    if not target then return false end
-			local card = room:askForCard(target, ".|.|.", "@huojin:"..target:objectName()..":"..player:objectName(), sgs.QVariant(), sgs.Card_MethodNone)
+			local card = room:askForCard(target, ".|.|.", "@huojingive:"..target:objectName()..":"..player:objectName(), sgs.QVariant(), sgs.Card_MethodNone)
 			if card then
 				room:obtainCard(player, card, false)
 				local list = sgs.SPlayerList()
@@ -4894,7 +4946,10 @@ Huojin = sgs.CreateTriggerSkill{
 					tar = room:askForPlayerChosen(target, list, self:objectName(), "", false, true)
 				end
 				if tar then
-                    room:askForUseSlashTo(player, tar, "@huojin-slash", false, true, false)
+                    room:setPlayerMark(tar, "huojin_tar", 1)
+                    --room:askForUseSlashTo(player, tar, "@huojin-slash", false, true, false)
+					room:askForUseCard(player, "@@huojin", "@huojin")
+					room:setPlayerMark(tar, "huojin_tar", 0)
 				end
 			end
 	    end
@@ -5882,7 +5937,7 @@ Baolie= sgs.CreateTriggerSkill{
 		on_record = function(self, event, room, player, data)
 			if event == sgs.EventPhaseEnd then
 				if player:getPhase() == sgs.Player_Finish then
-						 room:setPlayerMark(player, "#xinkong_max", 0)
+						 room:setPlayerMark(player, "##xinkong_max", 0)
 				end	
 			end		
 		
@@ -5930,6 +5985,7 @@ Baolie= sgs.CreateTriggerSkill{
 						elseif choice == "@xinkong2" then
 							local targetsm = room:askForPlayersChosen(player, room:getOtherPlayers(p), self:objectName(), 1, 1, "@xinkongb")
 							for _,pm in sgs.qlist(targetsm) do
+							    room:setPlayerMark(pm, "##xinkong_targetB", 1)
 							   local list = {}
 							   if not p:isKongcheng() then table.insert(list, "xinkong_seehandcards") end
 							   local dat = sgs.QVariant()
@@ -5939,10 +5995,11 @@ Baolie= sgs.CreateTriggerSkill{
 								   local m = room:askForCardChosen(player, p, "h", self:objectName(), true)
 								   room:obtainCard(player, m, false) 
 									if not room:askForUseSlashTo(p, pm, "@xinkong-slash", true) then room:loseHp(p) end
-									room:setPlayerMark(player, "#xinkong_max", 1)
+									room:setPlayerMark(player, "##xinkong_max", 1)
 									room:setPlayerFlag(player, "Global_PlayPhaseTerminated")
 	 
 								end	
+								room:setPlayerMark(pm, "##xinkong_targetB", 0)
 							end	
 						end       
 					elseif p:isKongcheng() then
@@ -5978,7 +6035,7 @@ Baolie= sgs.CreateTriggerSkill{
 	xinkongmax = sgs.CreateMaxCardsSkill{
 		name = "#xinkongmax" ,
 		extra_func = function(self, player)
-			if player:hasSkill("xinkong") and player:getMark("#xinkong_max") > 0 then
+			if player:hasSkill("xinkong") and player:getMark("##xinkong_max") > 0 then
 			   return 2
 			end
 		end,
@@ -6489,7 +6546,7 @@ Aoshavs = sgs.CreateViewAsSkill{
         return throne
     end,
     enabled_at_play = function(self, player)
-        return not player:hasUsed("ViewAsSkill_"..self:objectName().."Card") and player:getPile("throne"):isEmpty()
+        return not player:hasUsed("ViewAsSkill_"..self:objectName().."Card") ---and player:getPile("throne"):isEmpty()
     end,
 }
 
@@ -6551,15 +6608,15 @@ Jiankaivs = sgs.CreateZeroCardViewAsSkill{
 
 Jiankai = sgs.CreateTriggerSkill{
     name = "jiankai",
-    events = {sgs.TargetConfirmed, sgs.EventPhaseChanging , sgs.EventPhaseStart},
+    events = {sgs.TargetConfirmed, sgs.EventPhaseChanging , sgs.EventPhaseEnd},
 	view_as_skill = Jiankaivs,
 	on_record = function(self, event, room, player, data)
-		if event == sgs.EventPhaseChanging then
-			local change = data:toPhaseChange()
-			if change.from == sgs.Player_Play then
-				if player:hasFlag("jiankai_used") then
+		if event == sgs.EventPhaseEnd then
+			if player:getPhase() == sgs.Player_Play then
+				if player:getMark("jiankai_used") > 1 then
 				  player:clearOnePrivatePile("throne")
-				  room:setPlayerFlag(player, "-jiankai_used")
+				  --room:setPlayerFlag(player, "-jiankai_used")
+				  room:setPlayerMark(player, "jiankai_used", 0)
 				end
 			end
 		end
@@ -6568,27 +6625,33 @@ Jiankai = sgs.CreateTriggerSkill{
         if event == sgs.TargetConfirmed then
             local use = data:toCardUse()
             local card = use.card
-            if player and player:isAlive() and player:hasSkill(self:objectName()) and card and card:isKindOf("Slash") and use.to:length() == 1 and use.from and use.from == player then
+            if player and player:isAlive() and player:hasSkill(self:objectName()) and card and card:isKindOf("Slash") and use.from and use.from == player then
                 local throne = player:getPile("throne")
                 for _,id in sgs.qlist(throne) do
 					local throneCard = sgs.Sanguosha:getCard(id)
-					local target = use.to:at(0)
-					if throneCard:isKindOf("Weapon") and not target:getCards("hej"):isEmpty() then
-						return self:objectName() 
+					if throneCard:isKindOf("Weapon")or throneCard:isKindOf("Horse") then
+						local list = sgs.SPlayerList()
+						for _,l in sgs.qlist(use.to) do
+							if not l:getCards("hej"):isEmpty() then 
+								list:append(l) 
+							end
+						end
+						if not list:isEmpty() then
+							return self:objectName() 
+						end	
 					elseif throneCard:isKindOf("Armor") or throneCard:isKindOf("Treasure") then
 						return self:objectName()
-					elseif throneCard:isKindOf("Horse") then
-						if player:getHandcardNum() >= player:getHp() then
-							return self:objectName()
-						end
 					end
 				end
             end
         end
-		if event == sgs.EventPhaseStart and (player:getPhase() == sgs.Player_Start or player:getPhase() == sgs.Player_Finish) then
-            if player:isAlive() and player:hasSkill(self:objectName()) and not player:getPile("throne"):isEmpty() then
-				return self:objectName()
-			end
+		if event == sgs.EventPhaseChanging then
+		    local change = data:toPhaseChange()
+			if change.from == sgs.Player_Play then
+				if player:isAlive() and player:hasSkill(self:objectName()) and not player:getPile("throne"):isEmpty() then
+					return self:objectName()
+				end
+			end	
 		end
         return ""
     end,
@@ -6597,107 +6660,72 @@ Jiankai = sgs.CreateTriggerSkill{
 			local use = data:toCardUse()
 			local target = use.to:at(0)
 			local throne = player:getPile("throne")
-			local discard,draw,hit
+			local discard,draw
 			for _,id in sgs.qlist(throne) do  --特殊情况如和其他技能联动“王座”可能有多张牌，所以按照描述按顺序分别询问。
 				local throneCard = sgs.Sanguosha:getCard(id)
-				local target = use.to:at(0)
-				if throneCard:isKindOf("Weapon") and not target:getCards("hej"):isEmpty() then
+				if throneCard:isKindOf("Weapon") or throneCard:isKindOf("Horse") then
 					discard = true
 				elseif throneCard:isKindOf("Armor") or throneCard:isKindOf("Treasure") then
 					draw = true
-				elseif throneCard:isKindOf("Horse") then
-					if player:getHandcardNum() >= player:getHp() then
-						hit = true
-					end
 				end
 			end
 			--按顺序询问，直到选择一个发动开始
 			if discard and room:askForSkillInvoke(player, "jiankai_discard", data) then
-				local id = room:askForCardChosen(player, target, "hej", self:objectName()) 
-				room:setPlayerProperty(player, "jiankai_id", sgs.QVariant(id+1)) --不能保证亮将时有其他插入结算，所以要提前记录。注意int数据默认为0，所以这里id+1避免卡牌和trivial case重复
-                room:setPlayerFlag(player, "jiankai_used")
+				room:setPlayerMark(player, "jiankai_used", player:getMark("jiankai_used")+ 1)
 				room:setPlayerFlag(player, "jiankai_discard")--不能保证亮将时有其他插入结算，所以要提前记录。
                 room:broadcastSkillInvoke(self:objectName(), player)
 				return true
 			end
 			if draw and room:askForSkillInvoke(player, "jiankai_draw", data) then
-				room:setPlayerFlag(player, "jiankai_used")
+				room:setPlayerMark(player, "jiankai_used", player:getMark("jiankai_used")+ 1)
 				room:setPlayerFlag(player, "jiankai_draw")
-				room:broadcastSkillInvoke(self:objectName(), player)
-				return true
-			end
-			if hit and room:askForSkillInvoke(player, "jiankai_hit", data) then
-				room:setPlayerFlag(player, "jiankai_used")
-				room:setPlayerFlag(player, "jiankai_hit")
 				room:broadcastSkillInvoke(self:objectName(), player)
 				return true
 			end	
 		end
-		if event == sgs.EventPhaseStart then
-            if player:askForSkillInvoke(self:objectName(), data) then
-				local throne = player:getPile("throne")
-				local dis = sgs.IntList()
-				for _,id in sgs.qlist(throne) do
-					local card = sgs.Sanguosha:getCard(id)
-					if not card:isAvailable(player) then dis:append(id) end
+		if event == sgs.EventPhaseChanging then
+		    local change = data:toPhaseChange()
+            if change.from == sgs.Player_Play then--and player:askForSkillInvoke(self:objectName(), data)
+			    room:setPlayerMark(player, "#jiankai_used", 0)
+				for _,idl in sgs.qlist(player:getPile("throne")) do
+				  local card = sgs.Sanguosha:getCard(idl)
+					if card and card:isKindOf("EquipCard") then
+					   room:useCard(sgs.CardUseStruct(card, player, player))
+					end
+					if player:getPile("throne"):length() == 0 then break end 
 				end
-				room:fillAG(throne, player, dis)
-				local id = room:askForAG(player, throne, true, self:objectName())
-				room:clearAG(player)
-				if id > -1 then
-                    room:setPlayerProperty(player, "jiankai_card", sgs.QVariant(id+1))
-					local card = room:askForUseCard(player, "@@jiankai", "@jiankai")
-					room:setPlayerProperty(player, "jiankai_card", sgs.QVariant())
-					if card then return true end
-				end
+				player:clearOnePrivatePile("throne")
 			end
 		end
 	end,
 	on_effect = function(self, event, room, player, data, sp)
         if event == sgs.TargetConfirmed then
 			local use = data:toCardUse()
-			local target = use.to:at(0)
 			local throne = player:getPile("throne")
 			local type = ""
 			if player:hasFlag("jiankai_discard") then type = "discard" end
 			if player:hasFlag("jiankai_draw") then type = "draw" end
-			if player:hasFlag("jiankai_hit") then type = "hit" end
 			if player:hasFlag("jiankai_discard") then room:setPlayerFlag(player, "-jiankai_discard") end --及时清空数据避免插入结算
 			if player:hasFlag("jiankai_draw") then room:setPlayerFlag(player, "-jiankai_draw") end
-			if player:hasFlag("jiankai_hit") then room:setPlayerFlag(player, "-jiankai_hit") end
-			local discard,draw,hit --on_cost 里只发动一个效果所以这里要重新判断是否发动其他效果
+			local discard,draw --on_cost 里只发动一个效果所以这里要重新判断是否发动其他效果
 			for _,id in sgs.qlist(throne) do
 				local throneCard = sgs.Sanguosha:getCard(id)
-				local target = use.to:at(0)
-				if throneCard:isKindOf("Weapon") and not target:getCards("hej"):isEmpty() then
+				if throneCard:isKindOf("Weapon") or throneCard:isKindOf("Horse") then
 					discard = true
 				elseif throneCard:isKindOf("Armor") or throneCard:isKindOf("Treasure") then
 					draw = true
-				elseif throneCard:isKindOf("Horse") then
-					if player:getHandcardNum() >= player:getHp() then
-						hit = true
-					end
 				end
 			end
 			if type == "discard" then --选择了武器类效果则直接发动
-                local id = player:property("jiankai_id"):toInt() -1 --获取选择的卡牌
-				if id > -1 then
-					room:throwCard(id, target, player)
-				end
-				room:setPlayerProperty(player, "jiankai_id", sgs.QVariant()) --清空数据
+                for _,t in sgs.qlist(use.to) do
+					if not t:getCards("hej"):isEmpty() then 
+						local id = room:askForCardChosen(player, t, "hej", self:objectName())
+						room:throwCard(id, t, player)
+					end	
+				end	
 			end
             if type == "draw" or (type == "discard" and draw and room:askForSkillInvoke(player, "jiankai_draw", data)) then --选择了防具、宝物类效果则直接发动，否则选择了武器效果的情况下满足条件则继续询问发动
                 player:drawCards(1)
-			end
-			if type == "hit" or (hit and room:askForSkillInvoke(player, "jiankai_hit", data)) then --选择了坐骑类效果则直接发动，否则满足条件则继续询问发动
-                local jink_list = player:getTag("Jink_" .. use.card:toString()):toList()
-	            local index = use.to:indexOf(target)
-                local log = sgs.LogMessage()
-                log.type = "#jiankai_XD"
-                log.from = target
-                room:sendLog(log)
-                jink_list:replace(index,sgs.QVariant(0))
-		        player:setTag("Jink_" .. use.card:toString(), sgs.QVariant(jink_list))
 			end
 		end
 	end
@@ -6926,9 +6954,11 @@ Xieyu = sgs.CreateTriggerSkill{
         end
         if event == sgs.CardFinished then
             room:loseHp(player)
-            room:askForUseCard(player, "@@xieyu", "@xieyu")
-			player:hideGeneral(not player:inHeadSkills(self:objectName()))
-			room:setPlayerDisableShow(player, (player:inHeadSkills(self:objectName()) and "d") or "h", self:objectName())
+            if player:isAlive() then
+				room:askForUseCard(player, "@@xieyu", "@xieyu")
+				player:hideGeneral(not player:inHeadSkills(self:objectName()))
+				room:setPlayerDisableShow(player, (player:inHeadSkills(self:objectName()) and "d") or "h", self:objectName())
+			end	
         end
 	end
 }
@@ -6959,7 +6989,7 @@ Kuanghe = sgs.CreateTriggerSkill{
 			if change.to ~= sgs.Player_Play then return "" end
 			if player:hasShownGeneral1() and player:getActualGeneral1():isMale() then male = true end
 			if player:hasShownGeneral2() and player:getActualGeneral2():isMale() then male = true end
-            if player and player:isAlive() and player:hasSkill(self:objectName()) and not male and player:getHandcardNum() >= room:alivePlayerCount() - 1 and (not player:isSkipped(sgs.Player_Play) or not player:isSkipped(sgs.Player_Discard))then
+            if player and player:isAlive() and player:hasSkill(self:objectName()) and not male and player:getHandcardNum() >= player:getHp() and (not player:isSkipped(sgs.Player_Play) or not player:isSkipped(sgs.Player_Discard))then---(room:alivePlayerCount() - 1)*0.5
                 return self:objectName()
             end
         end
@@ -7014,7 +7044,7 @@ Aoshi = sgs.CreateTriggerSkill{
 	view_as_skill = Aoshivs,
     events = {sgs.EventPhaseStart, sgs.PindianVerifying, sgs.Pindian},
 	can_trigger = function(self, event, room, player, data)
-		if event == sgs.EventPhaseStart and player:hasSkill(self:objectName()) and player:getPhase()==sgs.Player_Start and not player:isKongcheng() and player:getMark("#aoshi_null")==0 then
+		if event == sgs.EventPhaseStart and player:hasSkill(self:objectName()) and player:getPhase()==sgs.Player_Start and player:getMark("#aoshi_null")==0 then---and not player:isKongcheng()
 			local can
             for _,p in sgs.qlist(room:getOtherPlayers(player)) do
 				if not p:isKongcheng() then
@@ -7085,12 +7115,21 @@ Aoshi = sgs.CreateTriggerSkill{
 			  target =  room:askForPlayerChosen(player, list, self:objectName(), "@aoshi1", true)
 			end
 			if target then
-			  room:broadcastSkillInvoke(self:objectName(), player)
-			  room:doLightbox("aoshi$", 1000)
-			  local pd = player:pindianSelect(target, "aoshi")
-			  local da = sgs.QVariant()
-			  da:setValue(pd)
-			  player:setProperty("aoshi_pd", da)
+				local n = 998
+				for _,g in sgs.qlist(room:getAlivePlayers()) do
+				   if g:getHandcardNum()< n then n = g:getHandcardNum() end
+				end
+				if player and player:isAlive() and player:getHandcardNum()==n then
+					player:drawCards(1, "aoshi")
+				end
+				room:broadcastSkillInvoke(self:objectName(), player)
+				room:doLightbox("aoshi$", 1000)
+				if not player:isKongcheng() then
+				    local pd = player:pindianSelect(target, "aoshi")
+					local da = sgs.QVariant()
+					da:setValue(pd)
+					player:setProperty("aoshi_pd", da)
+		        end 
 			  return true
 			end
 		else
@@ -7181,8 +7220,8 @@ Xinshang = sgs.CreateTriggerSkill{
 	       end
 		end
 		if event == sgs.Dying then
-			local x = player:getMaxHp()+1
-			if player:getHandcardNum()<x then player:drawCards(x-player:getHandcardNum()) end
+			---local x = player:getMaxHp()+1
+		    if player:getHandcardNum()<4 then player:drawCards(4-player:getHandcardNum()) end
 			local a = 1
 			if player:getPhase() ~= sgs.Player_NotActive then a = 2 end
 			room:setPlayerMark(player, "#aoshi_null", a)
@@ -7362,8 +7401,24 @@ mianling = sgs.CreateZeroCardViewAsSkill{
 		return new_card		
 	end,	
 	enabled_at_play = function(self, player)
-		if player:hasFlag("mianling_used") then return false end
-		return (player:getMark("mianling-add") == 0 and player:getPile("miann"):length()< 4) or player:getMark("mianling-obtain") == 0 
+        if player:isNude() then return false end
+		--[[return (player:getMark("mianling-add") == 0 and player:getPile("miann"):length()< 4) or player:getMark("mianling-obtain") == 0 ]]
+		return not player:hasFlag("mianling_used")
+	end
+}
+
+mianling = sgs.CreateZeroCardViewAsSkill{
+	name = "mianling",
+	view_as = function(self)
+		local new_card = mianlingCard:clone()
+		new_card:setShowSkill(self:objectName())	
+		new_card:setSkillName(self:objectName())		
+		return new_card		
+	end,	
+	enabled_at_play = function(self, player)
+		if player:isNude() then return false end
+		--[[return (player:getMark("mianling-add") == 0 and player:getPile("miann"):length()< 4) or player:getMark("mianling-obtain") == 0 ]]
+		return not player:hasFlag("mianling_used")
 	end
 }
 
@@ -7371,105 +7426,59 @@ mianlingCard = sgs.CreateSkillCard{
 	name = "mianlingCard",
 	target_fixed = true,
 	on_use = function(self, room, player)
-		local choice_list = {}
-		if player:getMark("mianling-add") == 0 and player:getPile("miann"):length()< 4 then table.insert(choice_list, "choice-mianling-add") end
-		if player:getMark("mianling-obtain") == 0 and player:getPile("miann"):length()> 0 then table.insert(choice_list, "choice-mianling-obtain") end
-		if player:isAlive() then table.insert(choice_list, "no") end
-		if #choice_list == 0 then return false end
-		local choice = room:askForChoice(player, "mianling", table.concat(choice_list, "+"))
-		if choice == "choice-mianling-obtain" then
-		    room:doLightbox("mianling$", 999)
-		    room:setPlayerMark(player, "mianling-obtain", 1)
-		    if player:getPile("miann"):length()> 0 then
-				local E = player:getPile("miann") room:fillAG(E, player)  local ided = room:askForAG(player, E, false, "mianling")  room:clearAG(player)  room:obtainCard(player, ided)
-				room:setPlayerMark(player, "##mianling_nu", 0) room:setPlayerMark(player, "##mianling_xi", 0) room:setPlayerMark(player, "##mianling_ai", 0) room:setPlayerMark(player, "##mianling_le", 0)
-				for _,p in sgs.qlist(room:getAlivePlayers()) do if p:getMark("mianling_nu_Slash") > 0 then room:setPlayerMark(p, "mianling_nu_Slash", 0) end end			
-				if sgs.Sanguosha:getCard(ided):getSuit() == sgs.Card_Heart then
-				    room:setPlayerMark(player, "##mianling_nu", 1)
-					for _,p in sgs.qlist(room:getAlivePlayers()) do
-						if player:distanceTo(p) <= player:getAttackRange() and player:getMark("##mianling_nu")> 0 then
-							local MJ = player:getPile("miann")
-							local m_heart = false local m_diamond = false local m_club = false local m_spade = false
-							for _, card_id in sgs.qlist(MJ) do
-								local card = sgs.Sanguosha:getCard(card_id)
-								if card:getSuit() == sgs.Card_Heart then  m_heart = true end
-								if card:getSuit() == sgs.Card_Diamond then m_diamond = true end
-								if card:getSuit() == sgs.Card_Club then m_club = true end
-								if card:getSuit() == sgs.Card_Spade then m_spade = true end
-							end
-							local m_result = 0
-							if m_spade then m_result = m_result + 1 end
-							if m_club then m_result = m_result + 1 end
-							if m_heart then m_result = m_result + 1 end
-							if m_diamond then m_result = m_result + 1 end
-							if m_result == 0 then room:setPlayerMark(p, "mianling_nu_Slash", 4)
-							elseif m_result == 1 then room:setPlayerMark(p, "mianling_nu_Slash", 3)
-							elseif m_result == 2 then room:setPlayerMark(p, "mianling_nu_Slash", 2)
-							elseif m_result == 3 then room:setPlayerMark(p, "mianling_nu_Slash", 1)
-							elseif m_result == 4 then room:setPlayerMark(p, "mianling_nu_Slash", 0) end
-						end
+		if not player:getPile("miann"):isEmpty() then---and not player:isNude()
+			local id = room:askForCard(player, ".|.|.|.!", "@mianling", sgs.QVariant(), sgs.Card_MethodNone)
+			if id then
+			    for _,idl in sgs.qlist(player:getPile("miann")) do
+				  local card = sgs.Sanguosha:getCard(idl)
+					if card then
+					   room:obtainCard(player, card)
 					end
-				elseif sgs.Sanguosha:getCard(ided):getSuit() == sgs.Card_Diamond then  room:setPlayerMark(player, "##mianling_xi", 1)
-				elseif sgs.Sanguosha:getCard(ided):getSuit() == sgs.Card_Club then  room:setPlayerMark(player, "##mianling_ai", 1)
-				elseif sgs.Sanguosha:getCard(ided):getSuit() == sgs.Card_Spade then  room:setPlayerMark(player, "##mianling_le", 1)
+					if player:getPile("miann"):length() == 0 then break end 
 				end
-			end	
-		elseif choice == "choice-mianling-add" then
-		        room:setPlayerMark(player, "mianling-add", 1)
-		        local MJ = player:getPile("miann")
-                local m_heart = false local m_diamond = false local m_club = false local m_spade = false
-				for _, card_id in sgs.qlist(MJ) do  local card = sgs.Sanguosha:getCard(card_id)
-					if card:getSuit() == sgs.Card_Heart then  m_heart = true end
-					if card:getSuit() == sgs.Card_Diamond then m_diamond = true end
-					if card:getSuit() == sgs.Card_Club then m_club = true end
-					if card:getSuit() == sgs.Card_Spade then m_spade = true end
-				end
-				local choice_list = {}
-				if not m_heart then local list = sgs.IntList()
-					for _,c in sgs.qlist(player:getCards("he")) do if c:getSuit() == sgs.Card_Heart then list:append(c:getEffectiveId()) end end
-					if not list:isEmpty() then table.insert(choice_list, "choice-heart-add") end  
-				end	
-                if not m_diamond then local list = sgs.IntList()
-					for _,c in sgs.qlist(player:getCards("he")) do if c:getSuit() == sgs.Card_Diamond then list:append(c:getEffectiveId()) end end
-					if not list:isEmpty() then table.insert(choice_list, "choice-diamond-add") end   
-				end	
-				if not m_club then local list = sgs.IntList()
-					for _,c in sgs.qlist(player:getCards("he")) do if c:getSuit() == sgs.Card_Club then list:append(c:getEffectiveId()) end end
-					if not list:isEmpty() then table.insert(choice_list, "choice-club-add") end   
-				end	
-				if not m_spade then local list = sgs.IntList()
-					for _,c in sgs.qlist(player:getCards("he")) do if c:getSuit() == sgs.Card_Spade then list:append(c:getEffectiveId()) end end
-					if not list:isEmpty() then table.insert(choice_list, "choice-spade-add") end  
-				end 
-			    if #choice_list == 0 then return false end
-				local choice = room:askForChoice(player, self:objectName(), table.concat(choice_list, "+"))
-				if choice == "choice-heart-add" then  local id = room:askForCard(player,".|heart|.|.!","@mianling",sgs.QVariant(),sgs.Card_MethodNone)
-					if id then	player:addToPile("miann", id) end
-				elseif choice == "choice-diamond-add" then	local id = room:askForCard(player, ".|diamond|.|.!", "@mianling", sgs.QVariant(), sgs.Card_MethodNone)
-					if id then  player:addToPile("miann", id) end   
-				elseif choice == "choice-club-add" then  local id = room:askForCard(player, ".|club|.|.!", "@mianling", sgs.QVariant(), sgs.Card_MethodNone)
-				   if id then player:addToPile("miann", id) end   
-				elseif choice == "choice-spade-add" then  local id = room:askForCard(player, ".|spade|.|.!", "@mianling", sgs.QVariant(), sgs.Card_MethodNone)
-				   if id then  player:addToPile("miann", id) end   
-				end
-				if player:getPile("miann"):length() > 3 and player:askForSkillInvoke("mianling_Calm") then
-					room:setPlayerMark(player, "mianling_nu_Slash", 0)  room:setPlayerMark(player, "##mianling_nu", 0) room:setPlayerMark(player, "##mianling_xi", 0) room:setPlayerMark(player, "##mianling_ai", 0) room:setPlayerMark(player, "##mianling_le", 0)
-			    end	
-		else
-			room:setPlayerFlag(player, "mianling_used")
+			    player:addToPile("miann", id) 
+			end 
+		elseif player:getPile("miann"):isEmpty()then
+		    local id = room:askForCard(player, ".|.|.|.!", "@mianling", sgs.QVariant(), sgs.Card_MethodNone)
+			if id then
+			    player:addToPile("miann", id) 
+			end 
 		end
+		room:setPlayerMark(player, "##mianling_nu", 0) 
+		room:setPlayerMark(player, "##mianling_xi", 0) 
+		room:setPlayerMark(player, "##mianling_ai", 0) 
+		room:setPlayerMark(player, "##mianling_le", 0)
+		local miann = player:getPile("miann")
+		for _,idl in sgs.qlist(miann) do  
+			local miannCard = sgs.Sanguosha:getCard(idl)
+			if miannCard:getSuit() == sgs.Card_Heart then
+				room:setPlayerMark(player, "##mianling_nu", 1)
+			elseif miannCard:getSuit() == sgs.Card_Diamond then
+			    room:setPlayerMark(player, "##mianling_xi", 1)
+			elseif miannCard:getSuit() == sgs.Card_Club then
+			    room:setPlayerMark(player, "##mianling_ai", 1)
+			elseif miannCard:getSuit() == sgs.Card_Spade then
+			    room:setPlayerMark(player, "##mianling_le", 1)
+			end
+		end
+		for _,p in sgs.qlist(room:getAlivePlayers()) do
+			if p:getMark("mianling_nu_Slash") > 0 then room:setPlayerMark(p, "mianling_nu_Slash", 0) end  
+			if player:distanceTo(p) <= player:getAttackRange() and player:getMark("##mianling_nu")> 0 then
+				room:setPlayerMark(p, "mianling_nu_Slash", 1)
+			end
+		end
+		room:setPlayerFlag(player, "mianling_used")
 	end,
 }
 
-
 mianlingShown = sgs.CreateTriggerSkill{
 	name = "#mianlingShown" ,
-	events = {sgs.EventPhaseStart, sgs.CardsMoveOneTime, sgs.DrawNCards, sgs.GeneralShown, sgs.EventPhaseChanging, sgs.CardFinished, sgs.CardUsed},
+	events = {sgs.EventPhaseStart, sgs.CardsMoveOneTime, sgs.DrawNCards, sgs.GeneralShown, sgs.CardFinished, sgs.CardUsed},--, sgs.EventPhaseChanging
 	on_record = function(self, event, room, player, data)
-		local change = data:toPhaseChange()
+		--[[local change = data:toPhaseChange()
 		if event == sgs.EventPhaseChanging and change.to ~= sgs.Player_NotActive then
 		   room:setPlayerMark(player, "mianling-obtain", 0)  room:setPlayerMark(player, "mianling-add", 0)
-		end
+		end]]
 		if event == sgs.CardFinished then
 			local use = data:toCardUse()
 			local players = room:findPlayersBySkillName(self:objectName())
@@ -7477,24 +7486,8 @@ mianlingShown = sgs.CreateTriggerSkill{
 				if sp:isAlive() and sp:hasShownSkill("mianling") and (use.card:isKindOf("Slash") or use.card:isKindOf("Music")) then
 					for _,p in sgs.qlist(room:getOtherPlayers(sp)) do
 						if p:getMark("mianling_nu_Slash") > 0 then room:setPlayerMark(p, "mianling_nu_Slash", 0) end  
-						if sp:distanceTo(p) <= sp:getAttackRange() and sp:getMark("##mianling_nu")> 0 and sp:getPile("miann"):length() < 4 and sp:hasShownSkill("ranxv") then
-							local MJ = sp:getPile("miann")  local m_heart = false  local m_diamond = false  local m_club = false  local m_spade = false
-							for _, card_id in sgs.qlist(MJ) do  local card = sgs.Sanguosha:getCard(card_id)
-								if card:getSuit() == sgs.Card_Heart then  m_heart = true end
-								if card:getSuit() == sgs.Card_Diamond then m_diamond = true end
-								if card:getSuit() == sgs.Card_Club then m_club = true end
-								if card:getSuit() == sgs.Card_Spade then m_spade = true end
-							end
-							local m_result = 0
-							if m_spade then m_result = m_result + 1 end
-							if m_club then m_result = m_result + 1 end
-							if m_heart then m_result = m_result + 1 end
-							if m_diamond then m_result = m_result + 1 end
-							if m_result == 0 then room:setPlayerMark(p, "mianling_nu_Slash", 4)
-							elseif m_result == 1 then room:setPlayerMark(p, "mianling_nu_Slash", 3)
-							elseif m_result == 2 then room:setPlayerMark(p, "mianling_nu_Slash", 2)
-							elseif m_result == 3 then room:setPlayerMark(p, "mianling_nu_Slash", 1)
-							elseif m_result == 4 then room:setPlayerMark(p, "mianling_nu_Slash", 0) end
+						if sp:distanceTo(p) <= sp:getAttackRange() and sp:getMark("##mianling_nu")> 0 and  sp:hasShownSkill("ranxv") then
+							room:setPlayerMark(p, "mianling_nu_Slash", 1)
 						end
 					end
 				end
@@ -7506,26 +7499,8 @@ mianlingShown = sgs.CreateTriggerSkill{
 			if ((move.to and move.to:objectName() == player:objectName() and move.to_place == sgs.Player_PlaceEquip) or (move.from and move.from:objectName() == player:objectName() and move.from_places:contains(sgs.Player_PlaceEquip))) then
 				for _,p in sgs.qlist(room:getOtherPlayers(player)) do
 					if p:getMark("mianling_nu_Slash") > 0 then room:setPlayerMark(p, "mianling_nu_Slash", 0) end  
-					if player:distanceTo(p) <= player:getAttackRange() and player:getMark("##mianling_nu")> 0 and player:getPile("miann"):length() < 4 and player:hasShownSkill("ranxv") then
-						local MJ = player:getPile("miann")
-						local m_heart = false local m_diamond = false local m_club = false local m_spade = false
-						for _, card_id in sgs.qlist(MJ) do
-							local card = sgs.Sanguosha:getCard(card_id)
-							if card:getSuit() == sgs.Card_Heart then  m_heart = true end
-							if card:getSuit() == sgs.Card_Diamond then m_diamond = true end
-							if card:getSuit() == sgs.Card_Club then m_club = true end
-							if card:getSuit() == sgs.Card_Spade then m_spade = true end
-						end
-						local m_result = 0
-						if m_spade then m_result = m_result + 1 end
-						if m_club then m_result = m_result + 1 end
-						if m_heart then m_result = m_result + 1 end
-						if m_diamond then m_result = m_result + 1 end
-						if m_result == 0 then room:setPlayerMark(p, "mianling_nu_Slash", 4)
-						elseif m_result == 1 then room:setPlayerMark(p, "mianling_nu_Slash", 3)
-						elseif m_result == 2 then room:setPlayerMark(p, "mianling_nu_Slash", 2)
-						elseif m_result == 3 then room:setPlayerMark(p, "mianling_nu_Slash", 1)
-						elseif m_result == 4 then room:setPlayerMark(p, "mianling_nu_Slash", 0) end
+					if player:distanceTo(p) <= player:getAttackRange() and player:getMark("##mianling_nu")> 0 and player:hasShownSkill("ranxv") then
+						room:setPlayerMark(p, "mianling_nu_Slash", 1)
 					end
 				end
 			end
@@ -7535,7 +7510,7 @@ mianlingShown = sgs.CreateTriggerSkill{
 			local players = room:findPlayersBySkillName(self:objectName())
 			for _,sp in sgs.qlist(players) do
 				if sp:isAlive() and sp:hasShownSkill("mianling") and sp:distanceTo(player) <= sp:getAttackRange() and sp:getMark("##mianling_xi")> 0 then 
-					if sp~=player and (sp:getPile("miann"):length() >= 4 or not sp:hasShownSkill("ranxv")) then return "" end
+					if sp~=player and not sp:hasShownSkill("ranxv") then return "" end
 					local list = room:getDrawPile()
 					if list:length()>0 then
 						local id = list:at(math.random(0,list:length()-1))
@@ -7554,7 +7529,7 @@ mianlingShown = sgs.CreateTriggerSkill{
 			local players = room:findPlayersBySkillName(self:objectName())
 			for _,sp in sgs.qlist(players) do
 				if sp:isAlive() and sp:hasShownSkill("mianling") and sp:distanceTo(player) <= sp:getAttackRange() and sp:getMark("##mianling_ai")> 0 then 
-				    if sp~=player and (sp:getPile("miann"):length() >= 4 or not sp:hasShownSkill("ranxv")) then return "" end
+				    if sp~=player and not sp:hasShownSkill("ranxv") then return "" end
 					room:setPlayerFlag(player, "mianling_ai_extra")
 				end	
 			end		
@@ -7562,8 +7537,8 @@ mianlingShown = sgs.CreateTriggerSkill{
 		if event == sgs.EventPhaseChanging and data:toPhaseChange().to == sgs.Player_Judge then
 			local players = room:findPlayersBySkillName(self:objectName())
 			for _,sp in sgs.qlist(players) do
-				if sp:isAlive() and sp:hasShownSkill("mianling") and sp:distanceTo(player) <= sp:getAttackRange() and sp:getMark("##mianling_le")> 0 then 
-				    if sp~=player and (sp:getPile("miann"):length() >= 4 or not sp:hasShownSkill("ranxv")) then return "" end
+				if sp:isAlive() and sp:hasShownSkill("mianling") and sp:distanceTo(player) <= sp:getAttackRange() and sp:getMark("##mianling_nu")> 0 then 
+				    if sp~=player and not sp:hasShownSkill("ranxv") then return "" end
 					player:skip(sgs.Player_Judge)
 				end	
 			end		
@@ -7573,7 +7548,7 @@ mianlingShown = sgs.CreateTriggerSkill{
 			local players = room:findPlayersBySkillName(self:objectName())
 			for _,sp in sgs.qlist(players) do
 				if sp:isAlive() and sp:hasShownSkill("mianling") and sp:distanceTo(player) <= sp:getAttackRange() and sp:getMark("##mianling_le")> 0 then 
-				    if sp~=player and (sp:getPile("miann"):length() >= 4 or not sp:hasShownSkill("ranxv")) then return "" end
+				    if sp~=player and not sp:hasShownSkill("ranxv") then return "" end-----(sp:getPile("miann"):length() >= 4 or not sp:hasShownSkill("ranxv"))
 					if not use.card:isKindOf("Slash") or use.card:isKindOf("ThunderSlash")or use.card:isKindOf("FireSlash") or use.card:isKindOf("IceSlash") then return false end
 					if not room:askForSkillInvoke(player, "mianling_attribute", data) then return end
 					local choice = room:askForChoice(player, "mianling", "thunder_slash+fire_slash+ice_slash")
@@ -7614,10 +7589,30 @@ mianlingShown = sgs.CreateTriggerSkill{
 	end,
 	on_effect=function(self, event, room, player, data)
 	    if event == sgs.GeneralShown then
-			local num = 0 for _,id in sgs.qlist(room:getDrawPile()) do local card = sgs.Sanguosha:getCard(id) if card:getSuit() == sgs.Card_Heart and num==0 then player:addToPile("miann", card) num = 1 end if num==1 then break end end
-			local num = 0 for _,id in sgs.qlist(room:getDrawPile()) do  local card = sgs.Sanguosha:getCard(id) if card:getSuit() == sgs.Card_Diamond and num==0 then  player:addToPile("miann", card)  num = 1 end  if num==1 then break end end
-			local num = 0 for _,id in sgs.qlist(room:getDrawPile()) do  local card = sgs.Sanguosha:getCard(id)  if card:getSuit() == sgs.Card_Club and num==0 then  player:addToPile("miann", card)  num = 1 end  if num==1 then break end end
-			local num = 0 for _,id in sgs.qlist(room:getDrawPile()) do  local card = sgs.Sanguosha:getCard(id)  if card:getSuit() == sgs.Card_Spade and num==0 then  player:addToPile("miann", card)  num = 1 end  if num==1 then break end end
+			local num = 0 
+			for _,id in sgs.qlist(room:getDrawPile()) do 
+				local card = sgs.Sanguosha:getCard(id) 
+				if num==0 then 
+					player:addToPile("miann", card) 
+					num = 1 
+				end 
+				if num==1 then 
+					break 
+				end 
+			end
+			local miann = player:getPile("miann")
+			for _,idl in sgs.qlist(miann) do  
+				local miannCard = sgs.Sanguosha:getCard(idl)
+				if miannCard:getSuit() == sgs.Card_Heart then
+					room:setPlayerMark(player, "##mianling_nu", 1)
+				elseif miannCard:getSuit() == sgs.Card_Diamond then
+					room:setPlayerMark(player, "##mianling_xi", 1)
+				elseif miannCard:getSuit() == sgs.Card_Club then
+					room:setPlayerMark(player, "##mianling_ai", 1)
+				elseif miannCard:getSuit() == sgs.Card_Spade then
+					room:setPlayerMark(player, "##mianling_le", 1)
+				end
+			end
 		end  
 	end	   
 }
@@ -7648,7 +7643,7 @@ ranxv = sgs.CreateTriggerSkill{
        if event == sgs.EventPhaseStart and player:getPhase() == sgs.Player_Play then
 			local players = room:findPlayersBySkillName(self:objectName())
 			for _,sp in sgs.qlist(players) do
-				if sp:isAlive() and sp:hasSkill(self:objectName()) and room:getCurrent():objectName() ~= sp:objectName() and sp:distanceTo(player) <= sp:getAttackRange() and not player:isNude() then
+				if sp:isAlive() and sp:hasSkill(self:objectName()) and sp:distanceTo(player) <= sp:getAttackRange() and not player:isNude() then----and room:getCurrent():objectName() ~= sp:objectName() 
 					return self:objectName(), sp
 				end
 			end
@@ -8871,7 +8866,7 @@ sgs.LoadTranslationTable{
 ["designer:Tatsumi"] = "FlameHaze",
 ["cv:Tatsumi"] = "齐藤壮马",
 ["lizhan"] = "历战",
-["$lizhan"] = "我一定会..活着回来。",
+["$lizhan"] = "天谴的时刻到了！",
 [":lizhan"] = "锁定技，当你造成或受到伤害后，若你“历”标记小于体力上限，你获得一个“历”标记；当你有“历”标记时，手牌上限+1。",
 ["caokai"] = "操铠",
 ["Flcaokai$"] = "image=image/animate/Flcaokai.png",
@@ -8986,7 +8981,7 @@ sgs.LoadTranslationTable{
 ["shunshan_to"] = "瞬闪：选择此次移动的目标",
 ["%Kuroko"] = "“姐姐大人黑子想成为你的力量！”",
 
-["Kaneki"] = "金木研",
+--[[["Kaneki"] = "金木研",
 ["@Kaneki"] = "東京喰種",
 ["#Kaneki"] = "黑色死神",
 ["~Kaneki"] = "",
@@ -8996,7 +8991,7 @@ sgs.LoadTranslationTable{
 ["shiyu"] = "食欲",
 [":shiyu"] = "锁定技，结束阶段开始时，若你本回合未造成过伤害，失去1点体力；若造成伤害数为1，摸1张牌；若造成伤害数不小于2，选择一项：1，摸两张牌。2，回复1点体力。",
 ["banhe"] = "半赫",
-[":banhe"] = "准备阶段开始时，若你已受伤，你可以从摸牌+弃牌堆随机获得一张装备牌。",
+[":banhe"] = "准备阶段开始时，若你已受伤，你可以从摸牌+弃牌堆随机获得一张装备牌。",]]
 
 ["Chiyuri"] = "仓嶋千百合",
 ["@Chiyuri"] = "加速世界",
@@ -9074,6 +9069,7 @@ sgs.LoadTranslationTable{
 	["$youdiz2"] = "第二波攻击编队，全体作战飞机，出击！",
 	--[":youdiz"] = "出牌阶段限一次，你可以将一张装备牌当作【存在缺失】使用。锁定技，若你明置，你的【存在缺失】额定目标+1，使用时摸1张牌。",
 	[":youdiz"] = "出牌阶段限一次，你可以令一名其他角色对你使用一张【杀】（无距离限制），然后若你体力值不小于其，你执行：令其进入存在缺失状态，并且若其与你势力不同，你摸一张牌。",
+	["@youdiz-slash:"] = "对“诱敌”来源对使用一张杀",
 	["Zuikaku"] = "瑞鶴",
 	["@Zuikaku"] = "艦隊collection",
 	["#Zuikaku"] = "最后的正规空母",
@@ -9196,11 +9192,13 @@ sgs.LoadTranslationTable{
 [":shenqi"] = "主将技，你明置此人物牌时，随机展示一张含有“魔法”势力标签的未出场人物牌，置于该人物牌上，称为“神器”；一名势力相同的其他角色阵亡时，你可以选择其一张人物牌，将其加入“神器”；当你使用【杀】时，你可以将一张“神器”与副将替换之(不因此获得“神器”拥有的限定技的标记)。",
 ["shenqigeneralcard"] = "神器",
 ["huojin"] = "祸津",
-[":huojin"] = "副将技，准备阶段开始时，你可以令一名其他角色选择是否交给你一张牌，若其选择是，你可以对其指定的另一名其他角色使用一张【杀】（无距离次数限制）。",
+[":huojin"] = "副将技，准备阶段开始时，你可以令一名其他角色选择是否交给你一张牌，若其选择是，你可以将一张牌当【杀】对其指定目标使用（无距离次数限制）。",
 ["zhanyuan"] = "斩缘",
 [":zhanyuan"] = "你的杀对目标造成伤害后，可以弃置其区域内的一张牌，然后其进入存在缺失状态。",
-["@huojin"] = "是否交给 %dest 一张牌",
-["@huojin-slash"] = "对目标使用一张杀",
+["@huojingive"] = "是否交给 %dest 一张牌",
+--["@huojin-slash"] = "对目标使用一张杀",
+["@huojin"] = "祸津",
+["~huojin"] = "可以将一张牌当【杀】对其指定目标使用",
 ["$shenqi1"] = "来吧，伴器！",
 ["$shenqi2"] = "丰苇原中国，喧扰迷惑其之邪魅...",
 ["$huojin"] = "闭嘴！",
@@ -9277,6 +9275,7 @@ sgs.LoadTranslationTable{
 ["#Megumin"] = "爆裂魔法使",
 ["@Megumin"] = "为美好的世界献上祝福",
 ["cv:Megumin"] = "高桥李依",
+["designer:Megumin"] = "clannad最爱, 光临长夜",
 ["~Megumin"] = "nice爆裂魔法",
 ["%Megumin"] = "“吾名惠惠，红魔族第一的魔法师兼爆裂魔法的操纵者！”",
 ["baolie"] = "爆裂",
@@ -9340,15 +9339,16 @@ sgs.LoadTranslationTable{
 	["%ShokuhouMisaki"] = "“如果……就算是这样……这样，你还是能颠覆大人的预期，在某一天变得能想起我的事，回忆起我这个人——，我便会对你说一些话，那是我要对你说的，最甜蜜温柔、最重要的话……”",
 	["~ShokuhouMisaki"] = "唔..呃呃~（遥控器掉落）",
 	["xinkong"] = "心控「强制自白&行为控制」",
-	[":xinkong"] = "<font color=\"purple\"><b>出牌阶段开始时，</b></font>可以指定一名其他角色A，选择（A无手牌默认选项一）:<font color=\"cyan\">①</b></font>重铸一张牌并令角色A展示所有手牌；<font color=\"cyan\">②</b></font>指定A以外的一名角色为B，你观看A手牌并获得其中1张，令A对B使用一张杀或失去1点体力（由A决定），本回合你手牌上限+2并结束出牌阶段。",
+	[":xinkong"] = "<font color=\"purple\"><b>出牌阶段开始时，</b></font>可以指定一名其他角色A，选择（A无手牌默认选项一）:<font color=\"cyan\">①</b></font>重铸一张牌并令角色A展示所有手牌；<font color=\"cyan\">②</b></font>指定A以外的一名角色为B，你观看A手牌并获得其中1张，令A对B使用一张杀或失去一点体力（由A决定），本回合你手牌上限+2并结束出牌阶段。",
 	["xinkong$"] = "image=image/animate/xinkong.png",
 	["@xinkong1"] = "「强制自白」：重铸一张牌并令角色A展示所有手牌",
-	["@xinkong2"] = "「行为控制」：观看并获得A1张手牌，令A对B使用一张杀否则其失去1点体力，本回合你手牌上限+2并结束出牌阶段",
+	["@xinkong2"] = "「行为控制」：观看并获得A1张手牌，令A对B使用一张杀否则其失去一点体力，本回合你手牌上限+2并结束出牌阶段",
 	["@xinkonga"] = "选择一名其他角色A",
 	["@xinkongb"] = "选择一名除其外的角色为B",
 	["&xinkong"] = "选择一张牌",
 	["#Card_Recast"] = "重铸选择牌",---"重铸因“%arg”选择的牌",
-	["@xinkong-slash"] = "对角色B使用一张杀或失去1点体力",
+	["xinkong_targetB"] = "角色B",
+	["@xinkong-slash"] = "对角色B使用一张杀或失去一点体力",
 	["xinkong_max"] = "手牌上限+2",
 	["$xinkong1"] = "我一定会...窥探合作者的大脑。",
 	["$xinkong2"] = "...真实的想法、行为准则。我会视情况操纵对方的感情和行动。",
@@ -9404,9 +9404,9 @@ sgs.LoadTranslationTable{
 	["cv:Tohka"] = "井上麻里奈",
 	["%Tohka"] = "“……我的名字吗……我的名字是夜刀神十香，是我最重要的人给我起的最重要的名字——很好听吧！”",
 	["aosha"] = "鏖杀",
-	[":aosha"] = "①每回合你首次使用的黑杀不计入次数且无距离限制。②出牌阶段限一次，若你没有“王座”，你可以弃置一张非基本牌，选择一种类型的装备牌，检索摸牌堆+弃牌堆一张此类型装备牌置于人物牌上作为“王座”。",
+	[":aosha"] = "①每回合你首次使用的黑杀不计入次数且无距离限制。②出牌阶段限一次，你可以弃置一张非基本牌，选择一种类型的装备牌，检索摸牌堆+弃牌堆一张此类型装备牌置于人物牌上作为“王座”。",
 	["jiankai"] = "剑铠",
-	[":jiankai"] = "①当你使用杀指定唯一目标时，可以根据“王座”包含的类型触发效果：{武器，弃置目标区域内一张牌；防具/宝物，摸一张牌；坐骑，若你手牌数不小于当前体力值，该杀不可闪避。}出牌阶段结束时，若你此回合发动过效果①，弃置所有“王座” 。②准备阶段/结束阶段 开始时，你可以使用一张“王座”。",
+	[":jiankai"] = "①当你使用杀指定目标后，可以根据“王座”包含的类型触发效果：{武器/坐骑，弃置目标区域内一张牌；防具/宝物，摸一张牌。}②出牌阶段结束时，若你此回合发动过多次效果①，则弃置所有“王座”，否则使用之。",
     ["throne"] = "王座",
 	["Weapon"] = "武器",
 	["Armor"] = "防具",
@@ -9465,9 +9465,9 @@ sgs.LoadTranslationTable{
 	["designer:ZeroTwo"] = "FlameHaze",
 	["cv:ZeroTwo"] = "户松遥",
 	["xieyu"] = "携驭",
-	[":xieyu"] = "①若你有明置男性人物牌：当你使用杀时，可以弃置场上一张延时锦囊牌，选择增加一名此杀的合法额外目标。②每回合限一次，当你使用杀结算后，若你另一张人物牌明置，你可以失去1点体力，视为使用一张杀（有范围限制，不计入次数），然后暗置另一张人物牌且不可明置之直到回合结束。",
+	[":xieyu"] = "①若你有明置男性人物牌：当你使用杀时，可以弃置场上一张延时锦囊牌，增加一名额外目标。②每回合限一次，当你使用杀后，若另一张人物牌明置，你可以失去一点体力，视为使用一张不计入次数的杀，然后暗置另一张人物牌直到回合结束。",
 	["kuanghe"] = "狂鹤",
-	[":kuanghe"] = "进入出牌阶段时，若你无明置男性人物牌且手牌不小于场上其他存活角色数：可以弃置所有手牌跳过出牌和弃牌阶段，对所有其他角色各造成1点伤害。当一名角色因“狂鹤”进入濒死状态时，你回复1点体力或摸一张牌。",
+	[":kuanghe"] = "进入出牌阶段时，若你无明置男性人物牌且手牌≥体力值：可以弃置所有手牌跳过出牌+弃牌阶段，对所有其他角色各造成一点伤害。当一名角色因“狂鹤”进入濒死状态时，你回复一点体力或摸一张牌。",
 	["$xieyu1"] = "嗯~你果然和我是一样的，我们还真是很像呢。人类的眼泪，我很久没见了。",
 	["$xieyu2"] = "来~过来吧！",
 	["$xieyu3"] = "让我品尝一下你吧~ 从现在开始，你就是我的Darling了！",
@@ -9489,9 +9489,9 @@ sgs.LoadTranslationTable{
 	["designer:Asuka"] = "FlameHaze",
 	["cv:Asuka"] = "宫村优子",
 	["aoshi"] = "傲势",
-	[":aoshi"] = "准备阶段开始时，你可以与一名其他角色拼点，若赢，你对其造成1点伤害，然后若双方点数之差为双数，可以使用一张拼点牌；若输，你失去1点体力。锁定技，你拼点时，点数增加x（x为已装备的防具+坐骑牌数）。",
+	[":aoshi"] = "准备阶段开始时，你可以与一名其他角色拼点，若你手牌为全场最少则先摸一张牌：赢，你对其造成1点伤害，若双方点数之差为双数，可以使用一张拼点牌；未赢，你失去一点体力。因此技能拼点时，你点数增加x（x为装备区牌数）。",
     ["xinshang"] = "心伤",
-	[":xinshang"] = "当你失去体力后，若因此进入濒死状态，将手牌补至x（x为你的体力上限+1），然后“傲势”失效直到你下回合结束；若未因此进入濒死状态，可以摸一张牌或使用一张手牌（不计入次数)。",
+	[":xinshang"] = "当你流失体力后，若因此进入濒死状态，将手牌补至4，“傲势”失效直到你下回合结束；若未因此进入濒死状态，可以摸一张牌或使用一张手牌（不计入次数)。",
 	["@aoshi"] = "你可以视为使用<font color=\"#FF8000\"><b>【%src】</b></font>",
     ["~aoshi"] = "请选择此牌的合法目标，若目标已确定则直接点击“确定”",
 	["aoshi$"] = "image=image/animate/aoshi.png",
@@ -9538,20 +9538,21 @@ sgs.LoadTranslationTable{
 	
 	["mianling"] = "面灵",
 	["mianling$"] = "image=image/animate/mianling.png",
-	[":mianling"] = "首次明置此人物时，牌堆四张不同花色牌置于人物上作为“面”。<font color=\"green\"><b>出牌阶段各限一次，</b></font>可以获得一张“面”并变为对应情绪/将一张缺少花色牌置于“面”中：\n1、红桃【怒】使用杀次数+x（x为“面”缺少花色数）\n2、方块【喜】摸牌阶段改为获得牌堆2张不同名牌\n3、梅花【哀】手牌上限-1\n4、黑桃【乐】跳过判定阶段且使用的普通【杀】可变更为任意属性",
+	[":mianling"] = "首次明置此人物时，将牌堆首张牌置于人物上作为“面”。<font color=\"green\"><b>出牌阶段限一次，</b></font>可以用1张牌替换“面”。根据“面”获得情绪：\n1、红桃【怒】出杀次数+1；跳过判定阶段。\n2、方块【喜】摸牌阶段改为获得牌堆2张不同名牌\n3、梅花【哀】手牌上限-1\n4、黑桃【乐】使用的普通杀可变为任意属性",
 	["miann"] = "面",
-	  ["mianling_nu"] = "怒",
-	  ["mianling_xi"] = "喜",	
-	  ["mianling_ai"] = "哀",	
-	  ["mianling_le"] = "乐",
-	  ["choice-mianling-add"] = "将与“面”均不同的一张牌置于其中",
-	  ["choice-mianling-obtain"] = "获得一张“面”并变为对应情绪",	
-	  ["choice-heart-add"] = "红桃",
-	  ["choice-diamond-add"] = "方块",	
-	  ["choice-club-add"] = "梅花",	
-	  ["choice-spade-add"] = "黑桃",
-	  ["@mianling"] = "选择一张该花色牌",
-	  ["mianling_Calm"] = "面灵：移除情绪",
+	["mianling_nu"] = "怒",
+	["mianling_xi"] = "喜",	
+	["mianling_ai"] = "哀",	
+	["mianling_le"] = "乐",
+	["@mianling"] = "你可以用一张牌替换“面”",
+	--["choice-mianling-add"] = "将与“面”均不同的一张牌置于其中",
+	--["choice-mianling-obtain"] = "获得一张“面”并变为对应情绪",	
+	--["choice-heart-add"] = "红桃",
+	--["choice-diamond-add"] = "方块",	
+	--["choice-club-add"] = "梅花",	
+	--["choice-spade-add"] = "黑桃",
+	--["@mianling"] = "选择一张该花色牌",
+   -- ["mianling_Calm"] = "面灵：移除情绪",
 	  ["mianling_attribute"] = "乐：变更此杀属性",
 	  ["#UseCard_thunder"] = "此杀变为雷杀", ["#UseCard_fire"] = "此杀变为火杀", ["#UseCard_ice"] = "此杀变为冰杀",
 	["$mianling1"] = "太子大人是我的恩人！而且也是作为面具的我的母亲....来着？",
@@ -9562,7 +9563,7 @@ sgs.LoadTranslationTable{
 	
 	["ranxv"] = "染绪",
 	["ranxv$"] = "image=image/animate/ranxv.png",
-	[":ranxv"] = "攻击范围内的角色出牌阶段开始，可以令其重铸一张牌，然后可以将一张同花色牌重铸并获得其重铸牌。锁定技，若“面”不足4，则攻击范围内的其他角色获得相同情绪效果。",
+	[":ranxv"] = "攻击范围内的角色出牌阶段开始时，你可以令其重铸一张牌，然后可以将一张同花色牌重铸并获得其重铸牌。锁定技，攻击范围内的其他角色获得相同情绪效果。",
 	["ranxv_recast"] = "染绪：重铸一张对应花色牌并获得其重铸牌",
 	["$ranxv1"] = "我的情绪控制能力提升了！我觉得我的情绪稳定下来了，不知道实际情况怎样呢？",
 	["$ranxv2"] = "战斗来开了帷幕。对自己的命运刮目相看吧！",

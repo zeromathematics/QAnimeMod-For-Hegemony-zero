@@ -1053,13 +1053,16 @@ bool GameRule::effect(TriggerEvent triggerEvent, Room *room, ServerPlayer *playe
         }
 
         if (Config.RewardTheFirstShowingPlayer && room->getTag("TheFirstToShowRewarded").isNull() && room->getScenario() == NULL) {
-            LogMessage log;
-            log.type = "#FirstShowReward";
-            log.from = player;
-            room->sendLog(log);
             room->setTag("TheFirstToShowRewarded", true);
-            if (player->askForSkillInvoke("userdefine:FirstShowReward"))
+            if (Config.RewardTheFirstShowingPlayerDetail == "Draw2Cards" && player->askForSkillInvoke("userdefine:FirstShowReward")){
+                LogMessage log;
+                log.type = "#FirstShowReward";
+                log.from = player;
+                room->sendLog(log);
                 player->drawCards(2);
+            }
+            if (Config.RewardTheFirstShowingPlayerDetail == "FirstShowMark")
+                room->addPlayerMark(player, "@firstshow");
             //room->setTag("TheFirstToShowRewarded", true);
         }
         foreach (const Skill *skill, player->getVisibleSkillList()) {

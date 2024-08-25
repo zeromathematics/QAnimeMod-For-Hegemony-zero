@@ -411,6 +411,13 @@ QWidget *ServerDialog::createMiscTab()
 
     reward_the_first_showing_player_checkbox = new QCheckBox(tr("The first player to show general can draw 2 cards"));
     reward_the_first_showing_player_checkbox->setChecked(Config.RewardTheFirstShowingPlayer);
+    QComboBox *rewardfirst = new QComboBox;
+    rewardfirst->addItem(tr("Draw2Cards"), "Draw2Cards");
+    rewardfirst->addItem(tr("FirstShowMark"), "FirstShowMark");
+    reward_the_first_showing_player_checkbox_detail = rewardfirst;
+    reward_the_first_showing_player_checkbox_detail->setEnabled(Config.RewardTheFirstShowingPlayer);
+    reward_the_first_showing_player_checkbox_detail->setCurrentText(tr(Config.RewardTheFirstShowingPlayerDetail.toStdString().c_str()));
+    connect(reward_the_first_showing_player_checkbox,&QCheckBox::toggled ,reward_the_first_showing_player_checkbox_detail,&QComboBox::setEnabled);
 
     view_next_player_deputy_general_checkbox = new QCheckBox(tr("View next player deputy general"));
     view_next_player_deputy_general_checkbox->setChecked(Config.ViewNextPlayerDeputyGeneral);
@@ -425,6 +432,7 @@ QWidget *ServerDialog::createMiscTab()
     bankingdom->addItem(tr("HumanChoose"), "HumanChoose");
     ban_kingdom_checkbox_detail = bankingdom;
     ban_kingdom_checkbox_detail->setEnabled(Config.BanKingdomMode);
+    ban_kingdom_checkbox_detail->setCurrentText(tr(Config.BanKingdomModeDetail.toStdString().c_str()));
     connect(ban_kingdom_checkbox,&QCheckBox::toggled ,ban_kingdom_checkbox_detail,&QComboBox::setEnabled);
 
 #if !defined(Q_OS_IOS) && !defined(Q_OS_ANDROID)
@@ -477,6 +485,7 @@ QWidget *ServerDialog::createMiscTab()
     tablayout->addLayout(HLay(minimize_dialog_checkbox, surrender_at_death_checkbox));
     tablayout->addLayout(HLay(luck_card_label, luck_card_spinbox));
     tablayout->addWidget(reward_the_first_showing_player_checkbox);
+    tablayout->addWidget(reward_the_first_showing_player_checkbox_detail);
     tablayout->addWidget(view_next_player_deputy_general_checkbox);
     tablayout->addWidget(activate_special_card_mode_checkbox);
     tablayout->addWidget(ban_kingdom_checkbox);
@@ -766,10 +775,23 @@ bool ServerDialog::config()
     Config.NullificationCountDown = nullification_spinbox->value();
     Config.EnableMinimizeDialog = minimize_dialog_checkbox->isChecked();
     Config.RewardTheFirstShowingPlayer = reward_the_first_showing_player_checkbox->isChecked();
+    //Config.RewardTheFirstShowingPlayerDetail = reward_the_first_showing_player_checkbox_detail->itemData(reward_the_first_showing_player_checkbox_detail->currentIndex()).toString();
+    if (reward_the_first_showing_player_checkbox_detail->currentText() == tr("Draw2Cards")){
+        Config.RewardTheFirstShowingPlayerDetail = "Draw2Cards";
+    }
+    else if(reward_the_first_showing_player_checkbox_detail->currentText() == tr("FirstShowMark")){
+        Config.RewardTheFirstShowingPlayerDetail = "FirstShowMark";
+    }
     Config.ViewNextPlayerDeputyGeneral = view_next_player_deputy_general_checkbox->isChecked();
     Config.ActivateSpecialCardMode = activate_special_card_mode_checkbox->isChecked();
     Config.BanKingdomMode = ban_kingdom_checkbox->isChecked();
-    Config.BanKingdomModeDetail = ban_kingdom_checkbox_detail->itemData(ban_kingdom_checkbox_detail->currentIndex()).toString();
+    //Config.BanKingdomModeDetail = ban_kingdom_checkbox_detail->itemData(ban_kingdom_checkbox_detail->currentIndex()).toString();
+    if (ban_kingdom_checkbox_detail->currentText() == tr("Random")){
+        Config.BanKingdomModeDetail = "Random";
+    }
+    else if(ban_kingdom_checkbox_detail->currentText() == tr("HumanChoose")){
+        Config.BanKingdomModeDetail = "HumanChoose";
+    }
     Config.ForbidAddingRobot = forbid_adding_robot_checkbox->isChecked();
     Config.OriginAIDelay = ai_delay_spinbox->value();
     Config.AIDelay = Config.OriginAIDelay;
@@ -806,9 +828,11 @@ bool ServerDialog::config()
     Config.setValue("NullificationCountDown", nullification_spinbox->value());
     Config.setValue("EnableMinimizeDialog", Config.EnableMinimizeDialog);
     Config.setValue("RewardTheFirstShowingPlayer", Config.RewardTheFirstShowingPlayer);
+    Config.setValue("RewardTheFirstShowingPlayerDetail", Config.RewardTheFirstShowingPlayerDetail);
     Config.setValue("ViewNextPlayerDeputyGeneral", Config.ViewNextPlayerDeputyGeneral);
     Config.setValue("ActivateSpecialCardMode", Config.ActivateSpecialCardMode);
     Config.setValue("BanKingdomMode", Config.BanKingdomMode);
+    Config.setValue("BanKingdomModeDetail", Config.BanKingdomModeDetail);
     Config.setValue("ForbidAddingRobot", Config.ForbidAddingRobot);
     Config.setValue("OriginAIDelay", Config.OriginAIDelay);
     Config.setValue("AlterAIDelayAD", ai_delay_altered_checkbox->isChecked());

@@ -137,6 +137,7 @@ private:
     QSpinBox *nullification_spinbox;
     QCheckBox *minimize_dialog_checkbox;
     QCheckBox *reward_the_first_showing_player_checkbox;
+    QComboBox *reward_the_first_showing_player_checkbox_detail;
     QCheckBox *view_next_player_deputy_general_checkbox;
     QCheckBox *activate_special_card_mode_checkbox;
     QCheckBox *ban_kingdom_checkbox;

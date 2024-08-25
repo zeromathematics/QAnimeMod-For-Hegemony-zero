@@ -2174,6 +2174,9 @@ end
 --夕立
 sgs.ai_skill_invoke.kuangquan = function(self, data)
   --local damage = data:toDamage()
+  local player = data:toPlayer()
+  if player:getArmor() and player:getArmor():objectName() == "SilverLion" then return false end
+  if player:getArmor() and player:getArmor():objectName() == "Breastplate" and player:getHp() == 1 then return false end
   return self:willShowForAttack() and self:isEnemy(data:toPlayer()) and (not data:toPlayer():hasShownSkill("rennai") or data:toPlayer():getMark("@Patience") > 0)
 end
 
@@ -2328,10 +2331,17 @@ sgs.ai_skill_invoke.mengfeng = function(self,data)
 end
 
 sgs.ai_skill_playerchosen.mengfeng = function(self, targets)
+   local room = self.room
    for _,p in ipairs(self.friends) do
-	 if p:getGeneral2Name() == "Kitagami" then return p end
+	 if p:getGeneral2Name() == "Kitagami" and not room:getCurrent():hasFlag(self.player:objectName().."mengfeng_tans"..p:objectName()) then return p end
    end
-   return self.friends[1]
+   return self.friends[math.random(1, #self.friends)]
+end
+
+sgs.ai_skill_playerchosen.mengfenghide = function(self, targets)
+  for _,p in ipairs(self.enemies) do
+	if p:hasShownOneGeneral() then return p end
+  end
 end
 
 reimugive_skill={}

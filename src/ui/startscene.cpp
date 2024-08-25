@@ -300,7 +300,7 @@ void StartScene::printServerInfo()
         serverLog->append(Config.FreeChoose ? tr("Free choose is enabled") : tr("Free choose is disabled"));
 
     if (Config.RewardTheFirstShowingPlayer)
-        serverLog->append(tr("The reward of showing general first is enabled"));
+        serverLog->append(tr("The reward of showing general first is enabled") + "("+ tr(Config.RewardTheFirstShowingPlayerDetail.toStdString().c_str()) +")");
 
     if (Config.ViewNextPlayerDeputyGeneral)
         serverLog->append(tr("view next player deputy general is enabled"));
