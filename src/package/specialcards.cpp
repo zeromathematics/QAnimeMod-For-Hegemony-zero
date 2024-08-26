@@ -2592,6 +2592,7 @@ public:
             int id = room->askForAG(ask_who, list, true, objectName());
             room->clearAG(ask_who);
             if (id > -1){
+                room->throwCard(id, ask_who, ask_who);
                 room->broadcastSkillInvoke(objectName(), ask_who);
                 return true;
             }
