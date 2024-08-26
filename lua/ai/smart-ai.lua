@@ -4017,6 +4017,10 @@ function SmartAI:damageIsEffective_(damageStruct)
                 return false
         end
 
+        if from:getMark("##azuyizhi")>0 then
+                return false
+        end
+
 	if to:hasArmorEffect("PeaceSpell") and not from:hasWeapon("IceSword") and not from:hasShownSkill("zhiman") and nature ~= sgs.DamageStruct_Normal then return false end
 	if to:hasShownSkills("jgyuhuo_pangtong|jgyuhuo_zhuque") and nature == sgs.DamageStruct_Fire then return false end
 	if to:getMark("@fog") > 0 and nature ~= sgs.DamageStruct_Thunder then return false end
@@ -4029,7 +4033,7 @@ function SmartAI:damageIsEffective_(damageStruct)
 		end
 	end
 
-	return true
+        return damage > 0
 end
 
 function SmartAI:getDamagedEffects(to, from, isSlash)

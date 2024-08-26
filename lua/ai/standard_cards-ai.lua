@@ -354,6 +354,15 @@ function SmartAI:slashIsEffective(slash, to, from, ignore_armor)
                         damage.damage = damage.damage + 1
                 end
         end
+        if from:getWeapon() and from:getWeapon():objectName() == "Shinai" then
+                damage.damage = damage.damage - 1
+                local dummy_use = { to = sgs.SPlayerList() }
+                dummy_use.to:append(to)
+                local analeptic = self:searchForAnaleptic(dummy_use, to, slash)
+                if analeptic and self:shouldUseAnaleptic(to, dummy_use) and analeptic:getEffectiveId() ~= slash:getEffectiveId() then
+                        damage.damage = damage.damage + 1
+                end
+        end
 	if not self:damageIsEffective_(damage) then return false end
 
 	if to:hasSkill("jgyizhong") and not to:getArmor() and slash:isBlack() then

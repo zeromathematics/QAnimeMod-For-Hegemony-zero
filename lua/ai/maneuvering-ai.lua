@@ -591,6 +591,9 @@ function SmartAI:useCardFireAttack(fire_attack, use)
                 if enemy:hasShownSkill("tianhuo") then
                         return
                 end
+                if self.player:getMark("##azuyizhi")>0 then
+                        return
+                end
 		return self:objectiveLevel(enemy) > 3 and damage > 0 and not enemy:isKongcheng()
 				and self:damageIsEffective(enemy, sgs.DamageStruct_Fire, self.player) and not self:cantbeHurt(enemy, self.player, damage)
 				and self:hasTrickEffective(fire_attack, enemy)
@@ -662,6 +665,9 @@ function SmartAI:useCardFireAttack(fire_attack, use)
                         damage = damage - 1
                 end
                 if enemy:hasShownSkill("tianhuo") then
+                        return
+                end
+                if self.player:getMark("##azuyizhi")>0 then
                         return
                 end
 		if self:damageIsEffective(enemy, sgs.DamageStruct_Fire, self.player) and damage > 1 then

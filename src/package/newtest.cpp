@@ -1665,6 +1665,7 @@ public:
             int id=room->askForCardChosen(player, from, "hej", objectName());
             if (id!=-1){
                 Card *card=Sanguosha->getCard(id);
+                room->setPlayerProperty(from, "zhudao_id", QVariant(id+1));
                 Player::Place place = room->getCardPlace(id);
                 int i=-1;
                 if (place == Player::PlaceEquip){
@@ -1717,6 +1718,7 @@ public:
                         room->moveCardTo(card,from,to,place,reason);
                     }
                 }
+                room->setPlayerProperty(from, "zhudao_id", QVariant());
             }
         }
         room->setPlayerProperty(player,"faceup",QVariant(true));
@@ -1762,6 +1764,7 @@ public:
                 int id=room->askForCardChosen(player, from, "hej", objectName());
                 if (id!=-1){
                     Card *card=Sanguosha->getCard(id);
+                    room->setPlayerProperty(from, "zhudao_id", QVariant(id+1));
                     Player::Place place = room->getCardPlace(id);
                     int i=-1;
                     if (place == Player::PlaceEquip){
@@ -1815,6 +1818,7 @@ public:
                         CardMoveReason reason=CardMoveReason(CardMoveReason::S_REASON_TRANSFER,player->objectName(),objectName(),"");
                         room->moveCardTo(card,from,to,place,reason);
                     }
+                    room->setPlayerProperty(from, "zhudao_id", QVariant(id+1));
                 }
             }
         }
@@ -6623,25 +6627,28 @@ public:
     Jifeng() : TriggerSkill("jifeng")
     {
         frequency = Frequent;
-        events << EventPhaseEnd << EventPhaseStart << HpChanged;
+        events << EventPhaseEnd << EventPhaseChanging << HpChanged;
     }
 
-    virtual TriggerList triggerable(TriggerEvent triggerEvent, Room *room, ServerPlayer *player, QVariant &data) const
-    {
-        TriggerList skill_list;
-        if (triggerEvent == EventPhaseStart && player->getPhase()==Player::Start){
+    virtual void record(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data) const
+   {
+        if (event == EventPhaseChanging && data.value<PhaseChangeStruct>().to == Player::NotActive){
             foreach(ServerPlayer *p, room->getAlivePlayers()){
                 if (p->hasFlag("jifeng_pro")){
                     room->setPlayerFlag(p, "-jifeng_pro");
                 }
             }
-            return skill_list;
         }
-        else if (triggerEvent==HpChanged && TriggerSkill::triggerable(player)){
+        else if (event == HpChanged && data.toInt() != 0){
             room->setPlayerFlag(player, "jifeng_pro");
-            return skill_list;
         }
-        else if (triggerEvent == EventPhaseEnd && player->getPhase()==Player::Finish){
+
+   }
+
+    virtual TriggerList triggerable(TriggerEvent triggerEvent, Room *room, ServerPlayer *player, QVariant &data) const
+    {
+        TriggerList skill_list;
+        if (triggerEvent == EventPhaseEnd && player->getPhase()==Player::Finish){
             if (player == NULL) return skill_list;
             QList<ServerPlayer *> shimakazes= room->findPlayersBySkillName(objectName());
             foreach (ServerPlayer *shimakaze, shimakazes) {

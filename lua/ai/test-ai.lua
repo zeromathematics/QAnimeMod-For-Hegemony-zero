@@ -73,6 +73,10 @@ sgs.ai_nullification.Key = function(self, card, from, to, positive, keep)
 	return
 end
 
+sgs.ai_skill_invoke.guangyu = function(self, data)
+	return self:willShowForAttack() or self:willShowForDefence()
+end
+
 zhuren_skill={}
 zhuren_skill.name="zhuren"
 table.insert(sgs.ai_skills,zhuren_skill)
@@ -293,13 +297,7 @@ sgs.ai_skill_playerchosen.Laiyuan = function(self, targets)
 	local source = self.player
 
 	for _,player in ipairs(self.friends) do
-		if player:isAlive() and player:getJudgingArea():length() > 0 then
-			return player
-		end
-	end
-
-	for _,player in ipairs(self.enemies) do
-		if player:isAlive() and (player:hasShownSkill("liegong") or player:hasShownSkill("Zhena")) and player:getWeapon() then
+		if player:isAlive() and player:getJudgingArea():length() > 0 and not noNeedToRemoveJudgeArea(player) then
 			return player
 		end
 	end
@@ -335,12 +333,11 @@ sgs.ai_skill_playerchosen.Laiyuan = function(self, targets)
 
 	if #self.enemies == 1 then
 		for _,badpeople in ipairs(self.enemies) do
-			if badpeople:isAlive() and not badpeople:hasShownSkill("kongcheng") then
+			if badpeople:isAlive() then
 				return badpeople
 			end
 		end
 	end
-
 
 	for _,player in ipairs(self.friends) do
 		if player:isAlive() and not player:getWeapon() then
@@ -351,6 +348,7 @@ sgs.ai_skill_playerchosen.Laiyuan = function(self, targets)
 			end
 		end
 	end
+
 	for _,player in ipairs(self.friends) do
 		if player:isAlive() and not player:getOffensiveHorse() then
 			for _,badpeople in ipairs(self.enemies) do
@@ -378,40 +376,28 @@ sgs.ai_skill_playerchosen.Laiyuan = function(self, targets)
 			end
 		end
 	end
-
-	for _,player in ipairs(self.enemies) do
-		if player:isAlive() and not player:isKongcheng() then
-			return player
-		end
-	end
 	return
 end
 --竹刀的选牌
 sgs.ai_skill_cardchosen.zhudao = function(self, who, flags)
 	local source = self.player
 
-	if self:isFriend(who) and who:getJudgingArea():length() > 0 then
-		local cards = who:getJudgingArea()
-		return cards[1]
-	end
-
-	if self:isEnemy(who) and who:hasShownSkill("liegong|Zhena") and who:isAlive() and who:getWeapon() and not who:hasSkills(sgs.lose_equip_skill) then
-		for _,player in ipairs(self.friends) do
-			if player:isAlive() and not player:getWeapon() then
-				local card = who:getWeapon()
+	if self:isFriend(who) and who:getJudgingArea():length() > 0 and not noNeedToRemoveJudgeArea(who) then
+		for _,card in sgs.qlist(who:getJudgingArea()) do
+			if not card:isKindOf("Key") then
+				return card
+			elseif who:isWounded() then
 				return card
 			end
 		end
 	end
 
 	if not ((not source:getArmor() and who:getArmor()) or (not source:getTreasure() and who:getTreasure()) or (not source:getDefensiveHorse() and who:getDefensiveHorse()) or (not source:getWeapon() and who:getWeapon()) or (not source:getOffensiveHorse() and who:getOffensiveHorse())) then
-		if self:isEnemy(who) and who:isAlive() and not who:hasShownSkill("kongcheng") and not who:isKongcheng() and #self.enemies==1 then
+		if self:isEnemy(who) and who:isAlive() and not who:isKongcheng() and #self.enemies==1 then
 			local cards = who:getHandcards()
-			return cards[1]
+			return cards:at(0)
 		end
 	end
-
-
 
 	if self:isEnemy(who) and who:isAlive() and who:getArmor() and not who:hasSkills(sgs.lose_equip_skill) then
 		for _,player in ipairs(self.friends) do
@@ -456,7 +442,7 @@ sgs.ai_skill_cardchosen.zhudao = function(self, who, flags)
 
 	if self:isEnemy(who) and who:isAlive() and not who:isKongcheng() then
 		local cards = who:getHandcards()
-		return cards[1]
+		return cards:at(0)
 	end
 	return nil
 end
@@ -464,58 +450,59 @@ end
 --给予
 sgs.ai_skill_playerchosen.Quxiang = function(self, targets)
 	local source = self.player
-
-	for _,player in ipairs(self.friends) do
-		if player:isAlive() and player:getJudgingArea():length() > 0 then
-			for _, target in sgs.qlist(targets) do
-				if self:isEnemy(target) and target:getJudgingArea():length() == 0 then
-					return target
-				end
-			end
+	local from
+	local id = -1
+	for _,p in sgs.qlist(self.room:getAlivePlayers()) do
+		if p:property("zhudao_id"):toInt()>0 then
+			id = p:property("zhudao_id"):toInt() - 1
+			from = p
+			break
 		end
 	end
+	local card = sgs.Sanguosha:getCard(id)
 
-	for _,player in ipairs(self.enemies) do
-		if player:isAlive() and (player:hasShownSkill("liegong") or player:hasShownSkill("Zhena")) and player:getWeapon() then
-			for _,goodguy in sgs.qlist(targets) do
-				if self:isFriend(goodguy) and not goodguy:getWeapon() then
-					return goodguy
-				end
+	if from:getJudgingArea():contains(card) then
+		for _, target in sgs.qlist(targets) do
+			if self:isEnemy(target) and not card:isKindOf("Key") then
+				return target
+			end
+			if self:isFriend(target) and card:isKindOf("Key") then
+				return target
 			end
 		end
 	end
 
 	if not source:getArmor() then
 		for _,player in sgs.qlist(targets) do
-			if self:isEnemy(player) and player:getArmor() and not player:hasSkills(sgs.lose_equip_skill) then
+			if self:isEnemy(player) and player:getArmor() and player:getArmor():getEffectiveId() == id and not player:hasSkills(sgs.lose_equip_skill) then
 				return source
 			end
 		end
 	end
 	if not source:getTreasure() then
 		for _,player in sgs.qlist(targets) do
-			if self:isEnemy(player) and player:getTreasure() and not player:hasSkills(sgs.lose_equip_skill) then
+			if self:isEnemy(player) and player:getTreasure() and player:getTreasure():getEffectiveId() == id and not player:hasSkills(sgs.lose_equip_skill) then
 				return source
 			end
 		end
 	end
 	if not source:getDefensiveHorse() then
 		for _,player in sgs.qlist(targets) do
-			if self:isEnemy(player) and player:getDefensiveHorse() and not player:hasSkills(sgs.lose_equip_skill) then
+			if self:isEnemy(player) and player:getDefensiveHorse() and player:getDefensiveHorse():getEffectiveId() == id and not player:hasSkills(sgs.lose_equip_skill) then
 				return source
 			end
 		end
 	end
 	if not source:getWeapon() then
 		for _,player in sgs.qlist(targets) do
-			if self:isEnemy(player) and player:getWeapon() and not player:hasSkills(sgs.lose_equip_skill) then
+			if self:isEnemy(player) and player:getWeapon() and player:getWeapon():getEffectiveId() == id and not player:hasSkills(sgs.lose_equip_skill) then
 				return source
 			end
 		end
 	end
 	if not source:getOffensiveHorse() then
 		for _,player in sgs.qlist(targets) do
-			if self:isEnemy(player) and player:getOffensiveHorse() and not player:hasSkills(sgs.lose_equip_skill) then
+			if self:isEnemy(player) and player:getOffensiveHorse() and player:getOffensiveHorse():getEffectiveId() == id and not player:hasSkills(sgs.lose_equip_skill) then
 				return source
 			end
 		end
@@ -523,17 +510,17 @@ sgs.ai_skill_playerchosen.Quxiang = function(self, targets)
 
 	if #self.enemies == 1 then
 		for _,badpeople in ipairs(self.enemies) do
-			if badpeople:isAlive() and not badpeople:hasShownSkill("kongcheng") then
+			if badpeople:isAlive() and badpeople:getHandcards():contains(card) then
 				return source
 			end
 		end
 	end
 
 	for _,badpeople in ipairs(self.enemies) do
-		if badpeople:isAlive() and badpeople:getWeapon() then
+		if badpeople:isAlive() and badpeople:getWeapon() and badpeople:getWeapon():getEffectiveId() == id then
 			for _,player in sgs.qlist(targets) do
 				if self:isFriend(player) and not player:getWeapon() then
-					if player:hasShownSkill("xuanfeng|xiaoji|zhudao") then
+					if player:hasSkills(sgs.lose_equip_skill) then
 						return player
 					end
 				end
@@ -547,10 +534,10 @@ sgs.ai_skill_playerchosen.Quxiang = function(self, targets)
 	end
 
 	for _,badpeople in ipairs(self.enemies) do
-		if badpeople:isAlive() and badpeople:getOffensiveHorse() then
+		if badpeople:isAlive() and badpeople:getOffensiveHorse() and badpeople:getOffensiveHorse():getEffectiveId() == id then
 			for _,player in sgs.qlist(targets) do
 				if self:isFriend(player) and not player:getOffensiveHorse() then
-					if player:hasShownSkill("xuanfeng|xiaoji|zhudao") then
+					if player:hasShownSkill(sgs.lose_equip_skill) then
 						return player
 					end
 				end
@@ -563,10 +550,10 @@ sgs.ai_skill_playerchosen.Quxiang = function(self, targets)
 		end
 	end
 	for _,badpeople in ipairs(self.enemies) do
-		if badpeople:isAlive() and badpeople:getArmor() then
+		if badpeople:isAlive() and badpeople:getArmor() and badpeople:getArmor():getEffectiveId() == id then
 			for _,player in sgs.qlist(targets) do
 				if self:isFriend(player) and not player:getArmor() then
-					if player:hasShownSkill("xuanfeng|xiaoji|zhudao") then
+					if player:hasShownSkill(sgs.lose_equip_skill) then
 						return player
 					end
 				end
@@ -579,10 +566,10 @@ sgs.ai_skill_playerchosen.Quxiang = function(self, targets)
 		end
 	end
 	for _,badpeople in ipairs(self.enemies) do
-		if badpeople:isAlive() and badpeople:getDefensiveHorse() then
+		if badpeople:isAlive() and badpeople:getDefensiveHorse() and badpeople:getDefensiveHorse():getEffectiveId() == id then
 			for _,player in sgs.qlist(targets) do
 				if self:isFriend(player) and not player:getDefensiveHorse() then
-					if player:hasShownSkill("xuanfeng|xiaoji|zhudao") then
+					if player:hasShownSkill(sgs.lose_equip_skill) then
 						return player
 					end
 				end
@@ -612,33 +599,27 @@ sgs.ai_skill_playerchosen.Quxiang = function(self, targets)
 	return source
 end
 
---思绪，准备复制粘贴就好。。
+--准备复制粘贴就好
 
 sgs.ai_skill_cardchosen.sixu = function(self, who, flags)
 	local source = self.player
 
-	if self:isFriend(who) and who:getJudgingArea():length() > 0 then
-		local cards = who:getJudgingArea()
-		return cards[1]
-	end
-
-	if self:isEnemy(who) and who:hasShownSkill("liegong|Zhena") and who:isAlive() and who:getWeapon() and not who:hasSkills(sgs.lose_equip_skill) then
-		for _,player in ipairs(self.friends) do
-			if player:isAlive() and not player:getWeapon() then
-				local card = who:getWeapon()
+	if self:isFriend(who) and who:getJudgingArea():length() > 0 and not noNeedToRemoveJudgeArea(who) then
+		for _,card in sgs.qlist(who:getJudgingArea()) do
+			if not card:isKindOf("Key") then
+				return card
+			elseif who:isWounded() then
 				return card
 			end
 		end
 	end
 
 	if not ((not source:getArmor() and who:getArmor()) or (not source:getTreasure() and who:getTreasure()) or (not source:getDefensiveHorse() and who:getDefensiveHorse()) or (not source:getWeapon() and who:getWeapon()) or (not source:getOffensiveHorse() and who:getOffensiveHorse())) then
-		if self:isEnemy(who) and who:isAlive() and not who:hasShownSkill("kongcheng") and not who:isKongcheng() and #self.enemies==1 then
+		if self:isEnemy(who) and who:isAlive() and not who:isKongcheng() and #self.enemies==1 then
 			local cards = who:getHandcards()
-			return cards[1]
+			return cards:at(0)
 		end
 	end
-
-
 
 	if self:isEnemy(who) and who:isAlive() and who:getArmor() and not who:hasSkills(sgs.lose_equip_skill) then
 		for _,player in ipairs(self.friends) do
@@ -683,7 +664,7 @@ sgs.ai_skill_cardchosen.sixu = function(self, who, flags)
 
 	if self:isEnemy(who) and who:isAlive() and not who:isKongcheng() then
 		local cards = who:getHandcards()
-		return cards[1]
+		return cards:at(0)
 	end
 	return nil
 end
@@ -731,11 +712,8 @@ sgs.ai_skill_invoke.sixu = function(self, data)
 	local i = 0
 	for _,player in ipairs(self.friends) do
 		if player:isAlive() then
-			if player:getJudgingArea():length() > 0 then
+			if player:getJudgingArea():length() > 0 and not noNeedToRemoveJudgeArea(player) then
 				Can_get_Card_Num = Can_get_Card_Num + 1
-			end
-			if player:hasShownSkill("Fangzhu|jujian") then
-				i = i+1
 			end
 		end
 	end

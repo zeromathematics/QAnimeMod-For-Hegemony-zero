@@ -600,8 +600,183 @@ shunshan_skill.getTurnUseCard=function(self,inclusive)
 end
 
 sgs.ai_skill_use_func["#ShunshanCard"] = function(card,use,self)
-    local target
+	local room = self.room
+	local source = self.player
+    local targets = sgs.SPlayerList()
+	local target
+	local card
+	for _,p in sgs.qlist(room:getAlivePlayers()) do
+	   if source:distanceTo(p) <= 1 and not p:getCards("hej"):isEmpty() then targets:append(p) end
+    end
+	for _,who in sgs.qlist(targets) do
+       local cd = sgs.ai_skill_cardchosen["zhudao"](self, who, "hej")
+	   if cd then 
+		  target = who
+		  break
+	   end
+	end
+	local cards = sgs.QList2Table(source:getCards("he"))
+	self:sortByKeepValue(cards)
+	card = cards[1]
+	if target and card then
+        use.card = sgs.Card_Parse("#ShunshanCard:"..card:getEffectiveId()..":&shunshan")
+		if use.to then use.to:append(target) end
+		return
+	end
+end
 
+sgs.ai_skill_cardchosen.shunshan = function(self, who, flags)
+	local card = sgs.ai_skill_cardchosen["zhudao"](self, who, flags)
+	if card then
+		self.room:setPlayerProperty(who, "shunshan_id", sgs.QVariant(card:getEffectiveId() + 1))
+		return card
+	end
+end
+
+sgs.ai_skill_playerchosen.shunshan = function(self, targets)
+	local source = self.player
+	local from = room:getTag("shunshanTarget"):toPlayer()
+    local id = from:property("shunshan_id"):toInt()-1
+	local room = self.room
+	room:setPlayerProperty(from, "shunshan_id", sgs.QVariant())
+	local card = sgs.Sanguosha:getCard(id)
+
+    if not from then return targets:at(0) end
+	if from:getJudgingArea():contains(card) then
+		for _, target in sgs.qlist(targets) do
+			if self:isEnemy(target) and not card:isKindOf("Key") then
+				return target
+			end
+			if self:isFriend(target) and card:isKindOf("Key") then
+				return target
+			end
+		end
+	end
+	if not source:getArmor() then
+		for _,player in sgs.qlist(targets) do
+			if self:isEnemy(player) and player:getArmor() and player:getArmor():getEffectiveId() == id and not player:hasSkills(sgs.lose_equip_skill) then
+				return source
+			end
+		end
+	end
+	if not source:getTreasure() then
+		for _,player in sgs.qlist(targets) do
+			if self:isEnemy(player) and player:getTreasure() and player:getTreasure():getEffectiveId() == id and not player:hasSkills(sgs.lose_equip_skill) then
+				return source
+			end
+		end
+	end
+	if not source:getDefensiveHorse() then
+		for _,player in sgs.qlist(targets) do
+			if self:isEnemy(player) and player:getDefensiveHorse() and player:getDefensiveHorse():getEffectiveId() == id and not player:hasSkills(sgs.lose_equip_skill) then
+				return source
+			end
+		end
+	end
+	if not source:getWeapon() then
+		for _,player in sgs.qlist(targets) do
+			if self:isEnemy(player) and player:getWeapon() and player:getWeapon():getEffectiveId() == id and not player:hasSkills(sgs.lose_equip_skill) then
+				return source
+			end
+		end
+	end
+	if not source:getOffensiveHorse() then
+		for _,player in sgs.qlist(targets) do
+			if self:isEnemy(player) and player:getOffensiveHorse() and player:getOffensiveHorse():getEffectiveId() == id and not player:hasSkills(sgs.lose_equip_skill) then
+				return source
+			end
+		end
+	end
+
+	if #self.enemies == 1 then
+		for _,badpeople in ipairs(self.enemies) do
+			if badpeople:isAlive() and badpeople:getHandcards():contains(card) then
+				return source
+			end
+		end
+	end
+
+	for _,badpeople in ipairs(self.enemies) do
+		if badpeople:isAlive() and badpeople:getWeapon() and badpeople:getWeapon():getEffectiveId() == id then
+			for _,player in sgs.qlist(targets) do
+				if self:isFriend(player) and not player:getWeapon() then
+					if player:hasSkills(sgs.lose_equip_skill) then
+						return player
+					end
+				end
+			end
+			for _,player in sgs.qlist(targets) do
+				if self:isFriend(player) and not player:getWeapon() then
+					return player
+				end
+			end
+		end
+	end
+
+	for _,badpeople in ipairs(self.enemies) do
+		if badpeople:isAlive() and badpeople:getOffensiveHorse() and badpeople:getOffensiveHorse():getEffectiveId() == id then
+			for _,player in sgs.qlist(targets) do
+				if self:isFriend(player) and not player:getOffensiveHorse() then
+					if player:hasShownSkill(sgs.lose_equip_skill) then
+						return player
+					end
+				end
+			end
+			for _,player in sgs.qlist(targets) do
+				if self:isFriend(player) and not player:getOffensiveHorse() then
+					return player
+				end
+			end
+		end
+	end
+	for _,badpeople in ipairs(self.enemies) do
+		if badpeople:isAlive() and badpeople:getArmor() and badpeople:getArmor():getEffectiveId() == id then
+			for _,player in sgs.qlist(targets) do
+				if self:isFriend(player) and not player:getArmor() then
+					if player:hasShownSkill(sgs.lose_equip_skill) then
+						return player
+					end
+				end
+			end
+			for _,player in sgs.qlist(targets) do
+				if self:isFriend(player) and not player:getArmor() then
+					return player
+				end
+			end
+		end
+	end
+	for _,badpeople in ipairs(self.enemies) do
+		if badpeople:isAlive() and badpeople:getDefensiveHorse() and badpeople:getDefensiveHorse():getEffectiveId() == id then
+			for _,player in sgs.qlist(targets) do
+				if self:isFriend(player) and not player:getDefensiveHorse() then
+					if player:hasShownSkill(sgs.lose_equip_skill) then
+						return player
+					end
+				end
+			end
+			for _,player in sgs.qlist(targets) do
+				if self:isFriend(player) and not player:getDefensiveHorse() then
+					return player
+				end
+			end
+		end
+	end
+
+	local cardNumMin = 100
+	local bestguy = source
+	for _,player in ipairs(self.enemies) do
+		if player:isAlive() and not player:isKongcheng() then
+			for _,goodguy in sgs.qlist(targets) do
+				local cardNum = goodguy:getHandcardNum()
+				if cardNum < cardNumMin and self:isFriend(goodguy) then
+					cardNumMin = cardNum
+					bestguy = goodguy
+				end
+			end
+			return bestguy
+		end
+	end
+	return source
 end
 
 sgs.ai_skill_invoke.dingshen = function(self, data)
