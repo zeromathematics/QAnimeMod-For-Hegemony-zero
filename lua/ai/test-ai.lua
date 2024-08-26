@@ -1876,10 +1876,10 @@ badan_skill.getTurnUseCard=function(self,inclusive)
      if (p:isFriendWith(self.player) and not p:isNude()) then n=n+1 end
      if (not p:hasShownOneGeneral()) then m=m+1 end
    end
-   if n<3 and m>=2 then
+   if n<2 and m>=2 then
      return
    end
-   if self.player:getLostHp()<=0 and n>1 then return end
+   if self.player:getLostHp()<=0 and n>0 then return end
 	return sgs.Card_Parse("@BadanCard=.&badan")
 end
 

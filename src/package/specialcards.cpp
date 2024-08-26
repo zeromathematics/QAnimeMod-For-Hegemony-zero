@@ -3898,8 +3898,16 @@ void LinkStart::onEffect(const CardEffectStruct &effect) const{
     int armor = -1;
     if (!weapons.isEmpty()){
         if (science){
-            room->fillAG(weapons, player);
-            weapon = room->askForAG(player, weapons, false, objectName());
+            QList<int> weapons3;
+            for (int i = 0; i < 3; i++){
+                if (!weapons.isEmpty()){
+                     int wid = weapons.at(rand()%weapons.length());
+                     weapons.removeOne(wid);
+                     weapons3 << wid;
+                }
+            }
+            room->fillAG(weapons3, player);
+            weapon = room->askForAG(player, weapons3, false, objectName());
             room->clearAG(player);
         }
         else{
@@ -3908,8 +3916,16 @@ void LinkStart::onEffect(const CardEffectStruct &effect) const{
     }
     if (!armors.isEmpty()){
         if (science){
-            room->fillAG(armors, player);
-            armor = room->askForAG(player, armors, false, objectName());
+            QList<int> armors3;
+            for (int i = 0; i < 3; i++){
+                if (!armors.isEmpty()){
+                     int aid = armors.at(rand()%armors.length());
+                     armors.removeOne(aid);
+                     armors3 << aid;
+                }
+            }
+            room->fillAG(armors3, player);
+            armor = room->askForAG(player, armors3, false, objectName());
             room->clearAG(player);
         }
         else{

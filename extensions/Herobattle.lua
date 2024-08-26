@@ -3864,29 +3864,53 @@ Jjueying = sgs.CreateTargetModSkill{
   end 
 }
 
+MoshiCard = sgs.CreateSkillCard{
+	name = "MoshiCard",
+	filter = function(self,targets, to_select)
+	    local n = sgs.Self:getMark("Nekojiyi_suit")
+		return #targets < n
+	end,
+	on_use = function(self, room,source,targets)
+        local n = sgs.Self:getMark("Nekojiyi_suit") 
+		local choice=room:askForChoice(source,"Moshi","Moshi_top+Moshi_bottom")
+		if choice =="Moshi_top" then
+			for _,tar in ipairs(targets) do
+				if not tar:isNude() then
+				    local card_id = room:askForCardChosen(source, tar, "he", "Moshi")
+					local card = sgs.Sanguosha:getCard(card_id)
+					local reason = sgs.CardMoveReason(0x09, source:objectName(), "moshi", "")
+					room:moveCardTo(card, tar,  nil ,sgs.Player_DrawPile, reason, true)
+				end
+			end
+		elseif choice =="Moshi_bottom" then
+			for _,tar in ipairs(targets) do
+				if not tar:isNude() then
+				    local card_id = room:askForCardChosen(source, tar, "he", "Moshi")
+					local card = sgs.Sanguosha:getCard(card_id)
+					room:throwCard(card, tar, source)
+			   end
+			end
+		end
+		if n > 3 then 
+		  local tw = room:askForPlayersChosen(source, room:getAlivePlayers(), "moshi", 0, 1, "Moshi_tar")
+			for _,p in sgs.qlist(tw) do
+				room:setPlayerMark(p, "##Moshi_replace", 1)
+			end	
+		end 		
+	end,
+}
+
 Moshi = sgs.CreateZeroCardViewAsSkill{
 	name = "moshi",
-	guhuo_type = "bt",
-    view_as = function(self)
-	    local pattern = sgs.Self:getTag(self:objectName()):toString()
-		if pattern == "" then return end
-		local vs = sgs.Sanguosha:cloneCard(pattern)
-		vs:setShowSkill(self:objectName())
-		vs:setSkillName(self:objectName())
-		return vs
-    end,
-    enabled_at_play = function(self, player)
-	    return not player:hasUsed("ViewAsSkill_moshiCard") and sgs.Self:getMark("Nekojiyi_suit") > 0
+	view_as = function(self)
+		local new_card = MoshiCard:clone()
+		new_card:setShowSkill(self:objectName())	
+		new_card:setSkillName(self:objectName())		
+		return new_card
 	end,
-	button_enabled = function(self, name)
-	    local n = sgs.Self:getMark("Nekojiyi_suit")
-		if n > 3 then 
-			if name ~= "archery_attack" and name ~= "savage_assault" and name ~= "duel" and  name ~= "drowning" and  name ~= "burning_camps" and name ~= "fire_attack" then return false end
-		elseif n <= 3 then
-            if name ~= "music" and name ~= "dismantlement" and name ~= "iron_chain" then return false end		
-		end	
-		return true
-	end ,
+	enabled_at_play = function(self, player)
+		return not player:hasUsed("#MoshiCard") and sgs.Self:getMark("Nekojiyi_suit") > 0
+	end
 }
 
 Moshiglobal = sgs.CreateTriggerSkill{
@@ -3894,19 +3918,6 @@ Moshiglobal = sgs.CreateTriggerSkill{
 	global = true,
 	events = {sgs.DamageInflicted, sgs.CardUsed},
 	   priority = 2,
-	on_record = function(self, event, room, player, data) 
-		if event == sgs.CardUsed then
-		    local use = data:toCardUse()
-			if use.card:getSkillName() == "moshi" then
-				if player:getMark("Nekojiyi_suit") > 3 then
-				   local tar = room:askForPlayersChosen(player, room:getAlivePlayers(), "moshi", 0, 1, "Moshi_tar")
-					for _,p in sgs.qlist(tar) do
-						room:setPlayerMark(p, "##Moshi_replace", 1)
-					end			  			
-				end
-			end
-		end
-	end,
 	can_trigger = function(self, event, room, player, data, sp)
 		if event == sgs.DamageInflicted then
 			local damage = data:toDamage()
@@ -6214,23 +6225,26 @@ ChahuiCard = sgs.CreateSkillCard{
 		   for _, id in sgs.qlist(list) do
 			  room:moveCardTo(sgs.Sanguosha:getCard(id), player, sgs.Player_PlaceTable, sgs.CardMoveReason(sgs.CardMoveReason_S_REASON_TURNOVER, player:objectName(), "chahui", ""), false)
 		   end
-		   room:fillAG(list, player)
-		   local id = -1
-		   id = room:askForAG(player, list, true, "chahui")
-		   room:clearAG(player)
-		   if id > -1 then
-			   list:removeOne(id)
-			   local players = sgs.SPlayerList()
-		       if player:isAlive() then players:append(player) end
-			   if targets[1]:isAlive() then players:append(targets[1]) end
-			   if players:length() == 0 then return end
-			   local target = room:askForPlayerChosen(player, players, "chahui")
-			   local card = sgs.Sanguosha:getCard(id)
-			   local use = sgs.CardUseStruct()
-			   use.from = player
-			   use.card = card
-			   use.to:append(target)
-			   room:useCard(use, false)
+		   for i = 1 , 2 , 1 do
+		    if list:isEmpty() then break end
+			room:fillAG(list, player)
+			local id = -1
+			id = room:askForAG(player, list, true, "chahui")
+			room:clearAG(player)
+			if id > -1 then
+				list:removeOne(id)
+				local players = sgs.SPlayerList()
+				if player:isAlive() then players:append(player) end
+				if targets[1]:isAlive() then players:append(targets[1]) end
+				if players:length() == 0 then return end
+				local target = room:askForPlayerChosen(player, players, "chahui")
+				local card = sgs.Sanguosha:getCard(id)
+				local use = sgs.CardUseStruct()
+				use.from = player
+				use.card = card
+				use.to:append(target)
+				room:useCard(use, false)
+			end
 		   end
 		   for i = 1, list:length(),1 do
 			  room:getDrawPile():prepend(list:at(list:length()-i))
@@ -7879,7 +7893,7 @@ yixins = sgs.CreateTriggerSkill{
 		end
 	end ,]]
 	can_trigger = function(self, event, room, player, data)
-		if event ==sgs.HpLost or event == sgs.Damaged and player and player:isAlive() and player:hasSkill(self:objectName()) then  return self:objectName() end
+		if (event == sgs.HpLost or event == sgs.Damaged) and player and player:isAlive() and player:hasSkill(self:objectName()) then return self:objectName() end
 		return ""
 	end ,
 	on_cost = function(self, event, room, player, data)
@@ -8817,7 +8831,7 @@ sgs.LoadTranslationTable{
 ["pquanneng_gainmark"] = "获得一枚“蓄力”标记",
 ["pquanneng_losemark"] = "弃置人物牌上的一个“蓄力”标记，摸一张牌并回复1点体力",
 ["plianjie"] = "连结「与你的羁绊」",
-[":plianjie"] = "主将技，此人物牌减少一个阴阳鱼。锁定技，当你发动一次“权能”后或者造成一次伤害时，获得一个“好感度”标记(上限为3)；你的准备阶段开始时，若你“好感度”标记为3，你可以弃置所有“好感度”标记，并从一个随机常规势力的三个随机未登场女性武将中选择一个替换你的副将。",--其他角色准备阶段开始时，若你有以此法记录的副将且其不在场上，你可以清除记录并替换为此副将，以此法替换副将时，不重置其限定技。",
+[":plianjie"] = "主将技，此人物牌减少一个阴阳鱼。锁定技，当你发动一次“权能”后或者造成一次伤害时，获得一个“好感度”标记(上限为3)；你的准备阶段开始时，若你“好感度”标记为3，你可以弃置所有“好感度”标记，并从一个随机常规势力的三个随机未登场女性人物牌中选择一个替换你的副将。",--其他角色准备阶段开始时，若你有以此法记录的副将且其不在场上，你可以清除记录并替换为此副将，以此法替换副将时，不重置其限定技。",
 ["%PYuuki"] = "“让我们在你的选拔下成为最强吧”",
 
 ["Fumika"] = "美川文伽",
@@ -9183,7 +9197,7 @@ sgs.LoadTranslationTable{
 	["designer:Ryuuichi"] = "网瘾少年",
 	["%Ryuuichi"] = "“异议あり！”",
 	["quzheng"] = "取证",
-	[":quzheng"] = "一名其他角色结束阶段结束时，若此回合有人受到伤害或阵亡，你可以弃置一张手牌，将一张本回合内以该角色为来源进入弃牌堆的牌置入你的武将牌上，称为“证据”（最多3张）。",
+        [":quzheng"] = "一名其他角色结束阶段结束时，若此回合有人受到伤害或阵亡，你可以弃置一张手牌，将一张本回合内以该角色为来源进入弃牌堆的牌置入你的人物牌上，称为“证据”（最多3张）。",
     ["nizhuan"] = "逆转",
 	[":nizhuan"] = "主将技，此人物牌减少一个阴阳鱼。每回合限一次，你可以将一张“证据”当做“异议”使用或打出，若你以此法使用牌的花色与被响应的【杀】牌颜色相同，此异议结算后目标视为对使用者使用一张名称相同的【杀】。",
 	["yanshen"] = "延审",
@@ -9204,8 +9218,10 @@ sgs.LoadTranslationTable{
 ["%Neko"] = "“如果我们的数日能够拯救某个人的生命，我们的生命就有了好几倍的价值”",
 ["~Neko"] = "我早就决定长大后要这么做了，我喜欢良太，而且今后也会永远喜欢你！",
 ["moshi"] = "魔使",
-[":moshi"] = "出牌阶段限一次，可以根据你本回合已使用过的花色数执行（至少1）：小于4，视为使用一张音/无形之手/铁索连环；等于4，视为使用一张伤害类锦囊牌，并于使用时可以令1名角色下次受到的伤害-1（减伤标识为“防护罩”）。",
+[":moshi"] = "出牌阶段限一次，可以根据你本回合已使用过的花色数执行：将至多等量角色各一张牌置于牌堆顶/弃置，若花色数达到4，令一名角色下次受到的伤害-1（触发标识为“防护罩”）。car",
 ---["Nekojiyi_suit"] = "魔使已使用花色",
+["Moshi_top"] = "置于牌堆顶",
+["Moshi_bottom"] = "弃置",
 ["Moshi_tar"] = "选择一名角色，其下次受到的伤害-1",
 ["Moshiglobal"] = "防护罩",
 ["Moshi_replace"] = "防护罩",
@@ -9448,7 +9464,7 @@ sgs.LoadTranslationTable{
 	["%Renne"] = "“超越善恶生死之处，我曾淡然走过”",
 	["cv:Renne"] = "西原久美子",
         ["chahui"] = "茶会",
-        [":chahui"] = "出牌阶段限一次，你可以对一名角色发起拼点，若你赢，你可以展示牌堆顶X张牌（X为拼点牌点数差）并可以选择其中一张牌视为对你或其使用之（不计入次数）；若你没赢，其获得你的拼点牌。",
+        [":chahui"] = "出牌阶段限一次，你可以对一名角色发起拼点，若你赢，你可以展示牌堆顶X张牌（X为拼点牌点数差）并可以选择其中1~2张牌视为对你或其依次使用之（不计入次数）；若你没赢，其获得你的拼点牌。",
         ["lianwu"] = "镰舞",
         [":lianwu"] = "当你用牌对其他角色造成伤害时，若此伤害牌有点数，你可以令其此回合内无法使用或打出点数大于此牌的牌。",
 		["lianwumark"] = "镰舞标记",

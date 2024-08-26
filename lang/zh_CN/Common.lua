@@ -31,7 +31,7 @@ CommonTranslationTable = {
 	["offensive"] = "先手",
 	["defensive"] = "后手",
 
-	["Generals"] = "武将" ,
+        ["Generals"] = "人物牌" ,
 	["Pairs"] = "组合",
 	["XMode"] = "血战到底",
 	["cancel"] = "取消",
@@ -212,7 +212,7 @@ CommonTranslationTable = {
 	["$JudgeResult"] = "%from 的判定结果为 %card",
 	["$PindianResult"] = "%from 的拼点牌为 %card",
 	["#ChooseSuit"] = "%from 选择了花色 %arg",
-	["#TurnOver"] = "%from 将武将牌叠置，现在是 %arg",
+        ["#TurnOver"] = "%from 将人物牌叠置，现在是 %arg",
 	["face_up"] = "平置状态",
 	["face_down"] = "叠置状态",
 	["#SkipPhase"] = "%from 跳过了 %arg 阶段",
