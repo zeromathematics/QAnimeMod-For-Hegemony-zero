@@ -270,7 +270,7 @@ sgs.dynamic_value.benefit.Tacos = true
 function SmartAI:useCardMapoTofu(card, use)
 	local targets = {}
 	for _,p in sgs.list(self.room:getAlivePlayers()) do
-		if self.player:distanceTo(p) <= 1 then table.insert(targets, p) end
+                if self.player:distanceTo(p) <= 1 and self.player:distanceTo(p)>-1 then table.insert(targets, p) end
 	end
 	if #targets == 0 then return end
 	local f_target

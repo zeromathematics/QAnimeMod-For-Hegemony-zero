@@ -606,7 +606,7 @@ sgs.ai_skill_use_func["#ShunshanCard"] = function(card,use,self)
 	local target
 	local card
 	for _,p in sgs.qlist(room:getAlivePlayers()) do
-	   if source:distanceTo(p) <= 1 and not p:getCards("hej"):isEmpty() then targets:append(p) end
+           if source:distanceTo(p) <= 1 and source:distanceTo(p)>-1 and not p:getCards("hej"):isEmpty() then targets:append(p) end
     end
 	for _,who in sgs.qlist(targets) do
        local cd = sgs.ai_skill_cardchosen["zhudao"](self, who, "hej")

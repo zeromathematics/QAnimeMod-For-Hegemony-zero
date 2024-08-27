@@ -1470,6 +1470,21 @@ public:
         events << PreCardUsed << CardFinished << TrickCardCanceling << SlashProceed;
     }
 
+    virtual void record(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data) const
+    {
+        if (event == CardFinished) {
+             CardUseStruct use = data.value<CardUseStruct>();
+             if (use.card!= NULL && use.card->hasFlag("zhanfang_card")){
+                 foreach(auto p, room->getAlivePlayers()){
+                     if (p->hasFlag("zhanfang_pro")){
+                         room->setPlayerFlag(p, "-zhanfang_pro");
+                     }
+                 }
+             }
+        }
+        return;
+    }
+
     virtual QStringList triggerable(TriggerEvent triggerEvent, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer* &) const
    {
         if (triggerEvent == PreCardUsed){
@@ -1503,13 +1518,13 @@ public:
                         }
                     }
                 }
-        else if (triggerEvent == TrickCardCanceling && TriggerSkill::triggerable(player)){
+        else if (triggerEvent == TrickCardCanceling /*&& TriggerSkill::triggerable(player)*/){
                     CardEffectStruct effect = data.value<CardEffectStruct>();
                     if (effect.from && effect.from->isAlive() && effect.to && effect.to->hasFlag("zhanfang_pro")){
                         return QStringList(objectName());
                     }
                 }
-                else if (triggerEvent == SlashProceed && TriggerSkill::triggerable(player)){
+                else if (triggerEvent == SlashProceed /*&& TriggerSkill::triggerable(player)*/){
                     SlashEffectStruct effect = data.value<SlashEffectStruct>();
                     if (effect.from && effect.from->isAlive() && effect.to && effect.to->hasFlag("zhanfang_pro")){
                         return QStringList(objectName());
@@ -1523,7 +1538,7 @@ public:
         if (event == PreCardUsed && player->askForSkillInvoke(this, data)){
             return true;
         }
-        else if((event == TrickCardCanceling ||event == SlashProceed )&&(player->hasShownSkill(this)||player->askForSkillInvoke(this, data))){
+        else if((event == TrickCardCanceling ||event == SlashProceed )/*&&(player->hasShownSkill(this)||player->askForSkillInvoke(this, data))*/){
             return true;
         }
         return false;
@@ -1557,19 +1572,19 @@ public:
        else if (triggerEvent == TrickCardCanceling){
                    CardEffectStruct effect = data.value<CardEffectStruct>();
                    if (effect.from && effect.from->isAlive() && effect.to && effect.to->hasFlag("zhanfang_pro")){
-                       room->setPlayerFlag(effect.to, "-zhanfang_pro");
-                       LogMessage log;
+                       //room->setPlayerFlag(effect.to, "-zhanfang_pro");
+                       /*LogMessage log;
                        log.type = "$zhanfang_effect";
-                       log.from = effect.to;
+                       log.from = player;
                        log.arg = effect.card->objectName();
-                       room->sendLog(log);
+                       room->sendLog(log);*/ //players who have nullification or igiari will expose
                        return true;
                    }
                }
                else if (triggerEvent == SlashProceed){
                    SlashEffectStruct effect = data.value<SlashEffectStruct>();
                    if (effect.from && effect.from->isAlive() && effect.to && effect.to->hasFlag("zhanfang_pro")){
-                       room->setPlayerFlag(effect.to, "-zhanfang_pro");
+                       //room->setPlayerFlag(effect.to, "-zhanfang_pro");
                        LogMessage log;
                        log.type = "$zhanfang_effect";
                        log.from = effect.to;

@@ -3073,7 +3073,7 @@ Bingfeng = sgs.CreateTriggerSkill{
 		local killer = death.damage.from
 		local targets = sgs.SPlayerList()
 		for _,p in sgs.qlist(room:getAlivePlayers()) do
-			if killer:distanceTo(p)<=1 then targets:append(p) end
+                        if killer:distanceTo(p)<=1 and killer:distanceTo(p)>-1 then targets:append(p) end
 		end
 		room:sortByActionOrder(targets)
 		for _,p in sgs.qlist(targets) do
@@ -3091,7 +3091,7 @@ Bingfeng = sgs.CreateTriggerSkill{
 ShunshanCard = sgs.CreateSkillCard{
 	name = "ShunshanCard",
 	filter = function(self, targets, to_select) --必须
-		if #targets < 1 and sgs.Self:distanceTo(to_select) <= 1 then
+                if #targets < 1 and sgs.Self:distanceTo(to_select) <= 1 and sgs.Self:distanceTo(to_select) >-1 then
 			return not to_select:isNude() or to_select:getJudgingArea():length() > 0
 		end
 	end,
@@ -7082,6 +7082,7 @@ Aoshivs = sgs.CreateZeroCardViewAsSkill{
 Aoshi = sgs.CreateTriggerSkill{
 	name = "aoshi",
 	view_as_skill = Aoshivs,
+	can_preshow = true,
     events = {sgs.EventPhaseStart, sgs.PindianVerifying, sgs.Pindian},
 	can_trigger = function(self, event, room, player, data)
 		if event == sgs.EventPhaseStart and player:hasSkill(self:objectName()) and player:getPhase()==sgs.Player_Start and player:getMark("#aoshi_null")==0 then---and not player:isKongcheng()
@@ -7503,7 +7504,7 @@ mianlingCard = sgs.CreateSkillCard{
 		end
 		for _,p in sgs.qlist(room:getAlivePlayers()) do
 			if p:getMark("mianling_nu_Slash") > 0 then room:setPlayerMark(p, "mianling_nu_Slash", 0) end  
-			if player:distanceTo(p) <= player:getAttackRange() and player:getMark("##mianling_nu")> 0 then
+                        if player:distanceTo(p) <= player:getAttackRange() and player:distanceTo(p)>-1 and player:getMark("##mianling_nu")> 0 then
 				room:setPlayerMark(p, "mianling_nu_Slash", 1)
 			end
 		end
@@ -7526,7 +7527,7 @@ mianlingShown = sgs.CreateTriggerSkill{
 				if sp:isAlive() and sp:hasShownSkill("mianling") and (use.card:isKindOf("Slash") or use.card:isKindOf("Music")) then
 					for _,p in sgs.qlist(room:getOtherPlayers(sp)) do
 						if p:getMark("mianling_nu_Slash") > 0 then room:setPlayerMark(p, "mianling_nu_Slash", 0) end  
-						if sp:distanceTo(p) <= sp:getAttackRange() and sp:getMark("##mianling_nu")> 0 and  sp:hasShownSkill("ranxv") then
+                                                if sp:distanceTo(p) <= sp:getAttackRange() and sp:distanceTo(p)>-1 and sp:getMark("##mianling_nu")> 0 and  sp:hasShownSkill("ranxv") then
 							room:setPlayerMark(p, "mianling_nu_Slash", 1)
 						end
 					end
@@ -7539,7 +7540,7 @@ mianlingShown = sgs.CreateTriggerSkill{
 			if ((move.to and move.to:objectName() == player:objectName() and move.to_place == sgs.Player_PlaceEquip) or (move.from and move.from:objectName() == player:objectName() and move.from_places:contains(sgs.Player_PlaceEquip))) then
 				for _,p in sgs.qlist(room:getOtherPlayers(player)) do
 					if p:getMark("mianling_nu_Slash") > 0 then room:setPlayerMark(p, "mianling_nu_Slash", 0) end  
-					if player:distanceTo(p) <= player:getAttackRange() and player:getMark("##mianling_nu")> 0 and player:hasShownSkill("ranxv") then
+                                        if player:distanceTo(p) <= player:getAttackRange() and player:distanceTo(p)>-1 and player:getMark("##mianling_nu")> 0 and player:hasShownSkill("ranxv") then
 						room:setPlayerMark(p, "mianling_nu_Slash", 1)
 					end
 				end
@@ -7549,7 +7550,7 @@ mianlingShown = sgs.CreateTriggerSkill{
 		    local count = data:toInt()
 			local players = room:findPlayersBySkillName(self:objectName())
 			for _,sp in sgs.qlist(players) do
-				if sp:isAlive() and sp:hasShownSkill("mianling") and sp:distanceTo(player) <= sp:getAttackRange() and sp:getMark("##mianling_xi")> 0 then 
+                                if sp:isAlive() and sp:hasShownSkill("mianling") and sp:distanceTo(player) <= sp:getAttackRange()and sp:distanceTo(player)>-1 and sp:getMark("##mianling_xi")> 0 then
 					if sp~=player and not sp:hasShownSkill("ranxv") then return "" end
 					local list = room:getDrawPile()
 					if list:length()>0 then
@@ -7568,7 +7569,7 @@ mianlingShown = sgs.CreateTriggerSkill{
 		if event == sgs.EventPhaseStart and player:getPhase() == sgs.Player_Discard then
 			local players = room:findPlayersBySkillName(self:objectName())
 			for _,sp in sgs.qlist(players) do
-				if sp:isAlive() and sp:hasShownSkill("mianling") and sp:distanceTo(player) <= sp:getAttackRange() and sp:getMark("##mianling_ai")> 0 then 
+                                if sp:isAlive() and sp:hasShownSkill("mianling") and sp:distanceTo(player) <= sp:getAttackRange() and sp:distanceTo(player)>-1 and sp:getMark("##mianling_ai")> 0 then
 				    if sp~=player and not sp:hasShownSkill("ranxv") then return "" end
 					room:setPlayerFlag(player, "mianling_ai_extra")
 				end	
@@ -7577,7 +7578,7 @@ mianlingShown = sgs.CreateTriggerSkill{
 		if event == sgs.EventPhaseChanging and data:toPhaseChange().to == sgs.Player_Judge then
 			local players = room:findPlayersBySkillName(self:objectName())
 			for _,sp in sgs.qlist(players) do
-				if sp:isAlive() and sp:hasShownSkill("mianling") and sp:distanceTo(player) <= sp:getAttackRange() and sp:getMark("##mianling_nu")> 0 then 
+                                if sp:isAlive() and sp:hasShownSkill("mianling") and sp:distanceTo(player) <= sp:getAttackRange() and sp:distanceTo(player)>-1 and sp:getMark("##mianling_nu")> 0 then
 				    if sp~=player and not sp:hasShownSkill("ranxv") then return "" end
 					player:skip(sgs.Player_Judge)
 				end	
@@ -7587,7 +7588,7 @@ mianlingShown = sgs.CreateTriggerSkill{
 		    local use = data:toCardUse()
 			local players = room:findPlayersBySkillName(self:objectName())
 			for _,sp in sgs.qlist(players) do
-				if sp:isAlive() and sp:hasShownSkill("mianling") and sp:distanceTo(player) <= sp:getAttackRange() and sp:getMark("##mianling_le")> 0 then 
+                                if sp:isAlive() and sp:hasShownSkill("mianling") and sp:distanceTo(player) <= sp:getAttackRange() and sp:distanceTo(player)>-1 and sp:getMark("##mianling_le")> 0 then
 				    if sp~=player and not sp:hasShownSkill("ranxv") then return "" end-----(sp:getPile("miann"):length() >= 4 or not sp:hasShownSkill("ranxv"))
 					if not use.card:isKindOf("Slash") or use.card:isKindOf("ThunderSlash")or use.card:isKindOf("FireSlash") or use.card:isKindOf("IceSlash") then return false end
 					if not room:askForSkillInvoke(player, "mianling_attribute", data) then return end
@@ -7683,7 +7684,7 @@ ranxv = sgs.CreateTriggerSkill{
        if event == sgs.EventPhaseStart and player:getPhase() == sgs.Player_Play then
 			local players = room:findPlayersBySkillName(self:objectName())
 			for _,sp in sgs.qlist(players) do
-				if sp:isAlive() and sp:hasSkill(self:objectName()) and sp:distanceTo(player) <= sp:getAttackRange() and not player:isNude() then----and room:getCurrent():objectName() ~= sp:objectName() 
+                                if sp:isAlive() and sp:hasSkill(self:objectName()) and sp:distanceTo(player) <= sp:getAttackRange() and sp:distanceTo(player)>-1 and not player:isNude() then----and room:getCurrent():objectName() ~= sp:objectName()
 					return self:objectName(), sp
 				end
 			end
@@ -8649,7 +8650,7 @@ sgs.LoadTranslationTable{
   ["$yuanyu1"] = "伦也：那天~我与命运相遇了",
   ["$yuanyu2"] = "抱歉。不小心看到了",
   ["$yuanyu3"] = "有没有感受到那种仿佛喜欢上现实女生一般的....呼吸困难、内心焦躁，还有.....心跳加速呢？",
-  [":yuanyu"] = "每轮限一次，当你的牌因弃置进入弃牌堆时，你可以选择其中一张记为“缘遇”牌并与牌堆顶五张牌以任意顺序置于牌堆顶。一名其他角色使用对应实体牌为“缘遇”牌的非技能牌时，清除此牌“缘遇”记录，然后你摸3张牌并可以交给其任意张牌。",
+  [":yuanyu"] = "每轮限一次，当你的牌因弃置进入弃牌堆时，你可以选择其中一张记为“缘遇”牌并与牌堆顶五张牌以任意顺序置于牌堆顶。一名其他角色使用对应实体牌为“缘遇”牌的牌时，清除此牌“缘遇”记录，然后你摸3张牌并可以交给其任意张牌。",
   ["@yuanyu"] = "交给该角色任意张牌", 
   ["%KMegumi"] = "“所以加油啊，伦也君！把我变成所有人都羨慕的幸福的女主角啊”",
   
@@ -8659,7 +8660,7 @@ sgs.LoadTranslationTable{
   ["designer:Sakuta"] = "光临长夜",
   ["cv:Sakuta"] = "石川界人",
   ["shuaiyan"] = "率言",
-  [":shuaiyan"] = "回合内限一次，当你使用非技能牌指定一名其他角色为唯一目标后，你可以获得其区域内的一张牌，然后若其存活且与你势力相同，你摸一张牌，若其存活且其为女性，其摸一张牌。",
+  [":shuaiyan"] = "回合内限一次，当你使用牌指定一名其他角色为唯一目标后，你可以获得其区域内的一张牌，然后若其存活且与你势力相同，你摸一张牌，若其存活且其为女性，其摸一张牌。",
   ["shangxian"] = "伤现",
   [":shangxian"] = "一名其他角色受到伤害后，若你即将与其势力相同，且其“伤现牌”数量小于其体力上限，你可以受到1点无来源伤害，随机展示一个场上不存在的带“现世”标签的人物牌，其选择此牌一个技能获得之并将此牌置于人物牌上记为“伤现牌”。<font color=\"#C0C0C0\"><b>永久技，</b></font>一名角色于其回合内回复体力时，其选择失去一个以此法获得的技能并将对应“伤现牌”移出游戏。",
   ["shangxiangeneralcard"] = "伤现牌", 
@@ -8968,11 +8969,11 @@ sgs.LoadTranslationTable{
 ["designer:Sakuya"] = "FlameHaze",
 ["cv:Sakuya"] = "东方Lost Word",
 ["huanshen"] = "幻身",
-["$huanshen"] = "哼哼。这里面可是什么都没有哦。",
+["$huanshen"] = "挺能干的嘛。",
 [":huanshen"] = "出牌阶段限一次/当你受到非【杀】的伤害时，你可以弃置至多等同于当前手牌数的牌，并摸等量的牌。",
 ["sshiji"] = "时计",
 ["Fhsshiji$"] = "image=image/animate/Fhsshiji.png",
-["$sshiji1"] = "时间啊......停止吧！",
+["$sshiji1"] = "你的时间由我掌控，check mate！",
 ["$sshiji2"] = "时间啊......停止吧！",
 [":sshiji"] = "每回合限一次，当你因“幻身”弃置牌时，若弃置牌颜色相同，且弃置牌不小于3或你没手牌，你可以回复1点体力，若至少有三张花色相同，你可以移动一名角色判定区所有牌，若有三种类别，你可以令当前回合角色叠置，若至少有三张同名，你可以从弃牌堆随机获得三张不同名的牌，且至你下个回合结束时你使用杀的额定次数+1。",
 ["sshiji_recover"] = "时计：回复体力",
@@ -9260,7 +9261,7 @@ sgs.LoadTranslationTable{
 ["%Chtholly"] = "“我已经无法获得幸福了,因为我的身边已经充满幸福了”",
 ["~Chtholly"] = "看来梦一般的回忆，也到落幕时间了吧",
 ["ranxin"] = "燃心",
-[":ranxin"] = "每回合限3次，你使用/以使用方式打出一张红色非技能牌时，若你“魔”小于3，你可以将牌堆顶一张牌作为“魔”置于人物牌上。锁定技，你有“魔”时，使用杀额定次数+1，你的杀造成伤害时弃置一张“魔”并摸一张牌。",
+[":ranxin"] = "每回合限3次，你使用/以使用方式打出一张红色牌时，若你“魔”小于3，你可以将牌堆顶一张牌作为“魔”置于人物牌上。锁定技，你有“魔”时，使用杀额定次数+1，你的杀造成伤害时弃置一张“魔”并摸一张牌。",
 ["$ranxin1"] = "因为...我发现了，其实我..早就已经被幸福包围了",
 ["$ranxin2"] = "现在我圆了梦，也有了美妙的回忆，已经没有什么遗憾了吧",
 ["chiyi"] = "斥忆",

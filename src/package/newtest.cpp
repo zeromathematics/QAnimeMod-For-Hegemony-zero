@@ -5120,7 +5120,7 @@ public:
                   QList<ServerPlayer *> redos = room->findPlayersBySkillName(objectName());
             foreach(ServerPlayer *redo, redos)
                 if (redo->canDiscard(redo, "he") && !redo->isKongcheng())
-                    if (redo->distanceTo(damage.to) <= 1)
+                    if (redo->distanceTo(damage.to) <= 1 && redo->distanceTo(damage.to)>-1)
                     skill_list.insert(redo, QStringList(objectName()));
             return skill_list;
 
@@ -7456,7 +7456,7 @@ public:
     {
         foreach(ServerPlayer *p, room->getOtherPlayers(player)){
             if (p->isFriendWith(player)){
-                if (player->distanceTo(p)<=1){
+                if (player->distanceTo(p)<=1 && player->distanceTo(p)>-1){
                     RecoverStruct recover;
                     recover.recover = 1;
                     recover.who = player;

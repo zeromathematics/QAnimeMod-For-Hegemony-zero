@@ -2855,7 +2855,7 @@ sgs.ai_skill_choice.azuyizhi = function(self, choices, data)
 
 sgs.ai_skill_invoke.gewu = function(self, data)
     for _,p in sgs.qlist(self.room:getOtherPlayers(self.player)) do
-		if self.player:willBeFriendWith(p) and self.player:distanceTo(p)<=1 and p:isWounded() then return true end
+                if self.player:willBeFriendWith(p) and self.player:distanceTo(p)<=1 and self.player:distanceTo(p)>-1 and p:isWounded() then return true end
 	end
 end
 

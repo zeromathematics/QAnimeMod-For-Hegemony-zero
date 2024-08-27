@@ -858,7 +858,7 @@ YuejiCard = sgs.CreateSkillCard{
 	name = "YuejiCard",
     mute = true,
 	filter = function(self, targets, to_select) 
-		if #targets <1 and sgs.Self:objectName() ~= to_select:objectName() and sgs.Self:distanceTo(to_select) <= 2 then
+                if #targets <1 and sgs.Self:objectName() ~= to_select:objectName() and sgs.Self:distanceTo(to_select) <= 2 and sgs.Self:distanceTo(to_select)>-1 then
 			return true
 		end
 	end,
@@ -1083,7 +1083,7 @@ Qianggan = sgs.CreateTriggerSkill{
 			local effect = data:toSlashEffect()
 			local players = room:findPlayersBySkillName(self:objectName())
 			for _,sp in sgs.qlist(players) do
-				if sp:isAlive()and sp:hasSkill("qianggan") and room:getCurrent():objectName() == player:objectName() and sp:distanceTo(player) <= sp:getAttackRange() and sp:getMark("qianggan_times") < 1 then----effect.from ~= player and player == effect.to and and effect.from:objectName() ~= player:objectName() and effect.to:objectName() == player:objectName() 
+                                if sp:isAlive()and sp:hasSkill("qianggan") and room:getCurrent():objectName() == player:objectName() and sp:distanceTo(player) <= sp:getAttackRange() and sp:distanceTo(player)>-1 and sp:getMark("qianggan_times") < 1 then----effect.from ~= player and player == effect.to and and effect.from:objectName() ~= player:objectName() and effect.to:objectName() == player:objectName()
 				   return self:objectName(), sp
 				end
 			end	
@@ -1812,7 +1812,7 @@ Hongquan = sgs.CreateTriggerSkill{
 EhuanshenCard = sgs.CreateSkillCard{
 	name = "EhuanshenCard",
 	filter = function(self,targets, to_select, player) 
-		return #targets < 1 and to_select:objectName() ~= player:objectName()
+                return #targets < 1 and to_select:objectName() ~= player:objectName() and player:distanceTo(to_select) == 1
 	end,
 	on_use = function(self,room,source,targets)
 		local dest = targets[1]
@@ -1849,7 +1849,7 @@ MowuCard = sgs.CreateSkillCard{
                 return to_select == p
             end
         end
-		return #targets < 1 and sgs.Self:distanceTo(to_select) <= 1 and to_select:objectName() ~= Self:objectName()
+                return #targets < 1 and sgs.Self:distanceTo(to_select) == 1 and to_select:objectName() ~= Self:objectName()
 	end,
 	on_use = function(self, room, source, targets)
 		local target = targets[1]
@@ -2064,7 +2064,7 @@ sgs.LoadTranslationTable{
     ["cv:Ruri"] = "花泽香菜",
     ["%Ruri"] = "“记载着在不久的将来，等待着恋人们的命运之预言书”",
     ["shengli"] = "圣狸「圣黑猫&圣白猫」",
-    [":shengli"] = "<font color=\"green\"><b>每回合各限一次，</b></font>其他角色使用以你为目标的黑色非技能牌结算后，你可以与其拼点，若你赢，你摸一张牌并可以对其使用一张【杀】；其他角色使用以你为目标的非黑色非技能牌结算后，你可以与使用者各摸一张牌（使用者为你则累计摸一张牌）。",
+    [":shengli"] = "<font color=\"green\"><b>每回合各限一次，</b></font>其他角色使用以你为目标的黑色牌结算后，你可以与其拼点，若你赢，你摸一张牌并可以对其使用一张【杀】；一名角色使用以你为目标的非黑色牌结算后，你可以与使用者各摸一张牌（使用者为你则累计摸一张牌）。",
     ["yishi"] = "仪式「命运记录」",
     [":yishi"] = "准备阶段开始时，你可以选择一名你势力的其他男性角色，你令你与其当中体力值较小的角色回复1点体力，手牌数较小的角色摸一张牌；若没有与你势力相同的其他男性角色，你可以令你本回合手牌上限+1。",
     ["yishi$"] = "image=image/animate/SE_Yishi.png",
@@ -2169,12 +2169,12 @@ sgs.LoadTranslationTable{
     [":guangjian"] = "出牌阶段限一次，你可以将至多两张颜色不同的基本牌置于一名没有“光剑”的其他角色上记为“光剑”。当其他角色使用牌结算后，你可以将一张“光剑”当作【杀】视为对其使用之，然后若其没有“光剑”，你摸1张牌。",
     ["rilun"] = "日轮",
     [":rilun"] = "准备阶段开始时，若你手牌数大于体力值，你可以指定一个势力，弃置该势力数一半的牌（向上取整），视为对该势力角色使用一张【无限剑制】，然后若其未造成伤害，你从摸牌堆检索一张红桃牌。",
-    ["$guangjian1"] = "了解",
-    ["$guangjian2"] = "没事",
-    ["$guangjian3"] = "你在这里做什么？",
-    ["$rilun1"] = "如果你有时间花在那样的东西上，应该多训练。",
-    ["$rilun2"] = "没关系。",
-    ["$rilun3"] = "什么意思？",
+    ["$guangjian1"] = "光剑",
+    ["$guangjian2"] = "我会为了打败精灵而施展这股力量。",
+    ["$guangjian3"] = "嗞~嗞~（剑光声）",
+    ["$rilun1"] = "灭绝天使！",
+    ["$rilun2"] = "灭绝天使·日轮",
+    ["$rilun3"] = "开什么玩笑？！我的意志不会改变，我的使命不会改变，我否定一切的精灵！",
     ["@rilun"] = "日轮：选择一名有明置人物牌的角色",
     ["@rilun_discard"] = "日轮：弃置等同该角色势力数一半的牌（向上取整）",
 

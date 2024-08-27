@@ -42,7 +42,7 @@ sgs.ai_skill_choice.music = function(self, choices, data)
 	if self.player:getMaxCards()+1 < self.player:getHandcardNum() then return "music_maxh" end
 	local na
 	for _,v in ipairs(self.enemies) do
-		if not self.player:inMyAttackRange(v) then
+                if not self.player:inMyAttackRange(v) and self.player:distanceTo(v)>-1 then
 			local x = self.player:distanceTo(v) - self.player:getAttackRange()
 			for _,c in sgs.qlist(self.player:getHandcards()) do
                if self.room:getCurrent():getMark("music_times")+1 >= x and c:isKindOf("Slash") and self:slashIsEffective(c, v, self.player) and c:isAvailable(self.player) then na = true end

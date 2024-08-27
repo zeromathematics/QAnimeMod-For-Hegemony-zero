@@ -5582,6 +5582,9 @@ huaqian = sgs.CreateTriggerSkill{
 		   player:drawCards(1, self:objectName())
 		    if player:objectName() ~= sp:objectName() and not player:isNude() then
 		       local card = room:askForCard(player, "..", "&huaqian:" .. sp:objectName(), sgs.QVariant(), sgs.Card_MethodNone)
+			    if not card then
+				   card = player:getCards("he"):at(math.random(1,player:getCards("he"):length())-1)
+			    end
 				if card then
 					room:moveCardTo(card, sp, sgs.Player_PlaceHand, sgs.CardMoveReason(0x17, player:objectName(), sp:objectName(), self:objectName(), ""))
 				end	
@@ -7118,7 +7121,7 @@ sgs.LoadTranslationTable{
   ["huaqian"] = "花牵",
   ["KozueHuaqian$"] = "image=image/animate/KozueHuaqian.png",
   [":huaqian"] = "与你势力相同的角色于其回合内使用第三种花色的牌后，你可以令其摸一张牌并交给你一张牌，然后若你的手牌最多，则其本回合使用牌无距离限制。",
-  ["&huaqian"] = "“扬名”发动，请交给 %src 一张牌",
+  ["&huaqian"] = "“花牵”发动，请交给 %src 一张牌（点取消则随机选一张牌）",
   ["#huaqianA"] = "%from 的“%arg”被触发，当前回合角色使用牌无距离限制",
   ["qiuyu"] = "秋语",
   ["KozueQiuyu$"] = "image=image/animate/KozueQiuyu.png",

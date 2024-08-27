@@ -1516,11 +1516,13 @@ bool Room::_askForIgiari(const Card *basic, ServerPlayer *from, ServerPlayer *to
     QVariant data = QVariant::fromValue(basicEffect);
     foreach (ServerPlayer *player, m_alivePlayers) {
         if (player->hasIgiari()) {
-            if (player->isOnline()) {
-                player->m_commandArgs = arg;
-                validHumanPlayers << player;
-            } else
-                validAiPlayers << player;
+            if (!thread->trigger(TrickCardCanceling, this, player, data)) {
+                if (player->isOnline()) {
+                    player->m_commandArgs = arg;
+                    validHumanPlayers << player;
+                } else
+                    validAiPlayers << player;
+            }
         }
     }
 
