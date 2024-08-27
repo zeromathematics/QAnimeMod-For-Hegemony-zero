@@ -1176,7 +1176,7 @@ Wange = sgs.CreateTriggerSkill{
 					--[[if sgs.Sanguosha:getCard(id):hasFlag("wangeCard") then
 						sgs.Sanguosha:getCard(id):setFlags("-wangeCard")
 					end]]
-                    if list:contains(sgs.QVariant(id)) then
+                    if list:contains(sgs.QVariant(id)) and move.from and move.from:objectName() == player:objectName() then
                         local from = findPlayerByObjectName(move.from:objectName())
                         if from:hasFlag("wangecard_fisrtflag") then
                             room:setPlayerFlag(from, "-wangecard_fisrtflag")
@@ -1184,11 +1184,11 @@ Wange = sgs.CreateTriggerSkill{
                         end
                         if from:hasFlag("wangeCard_useprevent") then
                             room:setPlayerFlag(from, "-wangeCard_useprevent")
-                            room:setPlayerFlag(from, "wangeCard_useprevent2")
+                            --room:setPlayerFlag(from, "wangeCard_useprevent2")
                             return
-                        elseif from:hasFlag("wangeCard_useprevent2") then
+                        --[[elseif from:hasFlag("wangeCard_useprevent2") then
                             room:setPlayerFlag(from, "-wangeCard_useprevent2")
-                            return
+                            return]]
                         end
                         list:removeOne(sgs.QVariant(id))
                         room:setTag("wangeCard", sgs.QVariant(list))
