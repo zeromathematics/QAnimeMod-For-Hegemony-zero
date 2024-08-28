@@ -654,6 +654,20 @@ sgs.ai_skill_choice["GameRule:TurnStart"] = function(self, choices, data)
 	if choice == "cancel" then
 		local showRate = math.random()
 
+		if self.player:hasSkill("yishi") and not self.player:hasShownSkill("yishi") then
+			local list = sgs.SPlayerList()
+            for _,p in sgs.qlist(self.room:getOtherPlayers(self.player)) do
+                if p:isMale() and p ~= self.player and player:willBeFriendWith(p) then list:append(p) end
+            end
+            if list:length() > 0 then
+				if self.player:inHeadSkills("yishi") and canShowHead then
+					return "GameRule_AskForGeneralShowHead"
+				elseif canShowDeputy then
+					return "GameRule_AskForGeneralShowDeputy"
+				end
+			end			
+		end
+
 		if canShowHead and showRate > 0.8 then
 			if self.player:isDuanchang() then return "GameRule_AskForGeneralShowHead" end
 			for _, p in ipairs(self.enemies) do

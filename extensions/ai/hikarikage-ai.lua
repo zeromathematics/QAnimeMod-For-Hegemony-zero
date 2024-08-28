@@ -1,3 +1,76 @@
+--Ruri
+sgs.ai_skill_invoke.shengli = function(self, data)
+    if not self:willShowForAttack() and not self:willShowForDefence() then return end
+	local use = data:toCardUse()
+	if self:isFriend(use.from) and not use.card:isBlack() then
+		return true
+	end
+	if self:isEnemy(use.from) and use.card:isBlack() then
+		if self.player:getHandcardNum() >= use.from:getHandcardNum() then
+			return true
+		end
+		local max_card = self:getMaxCard()
+	    local max_point = max_card:getNumber()
+	    if max_point - 10 >= self.player:getHandcardNum() - use.from:getHandcardNum() then
+		    return true
+		end
+		if max_point - 7 >= self.player:getHandcardNum() - use.from:getHandcardNum() and self:isWeak(use.from) then
+		    return true
+		end
+	end
+end
+
+sgs.ai_skill_invoke.yishi = function(self, data)
+	return self:willShowForAttack() or self:willShowForDefence()
+end
+
+sgs.ai_skill_playerchosen.yishi = function(self, targets)
+    local min = 998
+	local best
+    if self.player:getHp() < min then
+	   min = self.player:getHp()
+	   best = self.player
+	end
+    for _,p in sgs.qlist(targets) do
+		if p:getHp() < min and p:isWounded() then
+			min = p:getHp()
+			best = p
+		end
+	end
+    if best and best:getHandcardNum() < self.player:getHandcardNum() then return best end
+
+	for _,p in sgs.qlist(targets) do
+		if self.player:getHp() == min and self.player:isWounded() and self.player:getHp() < p:getHp() and self.player:getHandcardNum()~=p:getHandcardNum() then
+			return p
+	    end
+		if p:getHp() == min and p:isWounded() and p:getHp() < self.player:getHp() and self.player:getHandcardNum()~=p:getHandcardNum() then
+			return p
+	    end
+		if self.player:isWounded() and self.player:getHp() < p:getHp() and self.player:getHandcardNum()~=p:getHandcardNum() then
+			return p
+	    end
+		if p:isWounded() and p:getHp() < self.player:getHp() and self.player:getHandcardNum()~=p:getHandcardNum() then
+			return p
+	    end
+		if self.player:getHp() == min and self.player:isWounded() and self.player:getHp() < p:getHp() then
+			return p
+	    end
+		if p:getHp() == min and p:isWounded() and p:getHp() < self.player:getHp() then
+			return p
+	    end
+		if self.player:isWounded() and self.player:getHp() < p:getHp() then
+			return p
+	    end
+		if p:isWounded() and p:getHp() < self.player:getHp() then
+			return p
+	    end
+	end
+	for _,p in sgs.qlist(targets) do
+	    if p:getHandcardNum() ~= self.player:getHandcardNum() then return p end
+	end
+end
+
+--Elaina
 sgs.ai_skill_invoke.lvji = function(self, data)
 	return self:willShowForAttack() or self:willShowForDefence()
 end

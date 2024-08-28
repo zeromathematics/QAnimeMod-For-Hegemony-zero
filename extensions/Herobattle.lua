@@ -3860,7 +3860,7 @@ Huanxieffect = sgs.CreateTriggerSkill{
 Jjueying = sgs.CreateTargetModSkill{
   name = "jjueying",
   residue_func = function(self,player,card)
-	if player:hasSkill(self:objectName()) and player:getHp()>player:getMaxHp()/2 and card:getSuit() == sgs.Card_Spade then return 1	end
+      if player:hasShownSkill(self:objectName()) and player:getHp()>player:getMaxHp()/2 and card:getSuit() == sgs.Card_Spade then return 1 end
   end 
 }
 
@@ -3871,12 +3871,12 @@ MoshiCard = sgs.CreateSkillCard{
 		return #targets < n
 	end,
 	on_use = function(self, room,source,targets)
-        local n = sgs.Self:getMark("Nekojiyi_suit") 
-		local choice=room:askForChoice(source,"Moshi","Moshi_top+Moshi_bottom")
+        local n = source:getMark("Nekojiyi_suit") 
+		local choice=room:askForChoice(source,"moshi","Moshi_top+Moshi_bottom")
 		if choice =="Moshi_top" then
 			for _,tar in ipairs(targets) do
 				if not tar:isNude() then
-				    local card_id = room:askForCardChosen(source, tar, "he", "Moshi")
+				    local card_id = room:askForCardChosen(source, tar, "he", "moshi")
 					local card = sgs.Sanguosha:getCard(card_id)
 					local reason = sgs.CardMoveReason(0x09, source:objectName(), "moshi", "")
 					room:moveCardTo(card, tar,  nil ,sgs.Player_DrawPile, reason, true)
@@ -3885,7 +3885,7 @@ MoshiCard = sgs.CreateSkillCard{
 		elseif choice =="Moshi_bottom" then
 			for _,tar in ipairs(targets) do
 				if not tar:isNude() then
-				    local card_id = room:askForCardChosen(source, tar, "he", "Moshi")
+				    local card_id = room:askForCardChosen(source, tar, "he", "moshi")
 					local card = sgs.Sanguosha:getCard(card_id)
 					room:throwCard(card, tar, source)
 			   end
@@ -9151,7 +9151,7 @@ sgs.LoadTranslationTable{
 	["$youdiz2"] = "第二波攻击编队，全体作战飞机，出击！",
 	--[":youdiz"] = "出牌阶段限一次，你可以将一张装备牌当作【存在缺失】使用。锁定技，若你明置，你的【存在缺失】额定目标+1，使用时摸1张牌。",
 	[":youdiz"] = "出牌阶段限一次，你可以令一名其他角色对你使用一张【杀】（无距离限制），然后若你体力值不小于其，你执行：令其进入存在缺失状态，并且若其与你势力不同，你摸一张牌。",
-	["@youdiz-slash:"] = "对“诱敌”来源对使用一张杀",
+	["@youdiz-slash"] = "对“诱敌”来源对使用一张杀",
 	["Zuikaku"] = "瑞鶴",
 	["@Zuikaku"] = "艦隊collection",
 	["#Zuikaku"] = "最后的正规空母",

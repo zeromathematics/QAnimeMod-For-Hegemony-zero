@@ -1892,9 +1892,9 @@ sgs.ai_skill_playerchosen["#zhiliansShown"] = function(self)
 	local names = self.friends_noself
 	if #names >1 then
 		table.insert(result, names[1])
-	 elseif #name == 1 then
+	elseif #names == 1 then
 		table.insert(result, names[1])   
-	 end
+	end
 	return result
 end
 

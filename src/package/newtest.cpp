@@ -3530,7 +3530,8 @@ public:
 
     bool isEnabledAtPlay(const Player *player) const
     {
-        return Slash::IsAvailable(player);
+        //return Slash::IsAvailable(player); --cannot use general slash to judge
+        return true;
     }
 
     virtual bool isEnabledAtResponse(const Player *player, const QString &pattern) const

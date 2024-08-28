@@ -234,7 +234,7 @@ Wuhen = sgs.CreateTriggerSkill{
             local change = data:toPhaseChange()
             if change.from == sgs.Player_Play then
                 for _,p in sgs.qlist(room:getAlivePlayers()) do
-                    if player:hasFlag(p:objectName().."wuhen_effect") then
+                    if player:getMark(p:objectName().."wuhen_effect") > 0 then
                         room:setPlayerMark(player, p:objectName().."wuhen_effect", 0)
                         room:setPlayerMark(p, "#wuhen", p:getMark("#wuhen")-1)
                     end
@@ -1004,26 +1004,25 @@ Qishi = sgs.CreateTriggerSkill{
 Jieji = sgs.CreateTriggerSkill{
 	name = "jieji",
 	frequency = sgs.Skill_Compulsory,
-	events = {sgs.CardUsed, sgs.Damage, sgs.CardFinished},
+	events = {sgs.Damage, sgs.CardFinished, sgs.CardUsed},
 	on_record = function(self, event, room, player, data)
-		if event == sgs.CardUsed then
+        if event == sgs.CardUsed then
 		    local use = data:toCardUse()
 		    if player and player:isAlive() and player:hasSkill("jieji") and not use.card:isKindOf("SkillCard") and not use.to:contains(player) and use.to:length() > 0 then
-				room:setPlayerMark(player, "jieji_History", player:getMark("jieji_History") + 1)
+				use.card:setFlags("isuse_jieji")
             end
 		end
 		if event == sgs.Damage then 
 			local damage = data:toDamage()
-			if player and player:isAlive() and player:hasSkill("jieji") and player:getMark("jieji_History") > 0 and damage.card and not damage.card:isKindOf("SkillCard") then
-				---room:setPlayerMark(player, "jieji_damage", player:getMark("jieji_damage") + 1)
-				room:setPlayerMark(player, "jieji_damage", 1)
+			if player and player:isAlive() and player:hasSkill("jieji") and damage.card and not damage.card:isKindOf("SkillCard") then
+				damage.card:setFlags("damage_jieji")
 			end			
 		end
 	end, 
 	can_trigger = function(self, event, room, player, data)
        if event == sgs.CardFinished then
 			local use = data:toCardUse()
-            if player and player:isAlive() and player:hasSkill("jieji") and not use.card:isKindOf("SkillCard") and not use.to:contains(player) and use.to:length() > 0 and player:getMark("jieji_History") > 0 then----and not use.to:contains(player) 
+            if player and player:isAlive() and player:hasSkill("jieji") and not use.card:isKindOf("SkillCard") and not use.to:contains(player) and use.to:length() > 0 and use.card:hasFlag("isuse_jieji") then
 				return self:objectName()
 			end
         end
@@ -1031,23 +1030,17 @@ Jieji = sgs.CreateTriggerSkill{
 	end,
 	on_cost = function(self, event, room, player, data)
 		if player:hasShownSkill("jieji") or player:askForSkillInvoke(self, data) then
-		    room:broadcastSkillInvoke(self:objectName())
-			--room:doLightbox("jieji$", 999)
+			room:broadcastSkillInvoke(self:objectName())
 			return true
-		else
-            room:setPlayerMark(player, "jieji_damage", 0)
-			room:setPlayerMark(player, "jieji_History", 0) 		
 		end
 		return false
 	end,
 	on_effect = function(self, event, room, player, data)
 	    if event == sgs.CardFinished then
 		    local use = data:toCardUse()
-			if player:getMark("jieji_damage") > 0 then 
+			if use.card:hasFlag("damage_jieji") then
 			    room:askForDiscard(player, "jieji", 1, 1, false, true)
-				--------room:setPlayerMark(player, "jieji_damage", player:getMark("jieji_damage") - 1)
-				room:setPlayerMark(player, "jieji_damage", 0)
-			elseif player:getMark("jieji_damage") == 0 then
+			elseif not use.card:hasFlag("damage_jieji") then
 				local list = room:getDrawPile()
 				if list:length()>0 then
 					local lists = sgs.IntList()
@@ -1063,7 +1056,6 @@ Jieji = sgs.CreateTriggerSkill{
 					end
 				end
 			end
-			room:setPlayerMark(player, "jieji_History", player:getMark("jieji_History") - 1)
 		end	
 	end,
 }

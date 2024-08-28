@@ -5038,14 +5038,14 @@ baoshixst = sgs.CreateTriggerSkill{
 
 changyue = sgs.CreateTriggerSkill{
 	name = "changyue",
-	events = {sgs.CardUsed, sgs.CardFinished},
+	events = {sgs.CardFinished},
 	can_trigger = function(self, event, room, player, data)
 	    if event == sgs.CardFinished then
 			local use = data:toCardUse()
 			local players = room:findPlayersBySkillName(self:objectName())
 			for _,sp in sgs.qlist(players) do
 				if sp:isAlive() and sp:hasSkill("changyue") and use.card:isNDTrick()then
-						if player:objectName() ~= sp:objectName() and not room:getCurrent():hasFlag("changyue_used") then   
+						if player:objectName() ~= sp:objectName() and not room:getCurrent():hasFlag(sp:objectName().."changyue_used") then   
 							for _,c in sgs.qlist(sp:getCards("he")) do
 								if c:getSuit() == use.card:getSuit() then
 									return self:objectName(), sp	
@@ -5062,60 +5062,23 @@ changyue = sgs.CreateTriggerSkill{
 		local dat = sgs.QVariant()
 		dat:setValue(use.from)
 		if sp:askForSkillInvoke(self, data) then
-			room:broadcastSkillInvoke("changyue")
-			return true	
+			local card = room:askForCard(sp, ".|"..use.card:getSuitString().."|.|.", "@changyue", data, sgs.Card_MethodNone)
+			if card then
+				room:setPlayerProperty(sp, "changyue_card", sgs.QVariant(card:getEffectiveId()))
+				room:getCurrent():setFlags(sp:objectName().."changyue_used")
+				room:broadcastSkillInvoke("changyue")
+				return true	
+			end
 		end
 		return false
 	end ,
 	on_effect = function(self, event, room, player, data, sp)
-		if event == sgs.CardFinished then
-			local use = data:toCardUse()
-			if use.card:getSuit() == sgs.Card_Diamond then
-				local card = room:askForCard(sp, ".|diamond|.|.", "@changyue", data, sgs.Card_MethodNone)
-				if card then
-					room:setPlayerProperty(sp, "changyue_card", sgs.QVariant(card:getEffectiveId()))
-					local id = sp:property("changyue_card"):toInt()
-			        room:obtainCard(player, id)
-					if sp:isAlive() then
-					   room:obtainCard(sp, use.card)
-					end 
-			        room:getCurrent():setFlags("changyue_used")
-				end
-			elseif use.card:getSuit() == sgs.Card_Heart then
-				local card = room:askForCard(sp, ".|heart|.|.", "@changyue", data, sgs.Card_MethodNone)
-				if card then
-					room:setPlayerProperty(sp, "changyue_card", sgs.QVariant(card:getEffectiveId()))
-					local id = sp:property("changyue_card"):toInt()
-			        room:obtainCard(player, id)
-					if sp:isAlive() then
-					   room:obtainCard(sp, use.card)
-					end 
-			        room:getCurrent():setFlags("changyue_used")
-				end
-			elseif use.card:getSuit() == sgs.Card_Spade then
-				local card = room:askForCard(sp, ".|spade|.|.", "@changyue", data, sgs.Card_MethodNone)
-				if card then
-					room:setPlayerProperty(sp, "changyue_card", sgs.QVariant(card:getEffectiveId()))
-					local id = sp:property("changyue_card"):toInt()
-			        room:obtainCard(player, id)
-					if sp:isAlive() then
-					   room:obtainCard(sp, use.card)
-					end 
-			        room:getCurrent():setFlags("changyue_used")
-				end
-			elseif use.card:getSuit() == sgs.Card_Club then
-				local card = room:askForCard(sp, ".|club|.|.", "@changyue", data, sgs.Card_MethodNone)
-				if card then
-					room:setPlayerProperty(sp, "changyue_card", sgs.QVariant(card:getEffectiveId()))
-					local id = sp:property("changyue_card"):toInt()
-			        room:obtainCard(player, id)
-					if sp:isAlive() then
-					   room:obtainCard(sp, use.card)
-					end 
-			        room:getCurrent():setFlags("changyue_used")
-				end	
-			end
-		end
+		local use = data:toCardUse()
+		local id = sp:property("changyue_card"):toInt()
+		room:obtainCard(player, id)
+		if sp:isAlive() then
+			room:obtainCard(sp, use.card)
+		end 
 	end,
 }
 
@@ -5126,7 +5089,7 @@ changyues = sgs.CreateTriggerSkill{
 	    if event == sgs.CardFinished then
 			local use = data:toCardUse()
 				if player:isAlive() and player:hasSkill("changyue") and use.card:isNDTrick() and player:objectName() == use.from:objectName() then
-						if not player:hasFlag("changyue_used") then   
+						if not room:getCurrent():hasFlag(player:objectName().."changyue_used") then   
 							local players = sgs.SPlayerList()
 							for _,p in sgs.qlist(room:getOtherPlayers(player)) do
 								for _,c in sgs.qlist(p:getCards("ej")) do
@@ -5145,17 +5108,7 @@ changyues = sgs.CreateTriggerSkill{
 		local dat = sgs.QVariant()
 		dat:setValue(use.from)
 		if player:askForSkillInvoke(self, data) then
-		    if not player:hasShownSkill("changyue") then
-			   player:showGeneral(player:inHeadSkills("changyue"))
-		    end
-			room:broadcastSkillInvoke("changyue")
-			return true	
-		end
-		return false
-	end ,
-	on_effect = function(self, event, room, player, data)
-		if event == sgs.CardFinished then
-			local use = data:toCardUse()
+		    local use = data:toCardUse()
 				local players = sgs.SPlayerList()
 				for _,p in sgs.qlist(room:getOtherPlayers(player)) do
 					for _,c in sgs.qlist(p:getCards("ej")) do
@@ -5175,17 +5128,34 @@ changyues = sgs.CreateTriggerSkill{
 							end
 						end
 						room:fillAG(list, player)
+						local id = room:askForAG(player, list, false, self:objectName())
+						room:clearAG(player)
+						room:setPlayerProperty(player, "changyue_id", sgs.QVariant(id+1))
 						local dat = sgs.QVariant()
 						dat:setValue(target)
 						room:setPlayerProperty(player, "changyue_target", dat)
-						local id = room:askForAG(player, list, false, self:objectName())
-						room:setPlayerProperty(player, "changyue_target", sgs.QVariant())	
-						room:clearAG(player)
-						room:obtainCard(player, id)	
+						room:getCurrent():setFlags(player:objectName().."changyue_used")
+						if not player:hasShownSkill("changyue") then
+							player:showGeneral(player:inHeadSkills("changyue"))
+						end
+			            room:broadcastSkillInvoke("changyue", player)
+			            return true	
 					end
-					room:obtainCard(target, use.card)
-					player:setFlags("changyue_used")
-				end	
+				end	          
+		end
+		return false
+	end,
+	on_effect = function(self, event, room, player, data)
+		if event == sgs.CardFinished then
+			local use = data:toCardUse()
+			local id = player:property("changyue_id"):toInt()-1
+			local target = player:property("changyue_target"):toPlayer()
+			room:setPlayerProperty(player, "changyue_id", sgs.QVariant())
+			room:setPlayerProperty(player, "changyue_target", sgs.QVariant())
+			if id > -1 and target then
+				room:obtainCard(player, id)	
+				room:obtainCard(target, use.card)
+			end
 		end
 	end,
 }

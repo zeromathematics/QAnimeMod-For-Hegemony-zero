@@ -379,9 +379,9 @@ qianjin_skill.name = "qianjin"
 table.insert(sgs.ai_skills, qianjin_skill)
 qianjin_skill.getTurnUseCard = function(self, inclusive)
 	if not self:willShowForAttack() and not self:willShowForDefence() then return end
-	if self.player:hasUsed("qianjinCard") then return end
+	if self.player:hasUsed("#qianjinCard") then return end
 	local spadeX, clubX, heartX, diamondX = 0, 0, 0, 0
-	for _,p in sgs.qlist(self.player:getAliveSiblings()) do
+	for _,p in sgs.qlist(self.room:getOtherPlayers(self.player)) do
 		local cards = p:getCards("ej")
 		cards = sgs.QList2Table(cards)
 		for _,card in ipairs(cards) do
@@ -415,6 +415,7 @@ qianjin_skill.getTurnUseCard = function(self, inclusive)
 			diamondX = diamondX + 1
 		end
 	end
+    if math.max(spadeX, clubX, heartX, diamondX) == 0 then return end
 	local cardsB = self.player:getCards("he")
 	cardsB = sgs.QList2Table(cardsB)
 	for _,card in ipairs(cardsB) do
@@ -435,6 +436,11 @@ qianjin_skill.getTurnUseCard = function(self, inclusive)
 	return sgs.Card_Parse("#qianjinCard:.:&qianjin")
 end
 
+sgs.ai_skill_use_func["#qianjinCard"] = function(card,use,self)
+	use.card = sgs.Card_Parse("#qianjinCard:.:&qianjin")
+	return
+end
+
 sgs.ai_skill_use_func.qianjinCard = function(card,use,self)
 	use.card = sgs.Card_Parse("#qianjinCard:.:&qianjin")
 	return
@@ -442,7 +448,7 @@ end
 
 sgs.ai_skill_suit["qianjin"] = function(self)
 	local spadeX, clubX, heartX, diamondX = 0, 0, 0, 0
-	for _,p in sgs.qlist(self.player:getAliveSiblings()) do
+	for _,p in sgs.qlist(self.room:getOtherPlayers(self.player)) do
 		local cards = p:getCards("ej")
 		cards = sgs.QList2Table(cards)
 		for _,card in ipairs(cards) do
