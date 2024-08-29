@@ -28,40 +28,44 @@ Shengli = sgs.CreateTriggerSkill{
     can_trigger = function(self, event, room, player, data)
         if event == sgs.CardFinished then
             local use = data:toCardUse()
-            if use.card:getTypeId() == sgs.Card_TypeSkill then return "" end
             if not use.card:hasFlag("IsUsed") then return "" end
-            local players = room:findPlayersBySkillName(self:objectName())
-            for _,sp in sgs.qlist(players) do
-                if sp:hasSkill(self:objectName()) and sp:isAlive() and use.from and use.to:contains(sp) and sp ~= use.from and use.card:isBlack() and not room:getCurrent():hasFlag(sp:objectName().."shengli_black") then
-                    return self:objectName(), sp
-                end
-                if sp:hasSkill(self:objectName()) and sp:isAlive() and use.from and use.to:contains(sp) and not use.card:isBlack() and not room:getCurrent():hasFlag(sp:objectName().."shengli_notblack") then
-                    return self:objectName(), sp
+            if use.card:isKindOf("BasicCard") or use.card:isKindOf("TrickCard") or use.card:isKindOf("EquipCard") then
+                local players = room:findPlayersBySkillName(self:objectName())
+                for _,sp in sgs.qlist(players) do
+                    if sp:hasSkill(self:objectName()) and sp:isAlive() and use.from and use.to:contains(sp) and sp ~= use.from and use.card:isBlack() and not room:getCurrent():hasFlag(sp:objectName().."shengli_black") then
+                        return self:objectName(), sp
+                    end
+                    if sp:hasSkill(self:objectName()) and sp:isAlive() and use.from and use.to:contains(sp) and not use.card:isBlack() and not room:getCurrent():hasFlag(sp:objectName().."shengli_notblack") then
+                        return self:objectName(), sp
+                    end
                 end
             end 
         end
         return ""
     end,
     on_cost = function(self, event, room, player, data, sp)
-        if event == sgs.CardFinished and sp:askForSkillInvoke(self,data) then
-            local use = data:toCardUse()
-            room:setCardFlag(use.card, "-IsUsed");
-            if use.card:isBlack() then
-                room:setPlayerFlag(room:getCurrent(), sp:objectName().."shengli_black")
-                room:broadcastSkillInvoke(self:objectName(), math.random(1,3), sp)
-            else
-                room:setPlayerFlag(room:getCurrent(), sp:objectName().."shengli_notblack")
-                room:broadcastSkillInvoke(self:objectName(), math.random(4,7), sp)
-            end
+        local use = data:toCardUse()
+        if event == sgs.CardFinished then
+            local who = sgs.QVariant()
+            who:setValue(use.from)
+            if (use.card:isBlack() and sp:askForSkillInvoke("shengliA", who)) or (not use.card:isBlack() and sp:askForSkillInvoke("shengliB", who)) then
+                room:setCardFlag(use.card, "-IsUsed")
+                if use.card:isBlack() then
+                    room:setPlayerFlag(room:getCurrent(), sp:objectName().."shengli_black")
+                    room:broadcastSkillInvoke(self:objectName(), math.random(1,3), sp)
+                else
+                    room:setPlayerFlag(room:getCurrent(), sp:objectName().."shengli_notblack")
+                    room:broadcastSkillInvoke(self:objectName(), math.random(4,7), sp)
+                end
             return true
         elseif event == sgs.CardFinished then
-            local use = data:toCardUse()
-            room:setCardFlag(use.card, "-IsUsed");
+            room:setCardFlag(use.card, "-IsUsed")
         end
     end,
     on_effect = function(self, event, room, player, data, sp)
         if event == sgs.CardFinished then
             local use = data:toCardUse()
+            if use.from:isDead() then return end
             if use.card:isBlack() then
                 if not sp:isKongcheng() and not use.from:isKongcheng() then
                     local pd = sp:pindianSelect(use.from, "shengli")
@@ -228,6 +232,7 @@ Ance = sgs.CreateTriggerSkill{
 
 Wuhen = sgs.CreateTriggerSkill{
     name = "wuhen",
+	frequency = sgs.Skill_Compulsory,
 	events = {sgs.DamageInflicted, sgs.CardsMoveOneTime, sgs.EventPhaseChanging},
     on_record = function(self, event, room, player, data)
         if event == sgs.EventPhaseChanging then
@@ -2057,6 +2062,8 @@ sgs.LoadTranslationTable{
     ["%Ruri"] = "“记载着在不久的将来，等待着恋人们的命运之预言书”",
     ["shengli"] = "圣狸「圣黑猫&圣白猫」",
     [":shengli"] = "<font color=\"green\"><b>每回合各限一次，</b></font>其他角色使用以你为目标的黑色牌结算后，你可以与其拼点，若你赢，你摸一张牌并可以对其使用一张【杀】；一名角色使用以你为目标的非黑色牌结算后，你可以与使用者各摸一张牌（使用者为你则累计摸一张牌）。",
+    ["shengliA"] = "圣狸-拼点",
+    ["shengliB"] = "圣狸-摸牌",
     ["yishi"] = "仪式「命运记录」",
     [":yishi"] = "准备阶段开始时，你可以选择一名你势力的其他男性角色，你令你与其当中体力值较小的角色回复1点体力，手牌数较小的角色摸一张牌；若没有与你势力相同的其他男性角色，你可以令你本回合手牌上限+1。",
     ["yishi$"] = "image=image/animate/SE_Yishi.png",
@@ -2079,7 +2086,7 @@ sgs.LoadTranslationTable{
     ["@Ayanokoji"] = "欢迎来到实力至上主义的教室",
     ["#Ayanokoji"] = "实力至上",
     ["~Ayanokoji"] = "一切都结束了。",
-    ["designer:Ayanokoji"] = "樱内瑞业，光临长夜",
+    ["designer:Ayanokoji"] = "花宫瑞业&光临长夜",
     ["cv:Ayanokoji"] = "千叶翔也",
     ["%Ayanokoji"] = "“要付出多少牺牲都无所谓，只要最后我胜出那就行了”",
     ["ance"] = "暗策",
@@ -2097,7 +2104,6 @@ sgs.LoadTranslationTable{
     ["&ManakaMiuna"] = "爱花美海",
     ["@ManakaMiuna"] = "来自风平浪静的明天",
     ["#ManakaMiuna"] = "海之祭女",
-    ["~ManakaMiuna"] = "",
     ["%ManakaMiuna"] = "“为那场初恋所流下的泪水 融进了温暖的大海中”",
     ["designer:ManakaMiuna"] = "奇洛",
     ["cv:ManakaMiuna"] = "花泽香菜&小松未可子",
@@ -2116,7 +2122,7 @@ sgs.LoadTranslationTable{
     ["cv:Elaina"] = "本渡枫",
     ["%Elaina"] = "“这位不输给色彩斑斓的鲜花美得如花般绽放的人是谁呢？没错，就是我”",
     ["lvji"] = "旅迹",
-    [":lvji"] = "准备阶段开始时，你可以观看牌堆顶5张牌，选择一张置于人物牌上成为“记叙”，若为锦囊牌且与已有牌名皆不同，你摸一张牌；其他角色出牌阶段限一次，其可以将一张手牌当作“记叙”置于你人物牌上，若为锦囊牌且与已有牌名皆不同，其摸一张牌。（“记叙”上限为5）",
+    [":lvji"] = "准备阶段开始时，你可以观看牌堆顶5张牌，选择一张置于人物牌上成为“记叙”，若为锦囊牌且与已有牌名皆不同，你摸一张牌；<font color=\"green\"><b>其他角色的出牌阶段限一次，</b></font>其可以将一张手牌当作“记叙”置于你人物牌上，若为锦囊牌且与已有牌名皆不同，其摸一张牌。（“记叙”上限为5）",
     ["fahui"] = "法慧",
     [":fahui"] = "当你使用一张指定目标的普通锦囊牌时，你可以弃置一张与其颜色相同的“记叙”，无视合法性增加或减少一名目标。出牌阶段限一次，你可以将一张手牌当作“记叙”中的一张基本牌或普通锦囊牌使用。",
     ["jixu_id"] = "记叙",
@@ -2198,7 +2204,7 @@ sgs.LoadTranslationTable{
     ["xujian"] = "虚剑",
     [":xujian"] = "①其他角色获得你的牌后，可以令其获得效果V直到其回合结束：使用杀次数+1且无视防具。②出牌阶段开始，若你的另一张人物牌为“樱满集”则获得效果V直到回合结束，否则若另一张人物牌明置可以交给一名其他角色一张牌。",
     ["wange"] = "挽歌",
-    [":wange"] = "每回合限一次，当其他角色获得你区域的仅一张牌时，此牌记为“挽歌”牌直到其失去此牌。其他角色使用“挽歌”牌后，你可以摸一张牌或视为对其使用一张音。当你阵亡时，视为对任意名其他角色使用一张音。",
+    [":wange"] = "<font color=\"green\"><b>每回合限一次，</b></font>当其他角色获得你区域的仅一张牌时，此牌记为“挽歌”牌直到其失去此牌。其他角色使用“挽歌”牌后，你可以摸一张牌或视为对其使用一张音。当你阵亡时，视为对任意名其他角色使用一张音。",
     ["wangeA"] = "挽歌-标记此牌",
     ["wangeB"] = "挽歌-选择效果",
     ["wangeC"] = "挽歌-死亡用音",
@@ -2237,7 +2243,6 @@ sgs.LoadTranslationTable{
     ["&AliceM"] = "爱丽丝",
     ["@AliceM"] = "東方project",
     ["#AliceM"] = "七色的人偶使",
-    ["~AliceM"] = "",
     ["%AliceM"] = "“只有锐气还是不减呢”",
     ["designer:AliceM"] = "网瘾少年",
     ["cv:AliceM"] = "",
@@ -2251,7 +2256,6 @@ sgs.LoadTranslationTable{
     ["Meirin"] = "红美铃",
     ["@Meirin"] = "東方project",
     ["#Meirin"] = "华人小姑娘",
-    ["~Meirin"] = "",
     ["%Meirin"] = "“先手必胜！”",
     ["designer:Meirin"] = "网瘾少年",
     ["cv:Meirin"] = "",
@@ -2282,14 +2286,12 @@ sgs.LoadTranslationTable{
     ["HoshinoAi"] = "星野爱",
     ["@HoshinoAi"] = "我推的孩子",
     ["#HoshinoAi"] = "天才偶像大人",
-    ["~HoshinoAi"] = "",
     ["designer:HoshinoAi"] = "Yuuki",
     ["cv:HoshinoAi"] = "高桥李依",
 
     ["TsukimiEiko"] = "月见英子",
     ["@TsukimiEiko"] = "派对浪客诸葛孔明",
     ["#TsukimiEiko"] = "地狱歌姬",
-    ["~TsukimiEiko"] = "",
     ["designer:TsukimiEiko"] = "clannad最爱",
     ["cv:TsukimiEiko"] = "鬼头明里",
     ["fengliang"] = "逢亮",
