@@ -29,13 +29,13 @@ Shengli = sgs.CreateTriggerSkill{
         if event == sgs.CardFinished then
             local use = data:toCardUse()
             if not use.card:hasFlag("IsUsed") then return "" end
-            if use.card:isKindOf("BasicCard") or use.card:isKindOf("TrickCard") or use.card:isKindOf("EquipCard") then
+            if use.card:getTypeId() ~= sgs.Card_TypeSkill then
                 local players = room:findPlayersBySkillName(self:objectName())
                 for _,sp in sgs.qlist(players) do
-                    if sp:hasSkill(self:objectName()) and sp:isAlive() and use.from and use.to:contains(sp) and sp ~= use.from and use.card:isBlack() and not room:getCurrent():hasFlag(sp:objectName().."shengli_black") then
+                    if use.from and use.to:contains(sp) and sp ~= use.from and use.card:isBlack() and not room:getCurrent():hasFlag(sp:objectName().."shengli_black") then
                         return self:objectName(), sp
                     end
-                    if sp:hasSkill(self:objectName()) and sp:isAlive() and use.from and use.to:contains(sp) and not use.card:isBlack() and not room:getCurrent():hasFlag(sp:objectName().."shengli_notblack") then
+                    if use.from and use.to:contains(sp) and not use.card:isBlack() and not room:getCurrent():hasFlag(sp:objectName().."shengli_notblack") then
                         return self:objectName(), sp
                     end
                 end
@@ -45,22 +45,20 @@ Shengli = sgs.CreateTriggerSkill{
     end,
     on_cost = function(self, event, room, player, data, sp)
         local use = data:toCardUse()
-        if event == sgs.CardFinished then
-            local who = sgs.QVariant()
-            who:setValue(use.from)
-            if (use.card:isBlack() and sp:askForSkillInvoke("shengliA", who)) or (not use.card:isBlack() and sp:askForSkillInvoke("shengliB", who)) then
-                room:setCardFlag(use.card, "-IsUsed")
-                if use.card:isBlack() then
-                    room:setPlayerFlag(room:getCurrent(), sp:objectName().."shengli_black")
-                    room:broadcastSkillInvoke(self:objectName(), math.random(1,3), sp)
-                else
-                    room:setPlayerFlag(room:getCurrent(), sp:objectName().."shengli_notblack")
-                    room:broadcastSkillInvoke(self:objectName(), math.random(4,7), sp)
-                end
-            return true
-        elseif event == sgs.CardFinished then
+        local who = sgs.QVariant()
+        who:setValue(use.from)
+        if (use.card:isBlack() and sp:askForSkillInvoke("shengliA", who)) or (not use.card:isBlack() and sp:askForSkillInvoke("shengliB", who)) then
             room:setCardFlag(use.card, "-IsUsed")
+            if use.card:isBlack() then
+                room:setPlayerFlag(room:getCurrent(), sp:objectName().."shengli_black")
+                room:broadcastSkillInvoke(self:objectName(), math.random(1,3), sp)
+            else
+                room:setPlayerFlag(room:getCurrent(), sp:objectName().."shengli_notblack")
+                room:broadcastSkillInvoke(self:objectName(), math.random(4,7), sp)
+            end
+            return true
         end
+        return false
     end,
     on_effect = function(self, event, room, player, data, sp)
         if event == sgs.CardFinished then
@@ -82,7 +80,7 @@ Shengli = sgs.CreateTriggerSkill{
     end
 }
 
-Yishi= sgs.CreateTriggerSkill{
+Yishi = sgs.CreateTriggerSkill{
 	name = "yishi",
 	events = {sgs.EventPhaseStart, sgs.EventPhaseChanging},
     on_record = function(self, event, room, player, data)
@@ -152,7 +150,7 @@ Yishi= sgs.CreateTriggerSkill{
 YishiMax = sgs.CreateMaxCardsSkill{
 	name = "#yishimax",
 	extra_func = function(self, player)
-		if player:getMark("##yishi_max")>0 then
+		if player:getMark("##yishi_max") > 0 then
            return 1
 		end
 		return 0
@@ -163,17 +161,17 @@ AnceCard = sgs.CreateSkillCard{
 	name = "AnceCard",
     will_throw = false,
 	filter = function(self, targets, to_select) 
-		if #targets <1 and sgs.Self:objectName() ~= to_select:objectName() then
+		if #targets < 1 and sgs.Self:objectName() ~= to_select:objectName() then
 			return true
 		end
 	end,
     feasible = function(self, targets)
         if #targets ~= 1 then return false end
 		local target = targets[1]
-        if sgs.Self:getMark(target:objectName().."wuhen_effect")>0 then
-            return self:getSubcards():length()<=2
+        if sgs.Self:getMark(target:objectName().."wuhen_effect") > 0 then
+            return self:getSubcards():length() <= 2
         else
-            return self:getSubcards():length()==1
+            return self:getSubcards():length() == 1
         end
 	end,
 	on_use = function(self, room, source, targets)
@@ -187,7 +185,7 @@ AnceCard = sgs.CreateSkillCard{
 
 Ancevs=sgs.CreateViewAsSkill{
 	name="ance",
-	n=2,
+	n = 2,
 	view_filter=function(self,selected,to_select)
 		return #selected < 2  and not to_select:isEquipped()
 	end,
@@ -241,7 +239,7 @@ Wuhen = sgs.CreateTriggerSkill{
                 for _,p in sgs.qlist(room:getAlivePlayers()) do
                     if player:getMark(p:objectName().."wuhen_effect") > 0 then
                         room:setPlayerMark(player, p:objectName().."wuhen_effect", 0)
-                        room:setPlayerMark(p, "#wuhen", p:getMark("#wuhen")-1)
+                        room:setPlayerMark(p, "##wuhen", p:getMark("##wuhen")-1)
                     end
                 end
             end
@@ -263,14 +261,22 @@ Wuhen = sgs.CreateTriggerSkill{
         return ""
     end,
     on_cost = function(self, event, room, player, data, sp)
-        if event == sgs.DamageInflicted and (player:hasShownSkill(self:objectName()) or player:askForSkillInvoke(self,data)) then
-            room:broadcastSkillInvoke(self:objectName(), player)
+        if event == sgs.DamageInflicted then
+            if player:hasShownSkill(self:objectName()) or player:askForSkillInvoke(self, data) then
+                room:broadcastSkillInvoke(self:objectName(), player)
+            end
             return true
         end
-        if event == sgs.CardsMoveOneTime and player:askForSkillInvoke(self,data) then
-            room:broadcastSkillInvoke(self:objectName(), player)
+        if event == sgs.CardsMoveOneTime then
+            local move = data:toMoveOneTime()
+            local who = sgs.QVariant()
+            who:setValue(move.from)
+            if player:hasShownSkill(self:objectName()) or player:askForSkillInvoke(self, who) then
+                room:broadcastSkillInvoke(self:objectName(), player)
+            end
             return true
         end
+        return false
     end,
     on_effect = function(self, event, room, player, data, sp)
         if event == sgs.DamageInflicted then
@@ -287,7 +293,7 @@ Wuhen = sgs.CreateTriggerSkill{
             local move = data:toMoveOneTime()
             local from = findPlayerByObjectName(move.from:objectName())
             room:setPlayerMark(player, move.from:objectName().."wuhen_effect", 1)
-            room:setPlayerMark(from, "#wuhen", from:getMark("#wuhen")+1)
+            room:setPlayerMark(from, "##wuhen", from:getMark("##wuhen")+1)
         end
     end
 }
@@ -2090,9 +2096,9 @@ sgs.LoadTranslationTable{
     ["cv:Ayanokoji"] = "千叶翔也",
     ["%Ayanokoji"] = "“要付出多少牺牲都无所谓，只要最后我胜出那就行了”",
     ["ance"] = "暗策",
-    [":ance"] = "出牌阶段限一次，你可以将一张手牌交给一名其他角色，然后其可以使用一张【杀】或【相爱相杀】；然后本出牌阶段结束时，若该角色存活且其此阶段未造成或受到过伤害，其失去1点体力，你摸1张牌。",
+    [":ance"] = "出牌阶段限一次，你可以将一张手牌交给一名其他角色，然后其可以使用一张【杀】或【相爱相杀】；然后本出牌阶段结束时，若该角色存活且其此阶段未造成或受到过伤害，其失去1点体力，你摸一张牌。",
     ["wuhen"] = "无痕",
-    [":wuhen"] = "锁定技，你令你回合内受到的伤害-1；当其他角色失去最后的手牌时，若其存活，你可以令你对其发动“暗策”时交出的牌数改为“0~2张”至你出牌阶段结束（不能对已有此效果的角色发动）。",
+    [":wuhen"] = "锁定技，你于回合内受到的伤害-1；当其他角色失去最后的手牌时，若其存活，则你对其发动“暗策”时交出的牌数改为“0~2张”至你出牌阶段结束（不能对已有此效果的角色发动）。",
     ["@ance_use"] = "暗策：使用一张【杀】或【相爱相杀】",
     ["$ance1"] = "没有人可以对不存在的事件进行判决",
     ["$ance2"] = "只要我们统一口径，学校也就不能再追究了",
