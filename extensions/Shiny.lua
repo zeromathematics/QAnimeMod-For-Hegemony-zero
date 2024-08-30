@@ -6428,7 +6428,7 @@ sgs.LoadTranslationTable{
   ["~TangKK"] = "搞砸了……！",
   ["designer:TangKK"] = "bd波导&花宫瑞业",
   ["cv:TangKK"] = "Liyuu（李嘉）",
-  ["illustrator:TangKK"] = "青空葵",
+  ["illustrator:TangKK"] = "在下是子龙",
   ["%TangKK"] = "“太好听了吧~”",
   
   ["xiangyun"] = "乡韵",
@@ -6994,7 +6994,7 @@ sgs.LoadTranslationTable{
   ["%Umi"] = "“Love Arrow Shoot!”",
 
   ["lixun"] = "厉训",
-  [":lixun"] = "<font color=\"green\"><b>每回合限一次，</b></font>准备或结束阶段开始时，你可以将装备区或判定区内的一张牌当目标上限为X的冰【杀】使用（X为你场上的牌数，最少为1），然后你摸一张牌且攻击范围永久+1（最多+4）。",
+  [":lixun"] = "<font color=\"green\"><b>每回合限一次，</b></font>准备或结束阶段开始时，你可以将你场上的一张牌当目标上限为X的冰【杀】使用（X为你场上的牌数），然后你摸一张牌且攻击范围永久+1（最多+4）。",
   ["@lixun"] = "你可以发动“厉训”，转化一张冰【杀】",
   ["~lixun"] = "选择若干名其他角色作为目标→点击“确定”",
   ["lixun_weapon"] = "攻击范围+",
