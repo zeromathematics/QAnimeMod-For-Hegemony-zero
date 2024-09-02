@@ -1,23 +1,25 @@
---Ruri
-sgs.ai_skill_invoke.shengli = function(self, data)
-    if not self:willShowForAttack() and not self:willShowForDefence() then return end
-	local use = data:toCardUse()
-	if self:isFriend(use.from) and not use.card:isBlack() then
+--五更琉璃
+sgs.ai_skill_invoke.shengliA = function(self, data)
+    if not self:willShowForAttack() and not self:willShowForDefence() then return false end
+	local target = data:toPlayer()
+	return not self:isFriend(target)
+end
+
+sgs.ai_skill_invoke.shengliB = function(self, data)
+    if not self:willShowForAttack() and not self:willShowForDefence() then return false end
+	local target = data:toPlayer()
+	if self.player:getHandcardNum() >= target:getHandcardNum() then
 		return true
 	end
-	if self:isEnemy(use.from) and use.card:isBlack() then
-		if self.player:getHandcardNum() >= use.from:getHandcardNum() then
-			return true
-		end
-		local max_card = self:getMaxCard()
-	    local max_point = max_card:getNumber()
-	    if max_point - 10 >= self.player:getHandcardNum() - use.from:getHandcardNum() then
-		    return true
-		end
-		if max_point - 7 >= self.player:getHandcardNum() - use.from:getHandcardNum() and self:isWeak(use.from) then
-		    return true
-		end
+	local max_card = self:getMaxCard()
+	local max_point = max_card:getNumber()
+	if max_point - 10 >= self.player:getHandcardNum() - target:getHandcardNum() then
+		return true
 	end
+	if max_point - 7 >= self.player:getHandcardNum() - target:getHandcardNum() and self:isWeak(target) then
+		return true
+	end
+	return false
 end
 
 sgs.ai_skill_invoke.yishi = function(self, data)
