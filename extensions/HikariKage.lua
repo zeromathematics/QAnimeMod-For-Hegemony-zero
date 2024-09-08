@@ -264,8 +264,8 @@ Wuhen = sgs.CreateTriggerSkill{
         if event == sgs.DamageInflicted then
             if player:hasShownSkill(self:objectName()) or player:askForSkillInvoke(self, data) then
                 room:broadcastSkillInvoke(self:objectName(), player)
+                return true
             end
-            return true
         end
         if event == sgs.CardsMoveOneTime then
             local move = data:toMoveOneTime()
@@ -273,8 +273,8 @@ Wuhen = sgs.CreateTriggerSkill{
             who:setValue(move.from)
             if player:hasShownSkill(self:objectName()) or player:askForSkillInvoke(self, who) then
                 room:broadcastSkillInvoke(self:objectName(), player)
+                return true
             end
-            return true
         end
         return false
     end,
@@ -2172,7 +2172,7 @@ sgs.LoadTranslationTable{
     ["guangjian"] = "光剑",
     [":guangjian"] = "出牌阶段限一次，你可以将至多两张颜色不同的基本牌置于一名没有“光剑”的其他角色上记为“光剑”。当其他角色使用牌结算后，你可以将一张“光剑”当作【杀】视为对其使用之，然后若其没有“光剑”，你摸1张牌。",
     ["rilun"] = "日轮",
-    [":rilun"] = "准备阶段开始时，若你手牌数大于体力值，你可以指定一个势力，弃置该势力数一半的牌（向上取整），视为对该势力角色使用一张【无限剑制】，然后若其未造成伤害，你从摸牌堆检索一张红桃牌。",
+    [":rilun"] = "准备阶段开始时，若你手牌数大于体力值，你可以指定一个势力，弃置该势力数一半的牌（向上取整），视为对该势力角色使用一张【无限剑制】，然后若其未造成伤害，你从摸牌堆检索一张♥牌。",
     ["$guangjian1"] = "光剑",
     ["$guangjian2"] = "我会为了打败精灵而施展这股力量。",
     ["$guangjian3"] = "嗞~嗞~（剑光声）",

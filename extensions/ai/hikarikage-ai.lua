@@ -2,24 +2,26 @@
 sgs.ai_skill_invoke.shengliA = function(self, data)
     if not self:willShowForAttack() and not self:willShowForDefence() then return false end
 	local target = data:toPlayer()
-	return not self:isFriend(target)
+	if self:isEnemy(target) then
+		if self.player:getHandcardNum() >= target:getHandcardNum() then
+			return true
+		end
+		local max_card = self:getMaxCard()
+	    local max_point = max_card:getNumber()
+	    if max_point - 10 >= self.player:getHandcardNum() - target:getHandcardNum() then
+		    return true
+		end
+		if max_point - 7 >= self.player:getHandcardNum() - target:getHandcardNum() and self:isWeak(target) then
+		    return true
+		end
+	end
+	return false
 end
 
 sgs.ai_skill_invoke.shengliB = function(self, data)
     if not self:willShowForAttack() and not self:willShowForDefence() then return false end
 	local target = data:toPlayer()
-	if self.player:getHandcardNum() >= target:getHandcardNum() then
-		return true
-	end
-	local max_card = self:getMaxCard()
-	local max_point = max_card:getNumber()
-	if max_point - 10 >= self.player:getHandcardNum() - target:getHandcardNum() then
-		return true
-	end
-	if max_point - 7 >= self.player:getHandcardNum() - target:getHandcardNum() and self:isWeak(target) then
-		return true
-	end
-	return false
+	return self:isFriend(target)
 end
 
 sgs.ai_skill_invoke.yishi = function(self, data)
