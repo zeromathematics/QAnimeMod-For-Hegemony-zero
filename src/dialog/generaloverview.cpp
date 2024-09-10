@@ -200,6 +200,23 @@ QWidget *GeneralSearch::createInfoTab()
         const Package *package = Sanguosha->findChild<const Package *>(extension);
         if (package == NULL || package->getType() != Package::GeneralPack)
             continue;
+        if (package->objectName() == "mariabattleskill")
+            continue;
+
+        if (package->objectName() == "standard")
+            continue;
+
+        if (package->objectName() == "maria-battle")
+            continue;
+
+        if (package->objectName() == "formation")
+            continue;
+
+        if (package->objectName() == "transformation")
+            continue;
+
+        if (package->objectName() == "momentum")
+            continue;
         QCheckBox *checkbox = new QCheckBox;
         checkbox->setObjectName(extension);
         checkbox->setText(Sanguosha->translate(extension));

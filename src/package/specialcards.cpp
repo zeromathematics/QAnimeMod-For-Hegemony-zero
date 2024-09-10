@@ -2085,12 +2085,6 @@ public:
     {
         if (event == EventPhaseEnd && player->getPhase()==Player::Finish){
             QList<ServerPlayer *> mikus;
-            foreach(auto p, room->getAlivePlayers()){
-                if (player->getMark(p->objectName()+"noslash_jm")>0){
-                    room->setPlayerMark(player, p->objectName()+"noslash_jm", 0);
-                    mikus << p;
-                }
-            }
             foreach(auto miku, mikus){
                 QString choice;
                 room->broadcastSkillInvoke(objectName(),2);
@@ -2099,6 +2093,12 @@ public:
                 }
                 else{
                     choice = room->askForChoice(miku, objectName(), "eachdraw+youdiscard");
+                }
+                foreach(auto p, room->getAlivePlayers()){
+                    if (player->getMark(p->objectName()+"noslash_jm")>0){
+                        room->setPlayerMark(player, p->objectName()+"noslash_jm", 0);
+                        mikus << p;
+                    }
                 }
                 if (choice == "recover"){
                     RecoverStruct rcv = RecoverStruct();

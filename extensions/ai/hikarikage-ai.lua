@@ -93,11 +93,12 @@ sgs.ai_skill_use_func["#LvjigiveCard"] = function(card,use,self)
 	local target
 	local source = self.player
 	for _,friend in ipairs(self.friends_noself) do
-		if friend:hasShownSkill("lvji") then
+		if friend:hasShownSkill("lvji") and target:getPile("jixu_id"):length() <= 5 then
 			target = friend
 		end
 	end
     if not target then return end
+
 	local cards = sgs.QList2Table(self.player:getHandcards())
     self:sortByKeepValue(cards)
 	local needed = {}

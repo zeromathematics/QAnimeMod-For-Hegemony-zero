@@ -1241,14 +1241,9 @@ xiangyun = sgs.CreateTriggerSkill{
 		if event == sgs.CardFinished then
 			local use = data:toCardUse()
 			if player and player:isAlive() and player:hasSkill(self:objectName()) and player:objectName() == room:getCurrent():objectName() and not player:hasFlag("xiangyunUsed") and (use.card:isKindOf("BasicCard") or use.card:isNDTrick()) and not (use.card:hasFlag("xiangyun_damage")) then
-				if use.card:hasFlag("xiangyun_damage") then
-					use.card:clearFlags() --技能触发时清除卡牌标记
-				else
-				    return self:objectName() --这个放在 else 里面否则总是会触发
+				if not use.card:hasFlag("xiangyun_damage") then
+				    return self:objectName()
 				end
-			end
-			if use.card:hasFlag("xiangyun_damage") then
-				use.card:clearFlags() --不触发也清除卡牌标记
 			end
 		end
 		return ""
@@ -4744,7 +4739,7 @@ lixun = sgs.CreateTriggerSkill{
 	events = {sgs.EventPhaseStart},
 	can_preshow = true,
 	can_trigger = function(self, event, room, player, data)
-        if player and player:isAlive() and player:hasSkill(self:objectName()) and player:getPhase() == sgs.Player_Start and player:getEquips():length() + player:getJudgingArea():length()) > 0 then
+        if player and player:isAlive() and player:hasSkill(self:objectName()) and player:getPhase() == sgs.Player_Start and player:getEquips():length() + player:getJudgingArea():length() > 0 then
 		    return self:objectName()
 		end
 		return ""
