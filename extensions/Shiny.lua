@@ -42,7 +42,6 @@ Kozue = sgs.General(extension, "Kozue", "idol", 3, false)
 Harewataru = sgs.General(extension, "Harewataru", "idol", 4, false)
 NiceNature = sgs.General(extension, "NiceNature", "idol", 3, false)
 
-
 qinban = sgs.CreateTriggerSkill{
 	name = "qinban",
 	events = {sgs.EventPhaseStart},
@@ -781,7 +780,6 @@ heyixglobal = sgs.CreateTriggerSkill{
 
 heyixSlash = sgs.CreateTargetModSkill{
 	name = "#heyixSlash",
-	pattern = "Slash",
 	residue_func = function(self, player, card)
 		if player:getMark("#heyix_slashnum") > 0 then
 			return player:getMark("#heyix_slashnum")
@@ -3675,11 +3673,15 @@ yinfa = sgs.CreateTriggerSkill{
 		    local use = data:toCardUse()
 			local targets = findPlayerByObjectName(sp:property("yinfa_target"):toString())
 		    if not targets then return false end
-			local probabilityB = math.random(1,2)
+			local probabilityB = math.random(1,4)
 			if probabilityB == 1 then
 			   room:doLightbox("yinfa1$", 800)
 			elseif probabilityB == 2 then
 			   room:doLightbox("yinfa2$", 800)
+			elseif probabilityB == 3 then
+			   room:doLightbox("yinfa3$", 800) 
+			elseif probabilityB == 4 then
+			   room:doLightbox("yinfa4$", 800)   
 			end   	 
 			if targets:hasFlag("yinfa_use") then
 			    room:getCurrent():setFlags("yinfa_used")
@@ -4045,7 +4047,6 @@ shangyuan = sgs.CreateTriggerSkill{
 
 shangyuantr = sgs.CreateTargetModSkill{
 	name = "#shangyuantr",
-	pattern = "Slash",
 	residue_func = function(self, player, card)
 		if player:hasFlag("shangyuan_extra") then
 			return 1
@@ -4743,16 +4744,13 @@ lixun = sgs.CreateTriggerSkill{
 	events = {sgs.EventPhaseStart},
 	can_preshow = true,
 	can_trigger = function(self, event, room, player, data)
-        if player and player:isAlive() and player:hasSkill(self:objectName()) and (player:getPhase() == sgs.Player_Start or player:getPhase() == sgs.Player_Finish) then
-            if (player:getEquips():length()+ player:getJudgingArea():length()) > 0 and not player:hasFlag("lixunUsed") then
-		        return self:objectName()
-			end	
+        if player and player:isAlive() and player:hasSkill(self:objectName()) and player:getPhase() == sgs.Player_Start and player:getEquips():length() + player:getJudgingArea():length()) > 0 then
+		    return self:objectName()
 		end
 		return ""
 	end,
 	on_cost = function(self, event, room, player, data)
 		if player:askForSkillInvoke(self, data) then
-			player:setFlags("lixunUsed")
 			room:broadcastSkillInvoke(self:objectName(), player)
 			return true
 		end
@@ -4777,10 +4775,12 @@ gongdaoSummonCard = sgs.CreateArraySummonCard{
 	name = "gongdao",
 	mute = true,
 }
+
 gongdaoVS = sgs.CreateArraySummonSkill{
 	name = "gongdao",
 	array_summon_card = gongdaoSummonCard,
 }
+
 gongdao = sgs.CreateTriggerSkill{
 	name = "gongdao",
 	is_battle_array = true,
@@ -4791,7 +4791,7 @@ gongdao = sgs.CreateTriggerSkill{
 	on_record = function(self, event, room, player, data)
 		if event == sgs.EventPhaseChanging then
 			local phase = data:toPhaseChange().to
-			if phase == sgs.Player_NotActive and player:getMark("#gongdaoAttackRange")>0 then
+			if phase == sgs.Player_NotActive and player:getMark("#gongdaoAttackRange") > 0 then
 				room:setPlayerMark(player, "#gongdaoAttackRange", 0)
 			end
 		end
@@ -4810,7 +4810,6 @@ gongdao = sgs.CreateTriggerSkill{
 			end
 		end
 	end,
-
     on_cost = function(self,event,room,player,data,ask_who)
 		if ask_who:hasShownSkill("gongdao") then
 			room:doBattleArrayAnimate(ask_who)
@@ -4818,7 +4817,6 @@ gongdao = sgs.CreateTriggerSkill{
 		end
 		return false
 	end,
-
 	on_effect = function(self, event, room, player, data, ask_who)
 	    local max = 0
 		local players = room:getAlivePlayers()
@@ -4840,7 +4838,7 @@ gongdao = sgs.CreateTriggerSkill{
 gongdaotr = sgs.CreateAttackRangeSkill{
 	name = "#gongdaotr" ,
 	fixed_func = function(self, player, include_weapon)
-	    if player:getMark("#gongdaoAttackRange")>0 then
+	    if player:getMark("#gongdaoAttackRange") > 0 then
 			return player:getMark("#gongdaoAttackRange")
 		end
 		return -1
@@ -5757,8 +5755,6 @@ jianxing = sgs.CreateTriggerSkill{
 	end,
 }
 
-
-
 yinni = sgs.CreateViewAsSkill{
 	name = "yinni",
 	n = 1,
@@ -5776,7 +5772,7 @@ yinni = sgs.CreateViewAsSkill{
 		return card	
 	end,	
 	enabled_at_play = function(self, player)
-		return not player:hasFlag("yinni_used")
+		return player:getMark("##yinni_used") == 0---not player:hasFlag("yinni_used")
 	end,
 }
 
@@ -5900,7 +5896,7 @@ yinniCard = sgs.CreateSkillCard{
 					source:setFlags("-yinni_target")
 					targets[1]:setFlags("-yinni_target")
 					targets[2]:setFlags("-yinni_target")
-					source:setFlags("-yinni_used")
+					room:setPlayerMark(source, "##yinni_used", 0)
 			end
 		elseif #targets == 1 then
 		    targets[1]:setFlags("yinni_target")
@@ -5966,7 +5962,7 @@ yinniCard = sgs.CreateSkillCard{
 					
 					source:setFlags("-yinni_target")
 					targets[1]:setFlags("-yinni_target")
-				    source:setFlags("-yinni_used")
+				    room:setPlayerMark(source, "##yinni_used", 0)
 			end
         end
 		for _,K in sgs.qlist(room:getAlivePlayers()) do
@@ -5977,7 +5973,31 @@ yinniCard = sgs.CreateSkillCard{
 	end,
 }
 
-
+yinniGlobal = sgs.CreateTriggerSkill{
+	name = "yinniGlobal",
+	global = true,
+	events = {sgs.CardUsed, sgs.EventPhaseEnd},
+	     priority = 2,
+	can_trigger = function(self, event, room, player, data)
+		if event == sgs.CardUsed then
+			local use = data:toCardUse()
+			if use.card:getSkillName() == "yinni" then
+				room:setPlayerMark(player, "##yinni_used", 1)
+			end
+		end
+		if event == sgs.EventPhaseEnd and player:getPhase() == sgs.Player_Play then
+			for _,p in sgs.qlist(room:getAlivePlayers()) do
+			    if p:getMark("##yinni_used") > 0 then
+				   room:setPlayerMark(p, "##yinni_used", 0)
+				end
+			end
+		end
+		return ""
+	end,
+	on_cost = function(self, event, room, player, data)
+		return false 
+	end,
+}
 
 yongwang = sgs.CreateTriggerSkill{
 	name = "yongwang",
@@ -6032,43 +6052,14 @@ yongwang = sgs.CreateTriggerSkill{
 				end
 			end
 			if not ts:isEmpty() then
-				if player:askForSkillInvoke("yongwang_obtain") then
-					room:fillAG(ts, player)
-					local ide = room:askForAG(player, ts, false, self:objectName())
-					room:clearAG(player)
-					room:obtainCard(player, ide)
-				end   
+				room:fillAG(ts, player)
+				local ide = room:askForAG(player, ts, false, self:objectName())
+				room:clearAG(player)
+				room:obtainCard(player, ide)
 			end   
 		end
 	end,
 }
-
-yinniGlobal = sgs.CreateTriggerSkill{
-	name = "yinniGlobal",
-	global = true,
-	events = {sgs.CardUsed, sgs.EventPhaseEnd},
-	priority = 2,
-	can_trigger = function(self, event, room, player, data)
-		if event == sgs.CardUsed then
-			local use = data:toCardUse()
-			if use.card:getSkillName() == "yinni" then
-				use.from:setFlags("yinni_used")
-			end
-		end
-		if event == sgs.EventPhaseEnd and player:getPhase() == sgs.Player_Play then
-			for _,p in sgs.qlist(room:getAlivePlayers()) do
-			    if p:hasFlag("yinni_used") then
-				   p:setFlags("-yinni_used")
-				end
-			end
-		end
-		return ""
-	end,
-	on_cost = function(self, event, room, player, data)
-		return false 
-	end,
-}
-
 
 SRiko:addSkill(qinban)
 SRiko:addSkill(zhiyuan)
@@ -6994,7 +6985,7 @@ sgs.LoadTranslationTable{
   ["%Umi"] = "“Love Arrow Shoot!”",
 
   ["lixun"] = "厉训",
-  [":lixun"] = "<font color=\"green\"><b>每回合限一次，</b></font>准备或结束阶段开始时，你可以将你场上的一张牌当目标上限为X的冰【杀】使用（X为你场上的牌数），然后你摸一张牌且攻击范围永久+1（最多+4）。",
+  [":lixun"] = "准备阶段开始时，你可以将你场上的一张牌当目标上限为X的冰【杀】使用（X为你场上的牌数），然后你摸一张牌且攻击范围永久+1（最多+4）。",
   ["@lixun"] = "你可以发动“厉训”，转化一张冰【杀】",
   ["~lixun"] = "选择若干名其他角色作为目标→点击“确定”",
   ["lixun_weapon"] = "攻击范围+",
@@ -7105,7 +7096,7 @@ sgs.LoadTranslationTable{
   ["#NiceNature"] = "理想女主",---铜牌收藏家
   ["designer:NiceNature"] = "网瘾少年",
   ["cv:NiceNature"] = "前田佳织里",
-  ["illustrator:NiceNature"] = "",
+  ["illustrator:NiceNature"] = "mmk",
   ["%NiceNature"] = "“好啦好啦，因为是普通人，即使第三也很幸福啦～”",
   
   ["yinni"] = "寅睨",
@@ -7118,11 +7109,9 @@ sgs.LoadTranslationTable{
   ["yinni$"] = "image=image/animate/yinni.png",
   ["yongwang"] = "庸望",
   [":yongwang"] = "<font color=\"green\"><b>每回合限一次，</b></font>当牌因弃置而进入弃牌堆时，若其中存在点数比你的每一张手牌都大的牌，则你可以展示手牌，获得其中一张符合条件的牌。",
-  ["yongwang_obtain"] = "庸望：获得其中一张",
   ["yongwang$"] = "image=image/animate/yongwang.png",
   ["$yongwang"] = "语音",
   ["yongwang_num"] = "点数",
-  
 }
 
 return {extension}

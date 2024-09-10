@@ -7194,10 +7194,12 @@ Aoshi = sgs.CreateTriggerSkill{
 			log.from = player
 			if pd.from:objectName() == player:objectName() then
 				pd.from_number = n + pd.from_number
+				pd.from_number = math.min(13, pd.from_number)
 				log.arg = pd.from_number
 			end
 			if pd.to:objectName() == player:objectName() then
 				pd.to_number = n + pd.to_number
+				pd.to_number = math.min(13, pd.to_number)
 				log.arg = pd.to_number
 			end
 			room:sendLog(log)
