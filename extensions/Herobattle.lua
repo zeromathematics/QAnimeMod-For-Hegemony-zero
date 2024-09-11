@@ -289,7 +289,7 @@ Shuaiyan = sgs.CreateTriggerSkill{
 	events = {sgs.TargetConfirmed},
 	can_trigger = function(self, event, room, player, data)
 	    local use = data:toCardUse()
-		if player and player:isAlive() and player:hasSkill(self:objectName()) and use.to:length()==1 and player:getPhase() ~= sgs.Player_NotActive and not player:hasFlag("shuaiyan_used") and use.from == player and not use.to:contains(player) and use.card:getTypeId()~=sgs.Card_TypeSkill then
+		if player and player:isAlive() and player:hasSkill(self:objectName()) and use.to:length()==1 and player:getPhase() ~= sgs.Player_NotActive and not player:hasFlag("shuaiyan_used") and use.from == player and not use.to:contains(player) and use.card:getTypeId()~=sgs.Card_TypeSkill and not use.to:at(0):isAllNude() then
 			return self:objectName()
 		end
 		return ""
@@ -305,7 +305,7 @@ Shuaiyan = sgs.CreateTriggerSkill{
 	on_effect = function(self, event, room, player, data, ask_who)
         local use = data:toCardUse()
 		local dest = use.to:at(0)
-		if not dest:isNude() or dest:getJudgingArea():length()>0 then
+		if not dest:isAllNude() then
 		    room:obtainCard(player, room:askForCardChosen(player, dest, "hej", self:objectName()))
 		end
 		if (dest:isAlive() and dest:isFriendWith(player)) then
@@ -9059,6 +9059,7 @@ sgs.LoadTranslationTable{
 [":dingshen"] = "当你对其他角色造成非传导伤害时，可以令目标获得一个“针”标记，其手牌上限-X，到其他角色距离+X，X为“针”标记数，其回合结束时清除所有“针”标记。 锁定技，你到有“针”标记的其他角色距离为1。",
 ["@Stop"] = "针",
 ["shunshan_to"] = "瞬闪：选择此次移动的目标",
+["@shunshan-slash"] = "瞬闪：可以使用一张【杀】",
 ["%Kuroko"] = "“姐姐大人黑子想成为你的力量！”",
 
 --[[["Kaneki"] = "金木研",

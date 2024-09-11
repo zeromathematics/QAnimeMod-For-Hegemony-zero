@@ -2085,6 +2085,11 @@ public:
     {
         if (event == EventPhaseEnd && player->getPhase()==Player::Finish){
             QList<ServerPlayer *> mikus;
+            foreach(auto p, room->getAlivePlayers()){
+                if (player->getMark(p->objectName()+"noslash_jm")>0){
+                    mikus << p;
+                }
+            }
             foreach(auto miku, mikus){
                 QString choice;
                 room->broadcastSkillInvoke(objectName(),2);
@@ -2094,12 +2099,7 @@ public:
                 else{
                     choice = room->askForChoice(miku, objectName(), "eachdraw+youdiscard");
                 }
-                foreach(auto p, room->getAlivePlayers()){
-                    if (player->getMark(p->objectName()+"noslash_jm")>0){
-                        room->setPlayerMark(player, p->objectName()+"noslash_jm", 0);
-                        mikus << p;
-                    }
-                }
+                room->setPlayerMark(player, miku->objectName()+"noslash_jm", 0);
                 if (choice == "recover"){
                     RecoverStruct rcv = RecoverStruct();
                     rcv.recover = 1;
@@ -2262,13 +2262,13 @@ public:
     {
         if (event == TargetConfirmed){
             CardUseStruct use = data.value<CardUseStruct>();
-            if (TriggerSkill::triggerable(player) && use.from && !use.from->isFriendWith(player) && (use.card->isKindOf("Slash")||use.card->isNDTrick()) && use.to.length()==1 && use.to.at(0)->isFriendWith(player) && player->getMark("shiting_used")==0 && player->getPhase()==Player::NotActive){
+            if (TriggerSkill::triggerable(player) && use.from && !use.from->isFriendWith(player) && (use.card->isKindOf("Slash")|| use.card->isNDTrick()) && use.to.length()==1 && use.to.at(0)->isFriendWith(player) && player->getMark("shiting_used")==0 && player->getPhase()==Player::NotActive){
                 return QStringList(objectName());
             }
         }
-        if (event==CardFinished){
+        if (event == CardFinished){
            CardUseStruct use = data.value<CardUseStruct>();
-           if (TriggerSkill::triggerable(player) && player->getMark("shiting_used")>0 && use.card->getTypeId() != Card::TypeSkill && use.card->getSubcards().length()>0 && player->getPhase()!=Player::NotActive && !player->hasFlag("shitingb_used")){
+           if (TriggerSkill::triggerable(player) && player->getMark("shiting_used") > 0 && use.card->getEffectiveId() > -1 && (use.card->isKindOf("BasicCard")|| use.card->isNDTrick()) && player->getPhase()!=Player::NotActive && !player->hasFlag("shitingb_used")){
                return QStringList(objectName());
            }
         }
@@ -2278,12 +2278,13 @@ public:
 
     virtual bool cost(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *ask_who) const
     {
+        CardUseStruct use = data.value<CardUseStruct>();
         if (event == TargetConfirmed && player->askForSkillInvoke(this, data)){
             //room->setPlayerFlag(player,"shiting_extraturn");
             room->setPlayerMark(player, "shiting_used", 1);
             return true;
         }
-        if (event == CardFinished && player->askForSkillInvoke(this, data)){
+        if (event == CardFinished && player->askForSkillInvoke("@shiting:" + use.card->objectName(), data)){
             room->setPlayerFlag(player, "shitingb_used");
             return true;
         }
@@ -2299,10 +2300,20 @@ public:
         else{
             CardUseStruct use = data.value<CardUseStruct>();
             CardsMoveStruct move;
-            move.card_ids = use.card->getSubcards();
+            if (use.card->isVirtualCard()){
+                move.card_ids = use.card->getSubcards();
+            }
+            else{
+                move.card_ids << use.card->getId();
+            }
             move.to_place = Player::DrawPileBottom;
             move.reason.m_reason = CardMoveReason::S_REASON_PUT;
-            room->moveCardsAtomic(move, false);
+            room->moveCardsAtomic(move, true);
+            LogMessage log;
+            log.type = "$ShitingInfo";
+            log.from = player;
+            log.arg = use.card->objectName();
+            room->sendLog(log);
         }
         return false;
     }

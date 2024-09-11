@@ -874,10 +874,10 @@ sgs.ai_use_value["QiehuoCard"] = 7
 sgs.ai_use_priority["QiehuoCard"]  = 20
 sgs.ai_card_intention.QiehuoCard = 80
 
-sgs.ai_skill_invoke.shiting = function(self, data)
+sgs.ai_skill_invoke["shiting"] = function(self, data)
     local use = data:toCardUse()
-	if self.player:getPhase() ~= sgs.Player_NotActive then 
-	    return not use.card:isKindOf("EquipCard")
+	if self.player == self.room:getCurrent() then 
+	    return true
 	else
 	  if self.player:getHp() == 1 and self:getCardsNum("Peach") == 0 and self:getCardsNum("Analeptic") == 0 and self:getCardsNum("GuangyuCard") == 0 then return false end
 	  return true

@@ -2323,6 +2323,8 @@ end
 
 function SmartAI:askForSkillInvoke(skill_name, data)
 	skill_name = string.gsub(skill_name, "%-", "_")
+	skill_name = skill_name:split(":")[1]
+	skill_name = string.gsub(skill_name, "@", "")
 	local invoke = sgs.ai_skill_invoke[skill_name]
 	if type(invoke) == "boolean" then
 		return invoke

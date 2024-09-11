@@ -4595,7 +4595,7 @@ public:
     {
         if (event==DamageInflicted){
             DamageStruct damage=data.value<DamageStruct>();
-            if (TriggerSkill::triggerable(player) && (!damage.card||damage.card->getEffectiveId()<0||damage.nature!=DamageStruct::Normal)) {
+            if (TriggerSkill::triggerable(player) && (!damage.card || damage.card->getEffectiveId()<0 || damage.nature!=DamageStruct::Normal)) {
                  return QStringList(objectName());
             }
         }
@@ -9216,7 +9216,7 @@ public:
                 return QStringList();
             }
 
-            if (move.card_ids.length() == 0 || move.to_place != Player::DiscardPile || !TriggerSkill::triggerable(player) || player->isNude()){
+            if (move.card_ids.length() != 1 || move.to_place != Player::DiscardPile || !TriggerSkill::triggerable(player) || player->isNude()){
                 return QStringList();
             }
             foreach(int card_id, move.card_ids){
@@ -9259,7 +9259,9 @@ public:
     virtual bool cost(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *) const
     {
         if (event==CardsMoveOneTime) {
-           return player->askForSkillInvoke(this, data) && room->askForDiscard(player, objectName(), 1, 1, true, true, "@shuji-discard");
+           CardsMoveOneTimeStruct move = data.value<CardsMoveOneTimeStruct>();
+           Card *card = Sanguosha->getCard(move.card_ids.at(0));
+           return player->askForSkillInvoke(this, data) && room->askForDiscard(player, objectName(), 1, 1, true, true, "@shuji-discard:" + card->getName());
         }
         else if (event == EventPhaseStart){
             return player->hasShownSkill(objectName()) || player->askForSkillInvoke(this, data);

@@ -6928,7 +6928,7 @@ bool Room::askForDiscard(ServerPlayer *player, const QString &reason, int discar
         }
     }
 
-    if (to_discard.isEmpty()) return false;
+    if (to_discard.length() < min_num) return false;
 
     DummyCard dummy_card(to_discard);
     if (reason == "gamerule") {

@@ -1211,7 +1211,14 @@ void Client::askForSkillInvoke(const QVariant &arg)
     if (skill_name.startsWith("userdefine:")) {
         QString name = skill_name.mid(4);
         prompt_doc->setHtml(Sanguosha->translate("@" + name));
-    } else if (data.isEmpty()) {
+    } else if (skill_name.startsWith("@")){
+        QStringList list = skill_name.split(":");
+        QString second = "";
+        if (list.length() > 1) second = list.at(1);
+        text = Sanguosha->translate(list.at(0));
+        text.replace("%src", Sanguosha->translate(second));
+        prompt_doc->setHtml(text);
+    }else if (data.isEmpty()) {
         text = tr("Do you want to invoke skill [%1] ?").arg(Sanguosha->translate(skill_name));
         prompt_doc->setHtml(text);
     } else if (data.startsWith("playerdata:")) {
@@ -1220,7 +1227,7 @@ void Client::askForSkillInvoke(const QVariant &arg)
         prompt_doc->setHtml(text);
     } else if (skill_name.startsWith("cv_")) {
         setPromptList(QStringList() << "@sp_convert" << QString() << QString() << data);
-    } else {
+     } else {
         QStringList texts = data.split(":");
         text = QString("%1:%2").arg(skill_name).arg(texts.first());
         texts.replace(0, text);
