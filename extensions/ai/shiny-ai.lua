@@ -1134,9 +1134,15 @@ sgs.ai_skill_playerchosen.xinxing = function(self)
 	return result
 end
 
-sgs.ai_skill_choice.xinxing = "xinxingThrow" --如何防止给满血队友空弃Key？
+sgs.ai_skill_choice.xinxing = function(self, choices, data)	
+	local target = data:toPlayer()
+	if noNeedToRemoveJudgeArea(target) then
+		return "draw"
+	end
+	return "xinxingThrow"
+end
 
-sgs.ai_skill_cardchosen.xinxing = function(self, who, flags)
+sgs.ai_skill_cardchosen.xinxing = function(self, who, flags)	
 	return self:askForCardChosen(who, "j", "dismantlement")
 end
 

@@ -3159,7 +3159,7 @@ jinhun = sgs.CreateTriggerSkill{
 	events = {sgs.AskForPeachesDone},
 	can_trigger = function(self, event, room, player, data)
 		local dying = data:toDying()
-		if player and player:isAlive() and player:hasSkill(self:objectName()) and player == dying.who  and player:getHp() < 1 and player:getMark("@jinhun") > 0 then
+		if player and player:isAlive() and player:hasSkill(self:objectName()) and player == dying.who and player:getHp() < 1 and player:getMark("@jinhun") > 0 and (player:inHeadSkills(self) or player:inDeputySkills(self)) then
 			return self:objectName()
 		end
 		return ""
@@ -3174,6 +3174,7 @@ jinhun = sgs.CreateTriggerSkill{
 	end ,
 	on_effect = function(self, event, room, player, data)		
 		room:setPlayerMark(player, "@jinhun", 0)
+		player:removeGeneral(player:inHeadSkills(self))	
 		room:setPlayerProperty(player, "hp", sgs.QVariant(1))
         room:setPlayerProperty(player, "maxhp", sgs.QVariant(1))
 		local t = room:askForPlayerChosen(player, room:getOtherPlayers(player), self:objectName(), "&jinhun", true)
@@ -3357,7 +3358,7 @@ neifan = sgs.CreateTriggerSkill{
 			end
 			if choice == "neifanRemove" then
 				player:removeGeneral(false)
-				ask_who:removeGeneral(ask_who:inHeadSkills(self))	
+				ask_who:removeGeneral(ask_who:inHeadSkills(self))
 			end
 		end
 	end ,
@@ -3791,7 +3792,9 @@ xinxing = sgs.CreateTriggerSkill{
 			if A:getJudgingArea():length() <= 0 then
 				choice = "draw"
 			else
-				choice = room:askForChoice(ask_who, self:objectName(), "draw+xinxingThrow", data)
+				local who = sgs.QVariant()
+				who:setValue(A)
+				choice = room:askForChoice(ask_who, self:objectName(), "draw+xinxingThrow", who)
 			end
 			if choice == "draw" then
 				A:drawCards(1, self:objectName())
@@ -4261,7 +4264,7 @@ yuanshu = sgs.CreateTriggerSkill{
 		else
 			local players = room:findPlayersBySkillName(self:objectName())
 			for _,Fuuka in sgs.qlist(players) do
-				if room:getCurrent():hasFlag("yuanshu"..Fuuka:objectName()) and Fuuka:hasSkill("yuanshu") and damage.damage > 1 and (player == Fuuka or player:hasFlag("yuanshu-damage")) then
+				if damage.damage > 1 and room:getCurrent():hasFlag("yuanshu"..player:objectName()) then
 					return self:objectName(), Fuuka
 				end
 			end
@@ -4281,17 +4284,11 @@ yuanshu = sgs.CreateTriggerSkill{
 		room:sendCompulsoryTriggerLog(ask_who, self:objectName(), true)
 		room:doLightbox("FuukaYuanshu$", 999)
 		if event == sgs.Damaged then
-				local targets = sgs.SPlayerList()
-				for _,p in sgs.qlist(room:getAlivePlayers()) do
-					----if p:isFriendWith(player) then
-						targets:append(p)
-					---end
-				end
-				local p1 = room:askForPlayerChosen(player, targets, self:objectName(), "&yuanshu")
-				ask_who:drawCards(1, self:objectName())
-				p1:drawCards(1, self:objectName())
-				room:setPlayerFlag(p1, "yuanshu-damage")
-			room:setPlayerFlag(room:getCurrent(), "yuanshu"..player:objectName())
+			local p1 = room:askForPlayerChosen(player, room:getAlivePlayers(), self:objectName(), "&yuanshu")
+			ask_who:drawCards(1, self:objectName())
+			p1:drawCards(1, self:objectName())
+			room:setPlayerFlag(room:getCurrent(), "yuanshu"..ask_who:objectName())
+			room:setPlayerFlag(room:getCurrent(), "yuanshu"..p1:objectName())
 		else
 			local log = sgs.LogMessage()
 			log.type = "#yuanshu"
@@ -6692,12 +6689,12 @@ sgs.LoadTranslationTable{
   ["%YSetsuna"] = "“和我一起创造一个充满喜欢的世界吧！”",
 
   ["chixin"] = "炽心",
-  [":chixin"] = "①出牌阶段限一次，你可以将一张红色牌当火【杀】、【异端审判】或【天破壤碎】使用，若你的手牌最多，则此牌不能被响应。②若此人物牌明置，则你的火【杀】和【异端审判】目标上限+1。",
+  [":chixin"] = "①出牌阶段限一次，你可以将一张红色牌当火【杀】、【异端审判】或【天破壤碎】使用，若你的手牌最多，则此牌不能被响应。②若此人物牌已明置，则你的火【杀】和【异端审判】目标上限+1。",
   ["$chixin1"] = "呜～我心里“喜欢”的情绪快满出来了啦～！好想开live！",
   ["$chixin2"] = "被喜欢的心意环绕，真的好幸福……身体会变得暖呼呼的！",
   ["#chixinEffect"] = "炽心",
   ["jinhun"] = "烬魂",
-  [":jinhun"] = "限定技，当你于濒死状态未救活时，你可以将体力上限和体力值调整为1，然后你可以令一名其他角色从牌堆或弃牌堆中获得一张火【杀】、【异端审判】或【天破壤碎】。",
+  [":jinhun"] = "限定技，当你于濒死状态未救活时，你可以移除此人物牌，将体力上限和体力值调整为1，然后你可以令一名其他角色从牌堆或弃牌堆中获得一张火【杀】、【异端审判】或【天破壤碎】。",
   ["&jinhun"] = "你可以选择一名其他角色获得随机牌",
   ["@jinhun"] = "烬魂",
   ["$jinhun1"] = "我不是孤单一人，你为我带来了莫大的勇气……",
