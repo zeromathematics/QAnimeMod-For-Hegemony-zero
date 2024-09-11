@@ -15,9 +15,9 @@ Meirin = sgs.General(extension , "Meirin", "game", 4, false)
 Ellen = sgs.General(extension , "Ellen", "game", 3, false)
 --HoshinoAi = sgs.General(extension , "HoshinoAi", "idol", 3, false)
 --TsukimiEiko = sgs.General(extension , "TsukimiEiko", "idol", 3, false)
-ALO_Asuna = sgs.General(extension , "ALO_Asuna", "science", 3, false)
+--ALO_Asuna = sgs.General(extension , "ALO_Asuna", "science", 3, false)
 
-extension:insertConvertPairs("SE_Asuna", "ALO_Asuna")
+--extension:insertConvertPairs("SE_Asuna", "ALO_Asuna")
 
 Shengli = sgs.CreateTriggerSkill{
     name = "shengli",
