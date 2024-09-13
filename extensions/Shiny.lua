@@ -3686,7 +3686,7 @@ yinfa = sgs.CreateTriggerSkill{
 				if not room:askForUseCard(targets, "BasicCard+^Jink,EquipCard|"..use.card:getSuitString().."|.|hand", "@yinfa_use", -1, sgs.Card_MethodUse, false) then 
 					local x = sp:getMaxHp()-1
 					if x - targets:getHandcardNum() > 0 then
-						targets:drawCards(x - targets:getHandcardNum())
+						targets:drawCards(x - targets:getHandcardNum(), self:objectName())
 					elseif x - targets:getHandcardNum() < 0 then
 						room:askForDiscard(targets, self:objectName(), targets:getHandcardNum() - x, targets:getHandcardNum() - x, false, false)
 					end
@@ -5441,6 +5441,7 @@ xiexing = sgs.CreateTriggerSkill{
 
 xiexingDistance = sgs.CreateTargetModSkill{
 	name = "#xiexingDistance",
+	pattern = ".",
 	distance_limit_func = function(self, from, card)
 		if from:hasFlag("xiexing-distance") then
 			return 1000
@@ -5451,6 +5452,7 @@ xiexingDistance = sgs.CreateTargetModSkill{
 
 xiexingVS = sgs.CreateTargetModSkill{
 	name = "#xiexingVS",
+	pattern = ".",
 	residue_func = function(self, player)
 		if player:hasFlag("xiexingVS") then
 			return 1000
@@ -5524,7 +5526,7 @@ huaqian = sgs.CreateTriggerSkill{
 		   local use = data:toCardUse()
 		   player:drawCards(1, self:objectName())
 		    if player:objectName() ~= sp:objectName() and not player:isNude() then
-		       local card = room:askForCard(player, "..", "&huaqian:" .. sp:objectName(), data)
+		       local card = room:askForCard(player, "..", "&huaqian:" .. sp:objectName(), data, sgs.Card_MethodNone)
 			    if not card then
 					card = player:getCards("he"):at(math.random(1,player:getCards("he"):length())-1)
 			    end
@@ -6142,7 +6144,7 @@ youli = sgs.CreateTriggerSkill{
 		if #choice_list == 0 then return false end
 		local choice = room:askForChoice(player, self:objectName(), table.concat(choice_list, "+"), data)
 		if choice == "youli_give" then
-			local card = room:askForCard(player, ".|.|.|hand", "&youli:" .. dest:objectName(), data)
+			local card = room:askForCard(player, ".|.|.|hand", "&youli:" .. dest:objectName(), data, sgs.Card_MethodNone)
 			if not card then
 			   card = player:getCards("h"):at(math.random(1, player:getCards("h"):length())-1)
 			end
@@ -7230,8 +7232,8 @@ sgs.LoadTranslationTable{
   ["&PalmerHelios"] = "善信太阳神",
   ["#PalmerHelios"] = "爆逃姐妹",
   ["designer:PalmerHelios"] = "网瘾少年",
-  ["cv:PalmerHelios"] = "指出毬亚",
-  ["%PalmerHelios"] = "太阳神；“呀好嗨呦☆场子炒起来全都嗨起来，好好享受吧♪” 善信：“要当一辈子的爆逃姐妹哦！不是笨蛋组合！”",
+  ["cv:PalmerHelios"] = "野口百合&山根绮",
+  ["%PalmerHelios"] = "太阳神：“呀好嗨呦☆场子炒起来全都嗨起来，好好享受吧♪”善信：“要当一辈子的爆逃姐妹哦！不是笨蛋组合！”",
 
   ["chaoyan"] = "潮宴",
   [":chaoyan"] = "当你受到伤害后，你可以选择一名角色并选择一项：1.手牌数＜其的角色各摸X张牌（X为伤害数）；2.手牌数＞其的角色各弃置X张手牌。",
