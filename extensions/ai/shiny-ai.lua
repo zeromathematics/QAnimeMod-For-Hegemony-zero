@@ -1097,10 +1097,6 @@ sgs.ai_skill_choice.tuyou = function(self, choices, data)
 	return "tuyouObtain"
 end
 
-sgs.ai_skill_playerchosen.tuyou = function(self, targets)	
-	return self:findPlayerToDraw(true, 1)
-end
-
 --朝日奈未来
 
 --三船栞子
@@ -1289,6 +1285,33 @@ sgs.ai_skill_choice.juexiang = function(self, choices, data)
 	end
 	return "cancel"
 end
+
+--美浦波旁
+sgs.ai_skill_invoke.xiexing = true
+
+--乙宗梢
+sgs.ai_skill_invoke.huaqian = true
+
+sgs.ai_skill_invoke.qiuyu = true
+
+sgs.ai_skill_playerchosen.qiuyu = function(self)
+	targets = sgs.QList2Table(targets)
+	self:sort(targets, "hp")
+	for _, target in ipairs(targets) do
+		if self:isFriendWith(target) then
+			return target
+		end
+	end
+	for _, target in ipairs(targets) do
+		if self:isFriend(target) then
+			return target
+		end
+	end
+	return nil
+end
+
+--优秀素质
+sgs.ai_skill_invoke.yongwang = true
 
 --君·高坂穗乃果
 sgs.ai_skill_invoke.qingge = true

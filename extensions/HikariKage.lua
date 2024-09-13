@@ -272,8 +272,9 @@ Wuhen = sgs.CreateTriggerSkill{
         end
         if event == sgs.CardsMoveOneTime then
             local move = data:toMoveOneTime()
+            local dest = findPlayerByObjectName(move.from:objectName())
             local who = sgs.QVariant()
-            who:setValue(move.from)
+            who:setValue(dest)
             if player:hasShownSkill(self:objectName()) or player:askForSkillInvoke(self, who) then
                 room:broadcastSkillInvoke(self:objectName(), player)
                 return true
@@ -2109,7 +2110,7 @@ sgs.LoadTranslationTable{
     ["$wuhen1"] = "想出这个计划的是堀北，我只是按命令行动而已",
     ["$wuhen2"] = "要是传出各种谣言你也会很困扰的吧",
 
-    ["ManakaMiuna"] = "爱花&美海",
+    ["ManakaMiuna"] = "爱花＆美海",
     ["&ManakaMiuna"] = "爱花美海",
     ["@ManakaMiuna"] = "来自风平浪静的明天",
     ["#ManakaMiuna"] = "海之祭女",
