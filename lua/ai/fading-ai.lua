@@ -640,7 +640,7 @@ sgs.ai_skill_use_func.TaxianCard = function(card,use,self)
 				targets:append(p)
 			elseif self.player:getHp() > 1 or self:getCardsNum("Peach") > 0 or self:getCardsNum("Analeptic") > 0 then
 				targets:append(p)
-			elseif #targets == 2 then
+			elseif targets:length() == 2 then
 				targets:append(p)
 			end
 		end

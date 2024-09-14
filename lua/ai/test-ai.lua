@@ -1437,8 +1437,15 @@ sgs.ai_skill_invoke.huansha = function(self, data)
 end
 
 sgs.ai_skill_invoke.dapo = function(self, data)
-    if data:toPlayer() then
-	  return self:isFriend(data:toPlayer()) and (self:willShowForAttack() or self:isWeak(data:toPlayer()))
+	local prompt = data:toString():split(":")
+    local from
+    local to
+    for _,p in sgs.qlist(self.room:getAlivePlayers()) do
+       if p:objectName()==prompt[2] then from = p end
+	   if p:objectName()==prompt[3] then to = p end
+    end
+    if from and to then
+	   return self:isFriend(to) and (self:willShowForAttack() or self:isWeak(data:toPlayer()))
 	end
 end
 

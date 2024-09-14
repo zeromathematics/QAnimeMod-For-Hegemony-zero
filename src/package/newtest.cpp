@@ -1993,13 +1993,13 @@ public:
         return skill_list;
     }
 
-    virtual bool cost(TriggerEvent, Room *room, ServerPlayer *, QVariant &data, ServerPlayer *ask_who) const
+    virtual bool cost(TriggerEvent, Room *room, ServerPlayer *player, QVariant &data, ServerPlayer *ask_who) const
     {
         ServerPlayer *yyui = ask_who;
 
         if (yyui != NULL) {
             yyui->tag["wenchang_data"] = data;
-            bool invoke = room->askForDiscard(yyui, objectName(), 1, 1, true, true, "@wenchang", true);
+            bool invoke = room->askForDiscard(yyui, objectName(), 1, 1, true, true, "@wenchang:" + player->objectName(), true);
             yyui->tag.remove("wenchang_data");
 
             if (invoke) {
@@ -4771,7 +4771,8 @@ public:
     {
         DamageStruct damage = data.value<DamageStruct>();
         ServerPlayer *touma = ask_who;
-        if (damage.from && touma && touma->askForSkillInvoke(this, QVariant::fromValue(damage.to))) {
+        QString prompt = "show:" + damage.from->objectName() + ":" + damage.to->objectName();
+        if (damage.from && touma && touma->askForSkillInvoke(this, prompt)) {
             room->broadcastSkillInvoke(objectName(), touma);
             return true;
         }
