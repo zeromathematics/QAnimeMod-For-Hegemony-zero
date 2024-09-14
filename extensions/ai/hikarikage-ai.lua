@@ -130,3 +130,46 @@ sgs.ai_skill_use_func["#LvjigiveCard"] = function(card,use,self)
 		return
 	end
 end
+
+local fahui_skill = {}
+fahui_skill.name = "fahui"
+table.insert(sgs.ai_skills, fahui_skill)
+fahui_skill.getTurnUseCard = function(self,room,player,data)
+	if self.player:hasUsed("ViewAsSkill_fahuiCard") or self.player:isKongcheng() then return end
+	local usevalue = 0
+	local keepvalue = 0	
+	local id
+	local card1
+	local cards = self.player:getHandcards()
+	cards = sgs.QList2Table(cards)
+	self:sortByKeepValue(cards)
+	for _,card in ipairs(cards) do
+		id = tostring(card:getId())
+		card1 = card
+		usevalue=self:getUseValue(card)
+		keepvalue=self:getKeepValue(card)
+		break
+	end
+	if not id then return end
+	local parsed_card = {}
+	local list = self.player:getPile("jixu_id")
+	for _,i in sgs.qlist(list) do
+		local c = sgs.Sanguosha:getCard(i)
+		if  (c:isKindOf("BasicCard") or c:isNDTrick()) and c:isAvailable(self.player) then
+		  table.insert(parsed_card, sgs.Card_Parse(c:objectName()..":fahui[to_be_decided:"..card1:getNumberString().."]=" .. id .."&fahui"))
+		end
+	end
+	
+	local value = 0
+	local tcard
+	for _, c in ipairs(parsed_card) do
+		assert(c)
+		if self:getUseValue(c) > value and self:getUseValue(c) > keepvalue and self:getUseValue(c) > usevalue then
+			value = self:getUseValue(c)
+			tcard = c
+		end
+	end
+	if tcard and id then
+		return tcard
+	end
+end

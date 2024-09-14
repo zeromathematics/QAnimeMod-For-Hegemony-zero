@@ -44,6 +44,7 @@ return {
 	["@command-damage"] = "指令：请选择伤害的目标",
 	["@command-give"] = "指令：请选择两张牌交给%src",
 	["@command-select"] = "指令：请选择要保留的一张手牌和一张装备",
+	["~commandefect"] = "选择一张手牌和一张装备区里的牌，弃置其余的牌",
 	
 	["@docommand"] = "%arg：请选择是否执行指令（发起者%src）<br>%arg2",
 	["@docommand1"] = "%arg：请选择是否执行指令（发起者%src）<br>指令一：对%dest造成1点伤害",

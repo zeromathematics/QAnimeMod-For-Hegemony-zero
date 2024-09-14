@@ -1445,7 +1445,7 @@ sgs.ai_skill_invoke.dapo = function(self, data)
 	   if p:objectName()==prompt[3] then to = p end
     end
     if from and to then
-	   return self:isFriend(to) and (self:willShowForAttack() or self:isWeak(data:toPlayer()))
+	   return self:isFriend(to) and (self:willShowForAttack() or self:isWeak(to))
 	end
 end
 
