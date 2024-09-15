@@ -686,7 +686,7 @@ Jizou = sgs.CreateTriggerSkill{
                     dummy:addSubcard(sgs.Sanguosha:getCard(a))
                 end
 				if dummy:getSubcards():length() > 0 then
-					room:obtainCard(ask_who, dummy)
+					room:obtainCard(ask_who, dummy, false)
 				end
                 dummy:deleteLater()
             end

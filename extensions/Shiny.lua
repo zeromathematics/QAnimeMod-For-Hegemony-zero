@@ -2104,7 +2104,7 @@ xunfei = sgs.CreateTriggerSkill{
 		if list:length() > 0 then
 			local id = list:at(math.random(0, list:length()-1))
 			local card = sgs.Sanguosha:getCard(id)
-			room:obtainCard(ask_who, card)
+			room:obtainCard(ask_who, card, false)
 			if card and card:isKindOf("DelayedTrick") then
 				ask_who:drawCards(1, self:objectName())
 			else
@@ -3199,7 +3199,7 @@ jinhun = sgs.CreateTriggerSkill{
 			end
 			if list:length() > 0 then
 				local Chase = sgs.Sanguosha:getCard(list:at(math.random(0, list:length() - 1)))
-				room:obtainCard(t, Chase)
+				room:obtainCard(t, Chase, false)
 			end
 		end
 	end,
@@ -5054,7 +5054,7 @@ changyue = sgs.CreateTriggerSkill{
 	on_effect = function(self, event, room, player, data, sp)
 		local use = data:toCardUse()
 		local id = sp:property("changyue_card"):toInt()
-		room:obtainCard(player, id)
+		room:obtainCard(player, id, false)
 		if sp:isAlive() then
 			room:obtainCard(sp, use.card)
 		end 
@@ -5127,7 +5127,7 @@ changyues = sgs.CreateTriggerSkill{
 		room:setPlayerProperty(player, "changyue_id", sgs.QVariant())
 		room:setPlayerProperty(player, "changyue_target", sgs.QVariant())
 		if id > -1 and target then
-			room:obtainCard(player, id)
+			room:obtainCard(player, id, false)
 			room:obtainCard(target, use.card)
 		end
 	end,
@@ -7053,7 +7053,7 @@ sgs.LoadTranslationTable{
   ["quming"] = "曲命",
   [":quming"] = "主将技，你计算体力上限减少1个单独的阴阳鱼。<font color=\"green\"><b>每名角色限一次，</b></font>当一名角色进入濒死状态时，若你没有副将，则你可以变更副将，令其回复体力至1点。",
   ["yangming"] = "扬名",
-  [":yangming"] = "副将技，当你移除此人物牌时，若你装备区内有牌，则你可以令最多X名角色各摸一张牌（X为你装备区内的牌数），然后这些角色各交给你一张牌。",
+  [":yangming"] = "副将技，当你移除此人物牌时，你可以令最多X名角色各摸一张牌（X为你装备区内的牌数），然后这些角色各交给你一张牌。",
   ["yangming:Arisa"] = "你可以点击“确定”，发动技能“扬名”。或者点击“取消”",
   ["&yangming"] = "请选择最多 %src 名角色作为“扬名”的目标",
   ["&yangming_give"] = "“扬名”发动，请交给 %src 一张牌",
@@ -7219,12 +7219,11 @@ sgs.LoadTranslationTable{
   ["@yinni"] = "寅睨：展示一张手牌",
   ["@yinni_duel"] = "视为使用决斗",
   ["~yinni"] = "选择拼点目标",
-  ["$yinni"] = "语音",
   ["yinni$"] = "image=image/animate/yinni.png",
+  ["yinni_used"] = "寅睨已发动",
   ["yongwang"] = "庸望",
   [":yongwang"] = "<font color=\"green\"><b>每回合限一次，</b></font>当牌因弃置而进入弃牌堆时，若其中存在点数比你的每一张手牌都大的牌，则你可以展示手牌，获得其中一张符合条件的牌。",
   ["yongwang$"] = "image=image/animate/yongwang.png",
-  ["$yongwang"] = "语音",
   ["yongwang_num"] = "点数",
 
   ["PalmerHelios"] = "目白善信＆大拓太阳神",
