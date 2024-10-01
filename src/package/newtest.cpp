@@ -2688,7 +2688,7 @@ public:
             DamageStruct damage=data.value<DamageStruct>();
             if(damage.to->isDead())
                 return QStringList();
-            if (!damage.to->disableShow(true).contains(objectName())||!damage.to->disableShow(false).contains(objectName())){
+            if ((!damage.to->disableShow(true).contains(objectName()) && !(damage.to->getActualGeneral1()->objectName()!="sujiang" || damage.to->getActualGeneral1()->objectName()!="sujiangf") ) || (!damage.to->disableShow(false).contains(objectName()) && !(damage.to->getActualGeneral2()->objectName()!="sujiang" || damage.to->getActualGeneral2()->objectName()!="sujiangf"))){
                 return QStringList(objectName());
             }
         }
@@ -2711,9 +2711,9 @@ public:
     {
         DamageStruct damage=data.value<DamageStruct>();
         QStringList list;
-        if (!damage.to->disableShow(true).contains(objectName()))
+        if (!damage.to->disableShow(true).contains(objectName()) && !(damage.to->getActualGeneral1()->objectName()!="sujiang" || damage.to->getActualGeneral1()->objectName()!="sujiangf") )
             list.append("head_general");
-        if (!damage.to->disableShow(false).contains(objectName()))
+        if (!damage.to->disableShow(false).contains(objectName()) && !(damage.to->getActualGeneral2()->objectName()!="sujiang" || damage.to->getActualGeneral2()->objectName()!="sujiangf"))
             list.append("deputy_general");
         QString choice=room->askForChoice(player,objectName(),list.join("+"),data);
         room->broadcastSkillInvoke(objectName(),player);
@@ -6012,17 +6012,17 @@ public:
         else if (choice == "mengfeng_hide"){
             QList<ServerPlayer *> list;
             foreach(auto p, room->getAlivePlayers()){
-                if (p->hasShownOneGeneral() && !p->isFriendWith(player))
+                if (p->hasShownOneGeneral() && !p->isFriendWith(player) && (!(p->getActualGeneral1()->objectName()!="sujiang" || p->getActualGeneral1()->objectName()!="sujiangf") || !(p->getActualGeneral2()->objectName()!="sujiang" || p->getActualGeneral2()->objectName()!="sujiangf")) )
                     list << p;
             }
             if (list.length()>0){
                 ServerPlayer *tar = room->askForPlayerChosen(player, list, objectName()+"hide", "@mengfeng", true);
                 if (!tar) return false;
                 QStringList choices;
-                if (tar->hasShownGeneral1()){
+                if (tar->hasShownGeneral1() && !(tar->getActualGeneral1()->objectName()!="sujiang" || tar->getActualGeneral1()->objectName()!="sujiangf") ){
                     choices <<tar->getActualGeneral1Name();
                 }
-                if (tar->hasShownGeneral2()){
+                if (tar->hasShownGeneral2() && !(tar->getActualGeneral2()->objectName()!="sujiang" || tar->getActualGeneral2()->objectName()!="sujiangf") ){
                     choices << tar->getActualGeneral2Name();
                 }
                 QString general="";
@@ -6065,7 +6065,7 @@ void ReimugiveCard::use(Room *room, ServerPlayer *player, QList<ServerPlayer *> 
         return;
     room->broadcastSkillInvoke("saiqian", target);
     room->obtainCard(target, this, false);
-    if (!target->isNude() && room->askForCard(target, ".|red|.|.", "@saiqian", QVariant::fromValue(player))){
+    if (!target->isNude() && player->isWounded() && room->askForCard(target, ".|red|.|.", "@saiqian:" + player->objectName(), QVariant::fromValue(player))){
         RecoverStruct recover;
         recover.recover = 1;
         recover.who = target;

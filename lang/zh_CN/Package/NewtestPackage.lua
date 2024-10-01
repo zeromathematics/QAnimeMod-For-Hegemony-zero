@@ -840,7 +840,7 @@ return {
 	["$saiqian1"] = "还给我赛钱箱！",
     ["$saiqian2"] = " 魔理沙：呐是那么重要的赛钱箱吗？ 博丽灵梦：魔理沙你是不会懂的。",
 	["reimugive"] = "塞钱",
-	["@saiqian"] = "弃置一张红色牌，令来源回复1点体力",
+	["@saiqian"] = "你可以弃置一张红色牌，令 %src 回复1点体力",
 	["tuizhi_hegemony:head"] = "暗置主将",
 	["tuizhi_hegemony:deputy"] = "暗置副将",
 	["@tuizhi"] = "你可以选择一名角色，令其摸一张牌",
@@ -1345,4 +1345,3 @@ return {
 	["$lixiangjianqiao1"]="阿瓦隆！",
 	["Lixiangjianqiao$"] = "image=image/animate/lixiangjianqiao1.png",
 }
-
