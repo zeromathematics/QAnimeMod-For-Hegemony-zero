@@ -89,7 +89,7 @@ void RoomScene::resetPiles()
 }
 
 RoomScene::RoomScene(QMainWindow *main_window)
-    : game_started(false), main_window(main_window)
+    : game_started(false), main_window(main_window), m_tableBgPixmap(1, 1), m_tableBgPixmapOrig(1, 1)
 {
     setItemIndexMethod(NoIndex);
     setParent(main_window);
@@ -405,6 +405,11 @@ RoomScene::RoomScene(QMainWindow *main_window)
     prompt_box_widget->setFont(qf);
 
     addItem(prompt_box);
+
+    m_tableBg = new QGraphicsPixmapItem;
+    m_tableBg->setZValue(-100000);
+
+    addItem(m_tableBg);
 
     m_rolesBoxBackground.load("image/system/state.png");
     m_rolesBox = new QGraphicsPixmapItem;
@@ -1013,6 +1018,17 @@ void RoomScene::onSceneRectChanged(const QRectF &rect)
     m_tablew = newRect.width();// - infoPlane.width();
     m_tableh = newRect.height();// - dashboard->boundingRect().height();
     m_tableh -= _m_roomLayout->m_photoDashboardPadding;
+
+    /*if (m_tableBgPixmapOrig.width() == 1 || m_tableBgPixmapOrig.height() == 1)
+        m_tableBgPixmapOrig = G_ROOM_SKIN.getPixmap("tableBg");
+
+    m_tableBgPixmap = m_tableBgPixmapOrig.scaled(m_tablew, m_tableh, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+
+    m_tableBg->setPos(0, 0);
+    m_tableBg->setPixmap(m_tableBgPixmap);*/
+
+    m_tableh -= _m_roomLayout->m_photoDashboardPadding;
+
     updateTable();
     updateRolesBox();
 #ifdef Q_OS_ANDROID
@@ -4085,15 +4101,30 @@ void RoomScene::changeBG(const QString bg)
 
 void RoomScene::adjustDefaultBg()
 {
-    /*QPixmap pixmap = G_ROOM_SKIN.getPixmap("tableBg" + kingdom);
-    if (pixmap.width() == 1 || pixmap.height() == 1) {
-        // we treat this condition as error and do not use it
+    QString bgmusic_path = Config.value("BackgroundMusic", "audio/system/background.ogg").toString();
+
+    int x = 0;
+    for (int i = 1; i < 1000; i++){
+        if (bgmusic_path.contains(QString("audio/system/anime%1.ogg").arg(QString::number(i)))){
+            x = i;
+            break;
+        }
     }
-    else {
-        m_tableBgPixmapOrig = pixmap;
-        m_tableBgPixmap = pixmap.scaled(m_tablew, m_tableh + _m_roomLayout->m_photoDashboardPadding, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-        m_tableBg->setPixmap(m_tableBgPixmap);
-    }*/
+    if (x > 0 && QFile::exists(QString("image/backdrop/anime%1.jpg").arg(QString::number(x)))){
+        QString key = QString("tableBganime-%1");
+        QPixmap pixmap = G_ROOM_SKIN.getPixmap(key, QString::number(x));
+        if (pixmap.width() == 1 || pixmap.height() == 1) {
+            // we treat this condition as error and do not use it
+        }
+        else {
+            m_tableBgPixmapOrig = pixmap;
+            m_tableBgPixmap = pixmap.scaled(m_tablew, m_tableh + 2*_m_roomLayout->m_photoDashboardPadding, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+            m_tableBg->setPixmap(m_tableBgPixmap);
+        }
+    }
+    else{
+        m_tableBg->setPixmap(G_ROOM_SKIN.getPixmap(""));
+    }
 }
 
 void RoomScene::revivePlayer(const QString &who)
@@ -4432,8 +4463,16 @@ void RoomScene::onGameStart()
 #ifdef AUDIO_SUPPORT
     if (Config.EnableBgMusic) {
         // start playing background music
+        int m = 0;
+        for (int i = 1; i < 1000; i++){
+            if (QFile::exists(QString("audio/system/anime%1.ogg").arg(QString::number(i)))){
+                m = m+1;
+            }
+        }
+        int y = rand()%m +1;
+        Config.setValue("BackgroundMusic", QString("audio/system/anime%1.ogg").arg(QString::number(y)));
         QString bgmusic_path = Config.value("BackgroundMusic", "audio/system/background.ogg").toString();
-
+        adjustDefaultBg();
         Audio::playBGM(bgmusic_path);
     }
 #endif

@@ -173,3 +173,21 @@ fahui_skill.getTurnUseCard = function(self,room,player,data)
 		return tcard
 	end
 end
+
+sgs.ai_skill_askforag.lvji = function(self, card_ids)
+	local list = {}
+	for _,i in ipairs(card_ids) do
+		if sgs.Sanguosha:getCard(i):isNDTrick() then
+			table.insert(list, sgs.Sanguosha:getCard(i)) 
+		end
+	end
+	if #list > 0 then
+		self:sortByUseValue(list)
+		return list[1]:getEffectiveId()
+	end
+	for _,i in ipairs(card_ids) do
+		if sgs.Sanguosha:getCard(i):isKindOf("TrickCard") then
+			return i
+		end
+	end
+end

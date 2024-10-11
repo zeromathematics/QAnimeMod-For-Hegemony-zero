@@ -22,4 +22,4 @@ end
 	end
 --sgs.SetConfig("BackgroundImage", "image/backdrop/"..math.random(1,n)..".jpg")
 --sgs.SetConfig("TableBgImage", sgs.GetConfig("BackgroundImage", "")) 
-sgs.SetConfig("BackgroundMusic", "audio/system/anime"..math.random(1,m)..".ogg")
+--sgs.SetConfig("BackgroundMusic", "audio/system/anime"..math.random(1,m)..".ogg")

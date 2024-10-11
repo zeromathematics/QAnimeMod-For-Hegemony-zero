@@ -242,6 +242,8 @@ void ConfigDialog::setBgMusic(const QVariant &path)
     QString fileName = path.toString();
     ui->bgMusicPathLineEdit->setText(fileName);
     Config.setValue("BackgroundMusic", fileName);
+    if (RoomSceneInstance != NULL)
+        RoomSceneInstance->_adjustDefaultBg();
 
 #ifdef AUDIO_SUPPORT
     Audio::stopBGM();
