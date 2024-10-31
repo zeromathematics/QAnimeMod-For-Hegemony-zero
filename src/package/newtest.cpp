@@ -443,6 +443,7 @@ public:
         events << TurnStart << CardsMoveOneTime << CardUsed;
         view_as_skill = new Guangyuvs;
         can_preshow = true;
+        relate_to_place = "head";
     }
 
     virtual void record(TriggerEvent event, Room *room, ServerPlayer *player, QVariant &data) const
@@ -2688,7 +2689,7 @@ public:
             DamageStruct damage=data.value<DamageStruct>();
             if(damage.to->isDead())
                 return QStringList();
-            if ((!damage.to->disableShow(true).contains(objectName()) && !(damage.to->getActualGeneral1()->objectName()!="sujiang" || damage.to->getActualGeneral1()->objectName()!="sujiangf") ) || (!damage.to->disableShow(false).contains(objectName()) && !(damage.to->getActualGeneral2()->objectName()!="sujiang" || damage.to->getActualGeneral2()->objectName()!="sujiangf"))){
+            if ((!damage.to->disableShow(true).contains(objectName()) && (damage.to->getActualGeneral1()->objectName()!="sujiang" || damage.to->getActualGeneral1()->objectName()!="sujiangf") ) || (!damage.to->disableShow(false).contains(objectName()) && (damage.to->getActualGeneral2()->objectName()!="sujiang" || damage.to->getActualGeneral2()->objectName()!="sujiangf"))){
                 return QStringList(objectName());
             }
         }
@@ -2711,9 +2712,9 @@ public:
     {
         DamageStruct damage=data.value<DamageStruct>();
         QStringList list;
-        if (!damage.to->disableShow(true).contains(objectName()) && !(damage.to->getActualGeneral1()->objectName()!="sujiang" || damage.to->getActualGeneral1()->objectName()!="sujiangf") )
+        if (!damage.to->disableShow(true).contains(objectName()) && (damage.to->getActualGeneral1()->objectName()!="sujiang" || damage.to->getActualGeneral1()->objectName()!="sujiangf") )
             list.append("head_general");
-        if (!damage.to->disableShow(false).contains(objectName()) && !(damage.to->getActualGeneral2()->objectName()!="sujiang" || damage.to->getActualGeneral2()->objectName()!="sujiangf"))
+        if (!damage.to->disableShow(false).contains(objectName()) && (damage.to->getActualGeneral2()->objectName()!="sujiang" || damage.to->getActualGeneral2()->objectName()!="sujiangf"))
             list.append("deputy_general");
         QString choice=room->askForChoice(player,objectName(),list.join("+"),data);
         room->broadcastSkillInvoke(objectName(),player);

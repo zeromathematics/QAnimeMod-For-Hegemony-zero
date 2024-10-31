@@ -1025,9 +1025,9 @@ void RoomScene::onSceneRectChanged(const QRectF &rect)
     m_tableBgPixmap = m_tableBgPixmapOrig.scaled(m_tablew, m_tableh, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
 
     m_tableBg->setPos(0, 0);
-    m_tableBg->setPixmap(m_tableBgPixmap);*/
+    m_tableBg->setPixmap(m_tableBgPixmap);
 
-    m_tableh -= _m_roomLayout->m_photoDashboardPadding;
+    m_tableh -= _m_roomLayout->m_photoDashboardPadding;*/
 
     updateTable();
     updateRolesBox();
@@ -4118,7 +4118,7 @@ void RoomScene::adjustDefaultBg()
         }
         else {
             m_tableBgPixmapOrig = pixmap;
-            m_tableBgPixmap = pixmap.scaled(m_tablew, m_tableh + 2*_m_roomLayout->m_photoDashboardPadding, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+            m_tableBgPixmap = pixmap.scaled(m_tablew, m_tableh + _m_roomLayout->m_photoDashboardPadding, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
             m_tableBg->setPixmap(m_tableBgPixmap);
         }
     }
