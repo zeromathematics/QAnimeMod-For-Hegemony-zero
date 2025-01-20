@@ -116,46 +116,49 @@ class GameRule_LordConvertion : public TriggerSkill
 public:
     GameRule_LordConvertion() : TriggerSkill("GameRule_LordConvertion")
     {
-        events << GameStart;
+        events << EventPhaseStart;
         global = true;
     }
 
-    virtual TriggerList triggerable(TriggerEvent, Room *room, ServerPlayer *player, QVariant &) const
+    virtual bool triggerable(const ServerPlayer *player) const
     {
-        TriggerList trigger_map;
-
         if (!Config.value("EnableLordConvertion", true).toBool())
-            return trigger_map;
+            return false;
 
-        if (player == NULL) {
-            foreach (ServerPlayer *p, room->getAllPlayers()) {
-                if (p->getActualGeneral1() != NULL) {
-                    QString lord = "lord_" + p->getActualGeneral1()->objectName();
-                    bool check = true;
-                    foreach (ServerPlayer *p2, room->getOtherPlayers(p)) {                                 //no duplicate lord
-                        if (p != p2 && lord == "lord_" + p2->getActualGeneral1()->objectName()) {
-                            check = false;
-                            break;
-                        }
+        if (player->getPhase() != Player::Start)
+            return false;
+
+        if (player->getMark("Global_RoundCount") != 1 || player->getMark("HaventShowGeneral") == 0 )
+            return false;
+
+        if (player != NULL) {
+            if (player->getActualGeneral1() != NULL) {
+                QString lord = "lord_" + player->getActualGeneral1()->objectName();
+                bool check = true;
+                foreach (auto *p2, player->getSiblings()) {                                 //no duplicate lord
+                    if (player->objectName() != p2->objectName() && lord == "lord_" + p2->getActualGeneral1()->objectName()) {
+                        check = false;
+                        break;
                     }
-                    const General *lord_general = Sanguosha->getGeneral(lord);
-                    if (check && lord_general && !Sanguosha->getBanPackages().contains(lord_general->getPackage()))
-                        trigger_map.insert(p, QStringList(objectName()));
                 }
+                const General *lord_general = Sanguosha->getGeneral(lord);
+                if (check && lord_general && !Sanguosha->getBanPackages().contains(lord_general->getPackage()))
+                    return true;
             }
         }
-
-        return trigger_map;
+        return false;
     }
 
     virtual bool cost(TriggerEvent, Room *, ServerPlayer *, QVariant &, ServerPlayer *ask_who) const
     {
-        return ask_who->askForSkillInvoke("userdefine:changetolord", "GameStart");
+        //return ask_who->askForSkillInvoke("userdefine:changetolord", "GameStart");
+        return true;
     }
 
     virtual bool effect(TriggerEvent, Room *, ServerPlayer *, QVariant &, ServerPlayer *ask_who) const
     {
         ask_who->changeToLord();
+        ask_who->showGeneral();
         return false;
     }
 };
@@ -477,11 +480,15 @@ bool GameRule::effect(TriggerEvent triggerEvent, Room *room, ServerPlayer *playe
             room->setPlayerFlag(player, "-Global_FirstRound");
             player->turnOver();
 #ifndef QT_NO_DEBUG
-            if (player->isAlive() && !player->getAI() && player->askForSkillInvoke("userdefine:playNormally"))
+            if (player->isAlive() && !player->getAI() && player->askForSkillInvoke("userdefine:playNormally")){
+                room->addPlayerMark(player, "Global_RoundCount");
                 player->play();
+            }
 #endif
-        } else if (player->isAlive())
+        } else if (player->isAlive()){
+            room->addPlayerMark(player, "Global_RoundCount");
             player->play();
+        }
 
         break;
     }

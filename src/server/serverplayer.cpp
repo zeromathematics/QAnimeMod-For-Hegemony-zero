@@ -1926,6 +1926,8 @@ void ServerPlayer::showGeneral(bool head_general, bool trigger_event, bool sendL
         if (!ignore_rule && !canShowGeneral("h")) return;
         if (getGeneralName() != "anjiang") return;
 
+        room->removePlayerMark(this, "HaventShowGeneral");
+
         setSkillsPreshowed("h");
         notifyPreshow();
         room->setPlayerProperty(this, "general1_showed", true);
@@ -2002,6 +2004,9 @@ void ServerPlayer::showGeneral(bool head_general, bool trigger_event, bool sendL
     } else {
         if (!ignore_rule && !canShowGeneral("d")) return;
         if (getGeneral2Name() != "anjiang") return;
+
+        room->removePlayerMark(this, "HaventShowGeneral2");
+
         setSkillsPreshowed("d");
         notifyPreshow();
         room->setPlayerProperty(this, "general2_showed", true);
@@ -2669,6 +2674,9 @@ void ServerPlayer::changeToLord()
 
     QStringList real_generals = room->getTag(objectName()).toStringList();
     QString name = real_generals.takeFirst();
+
+    const General *head = Sanguosha->getGeneral(name);
+
     name.prepend("lord_");
     real_generals.prepend(name);
     room->setTag(objectName(), real_generals);
@@ -2677,12 +2685,16 @@ void ServerPlayer::changeToLord()
 
     const General *lord = Sanguosha->getGeneral(name);
     const General *deputy = Sanguosha->getGeneral(real_generals.last());
-    Q_ASSERT(lord != NULL && deputy != NULL);
+    Q_ASSERT(head != NULL && lord != NULL && deputy != NULL);
     int doubleMaxHp = lord->getMaxHpHead() + deputy->getMaxHpDeputy();
     room->setPlayerMark(this, "HalfMaxHpLeft", doubleMaxHp % 2);
 
-    setMaxHp(doubleMaxHp / 2);
-    setHp(doubleMaxHp / 2);
+    int x = getMaxHp();
+    int y = x + doubleMaxHp / 2 - (head->getMaxHpHead() + deputy->getMaxHpDeputy()) / 2;
+    setMaxHp(y);
+
+    if (y > x)
+        setHp(getHp() - x + y);
 
     room->broadcastProperty(this, "maxhp");
     room->broadcastProperty(this, "hp");

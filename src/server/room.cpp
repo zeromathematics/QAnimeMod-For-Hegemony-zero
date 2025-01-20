@@ -5394,6 +5394,9 @@ void Room::startGame()
         int max_hp = general1->getMaxHpHead() + general2->getMaxHpDeputy();
         setPlayerMark(player, "HalfMaxHpLeft", max_hp % 2);
 
+        setPlayerMark(player, "HaventShowGeneral", 1);
+        setPlayerMark(player, "HaventShowGeneral2", 1);
+
         player->setMaxHp(max_hp / 2);
         player->setHp(player->getMaxHp());
         // setup AI

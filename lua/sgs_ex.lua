@@ -795,7 +795,7 @@ function sgs.CreateEquipCard(spec)
 
 	card.on_install = spec.on_install
 	card.on_uninstall = spec.on_uninstall
-	card.filter = spec.filter
+	--card.filter = spec.filter
 
 	return card
 end

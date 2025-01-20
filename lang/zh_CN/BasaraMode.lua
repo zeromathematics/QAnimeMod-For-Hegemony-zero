@@ -69,5 +69,6 @@ return
 
 	["GameRule_AskForGeneralShowHead"] = "明置主将" ,
 	["GameRule_AskForGeneralShowDeputy"] = "明置副将" ,
+        ["GameRule_LordConvertion"] = "更换为主角" ,
 	["armorskill"] = "选择要发动的技能",
 }

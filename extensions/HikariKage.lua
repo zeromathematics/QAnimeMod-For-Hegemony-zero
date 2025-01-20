@@ -13,6 +13,9 @@ Chisato = sgs.General(extension, "Chisato", "science", 3, false)
 AliceM = sgs.General(extension , "AliceM", "game", 3, false)
 Meirin = sgs.General(extension , "Meirin", "game", 4, false)
 Ellen = sgs.General(extension , "Ellen", "game", 3, false)
+
+lord_Oumashu = sgs.General(extension , "lord_Oumashu$", "science", 4, true, true)
+GasaiYuno = sgs.General(extension , "GasaiYuno", "science", 3, false)
 --HoshinoAi = sgs.General(extension , "HoshinoAi", "idol", 3, false)
 --TsukimiEiko = sgs.General(extension , "TsukimiEiko", "idol", 3, false)
 --ALO_Asuna = sgs.General(extension , "ALO_Asuna", "science", 3, false)
@@ -2022,6 +2025,194 @@ Youpian = sgs.CreateTriggerSkill{
 	end
 }
 
+---------------- HikariKage 2nd
+Chikuang = sgs.CreateTriggerSkill{
+	name = "chikuang",
+	events = {sgs.AskForPeachesDone, sgs.CardsMoveOneTime, sgs.EventPhaseStart, sgs.Dying},
+	on_record = function(self, event, room, player, data)
+       if event == sgs.AskForPeachesDone then
+			local dying = data:toDying()
+			local players = room:findPlayersBySkillName(self:objectName())
+			for _,sp in sgs.qlist(players) do
+				if sp:isAlive() and sp:hasShownSkill("chikuang") and sp ~= dying.who and dying.who:getMark("##anlian") > 0 and dying.who:getHp()<1 and sp:getMark("@zhoumu")> 1then
+					local kingdom = player:getKingdom()
+					room:setPlayerProperty(sp, "kingdom" ,sgs.QVariant("careerist"))
+		            room:setPlayerProperty(sp, "role" ,sgs.QVariant("careerist"))
+				end
+			end
+        end
+	end,	
+	can_trigger = function(self, event, room, player, data)
+	    if event == sgs.CardsMoveOneTime then
+			local move = data:toMoveOneTime()
+			for _, p in sgs.qlist(room:findPlayersBySkillName(self:objectName())) do
+				if move.to_place==sgs.Player_PlaceHand and move.to:objectName()==p:objectName() and move.from and move.from:objectName()~=p:objectName() and move.from:objectName()==player:objectName() and p:hasSkill("chikuang") then
+					if move.from_places:contains(sgs.Player_PlaceEquip)
+					or move.from_places:contains(sgs.Player_PlaceHand) and p:getMark("anlianused") == 0 then
+						return self:objectName(), p
+					end
+				end
+			end
+	    end
+		if event == sgs.EventPhaseStart and player:getPhase() == sgs.Player_Play then
+			local players = room:findPlayersBySkillName(self:objectName())
+			for _,sp in sgs.qlist(players) do
+			  if sp:hasSkill("chikuang") and player:getMark("##anlian") > 0 and sp:getMark("@zhoumu")< 3 then
+				 return self:objectName(), sp
+			  end
+			end
+		end
+		if event == sgs.Dying then
+		    local dying = data:toDying()
+			local players = room:findPlayersBySkillName(self:objectName())
+			for _,sp in sgs.qlist(players) do
+			  if sp:hasSkill("chikuang") and dying.who == sp and sp == player and sp:getPhase() ~= sgs.Player_NotActive and sp:getMark("@zhoumu")< 3 then
+				 return self:objectName(), sp
+			  end
+			end
+		end
+		return ""
+	end ,
+	on_cost = function(self, event, room, player, data, ask_who)
+	    if event == sgs.CardsMoveOneTime then
+			if ask_who:askForSkillInvoke(self, data) then
+				room:broadcastSkillInvoke(self:objectName(), ask_who)
+				room:setPlayerMark(ask_who, "anlianused", 1)
+                room:setPlayerMark(ask_who, "chikuang_target"..player:objectName(), 1)
+				return true
+			end	
+		end
+		if event == sgs.EventPhaseStart then
+			if ask_who:askForSkillInvoke(self, data) then
+				room:broadcastSkillInvoke(self:objectName(), ask_who)
+				return true
+			end	
+		end
+		if event == sgs.Dying then
+		    if ask_who:hasShownSkill("chikuang") or ask_who:askForSkillInvoke(self, data) then
+				room:broadcastSkillInvoke(self:objectName(), ask_who)
+				return true
+			end	
+		end
+		return false
+	end ,
+	on_effect = function(self, event, room, player, data, ask_who)
+	    if event == sgs.CardsMoveOneTime then
+			local move = data:toMoveOneTime()
+			room:setPlayerMark(player, "##anlian", 1)
+        end
+		if event == sgs.EventPhaseStart then
+			local obtained = sgs.IntList()
+			for _, card in sgs.qlist(player:getHandcards()) do
+				obtained:append(card:getEffectiveId())
+			end
+			local x = 10 - player:getHandcardNum() 
+			local num = 0
+			for _,id in sgs.qlist(room:getDrawPile()) do
+				local card = sgs.Sanguosha:getCard(id)
+				if card and num~=x then
+				   obtained:append(id)
+				   num = num + 1
+				end
+				if num==x then break end
+			end	
+			room:fillAG(obtained,ask_who)
+			local g = room:askForAG(ask_who,obtained,true,self:objectName())  
+			room:clearAG(ask_who)
+			local choice_list = {}
+			if not player:isKongcheng() and not ask_who:isNude() then table.insert(choice_list, "chikuang-Handcard") end
+			if not room:getDrawPile():isEmpty() and not ask_who:isNude() then table.insert(choice_list, "chikuang-DrawPile") end
+			if ask_who:isAlive() then table.insert(choice_list, "no") end
+			if #choice_list == 0 then return false end
+			local choice = room:askForChoice(ask_who, self:objectName(), table.concat(choice_list, "+"))
+			if choice == "chikuang-Handcard" then
+				local Hcard = room:askForCardChosen(ask_who, player, "h", self:objectName(), true)
+				local Ycard = room:askForCard(ask_who, ".|.|.|.", "@chikuang", sgs.QVariant(), sgs.Card_MethodNone)
+				if Ycard and Hcard then
+					room:obtainCard(ask_who, Hcard, false) 
+					room:obtainCard(player,Ycard, false) 
+				end	
+			elseif choice == "chikuang-DrawPile" then
+				while room:getDrawPile():length()<x do
+					room:swapPile()
+				end
+				local cards = sgs.IntList()
+				local drawlist = room:getDrawPile()
+				if drawlist:isEmpty() then return false end
+				for i=1 ,x ,1 do
+					cards:append(room:getDrawPile():at(i-1))
+				end
+				room:fillAG(cards, ask_who)
+				idd = room:askForAG(ask_who, cards, true, self:objectName())
+				room:clearAG(ask_who)
+				local ex = room:askForCard(ask_who, ".|.|.|.", "@chikuang", sgs.QVariant(), sgs.Card_MethodNone)
+				local index
+				for i = 1,x,1 do
+				   if i <= cards:length() and cards:at(i-1) == idd then index = i end
+				end
+				if ex then
+				   room:putIdAtDrawpile(ex:getEffectiveId(), index)
+				   room:obtainCard(ask_who, idd, false)
+				end
+				
+			end
+        end
+		if event == sgs.Dying then
+		    local dying = data:toDying()
+			if ask_who:getMark("@zhoumu") == 0 then
+			    room:setPlayerMark(ask_who, "@zhoumu", ask_who:getMark("@zhoumu")+2)
+			else
+			    room:setPlayerMark(ask_who, "@zhoumu", ask_who:getMark("@zhoumu")+1)
+            end
+			room:setPlayerProperty(ask_who, "hp", sgs.QVariant(2))
+		end	
+	end ,
+}
+
+Chuai = sgs.CreateTriggerSkill{
+    name = "chuai",
+	events = {sgs.TargetConfirmed},
+    can_trigger = function(self, event, room, player, data)
+        local use = data:toCardUse()
+        local target
+        local anlian
+        for _,p in sgs.qlist(room:getOtherPlayers(player)) do
+           if player:getMark("chikuang_target"..p:objectName())>0 then
+               anlian = p
+               break
+           end
+        end
+        if anlian then
+            target = anlian
+        else
+            target = player
+        end
+        if player:isAlive() and player:hasSkill(self:objectName()) and target and target ~= use.from and use.card:isBlack() and not use.card:isKindOf("SkillCard") and use.to:contains(target) and not room:getCurrent():hasFlag("chuai_used"..player:objectName()) then
+            return self:objectName()
+        end
+    end,
+    on_cost = function(self, event, room, player, data, ask_who)
+		if player:askForSkillInvoke(self,data) then
+            room:broadcastSkillInvoke(self:objectName(), player)
+            room:setPlayerFlag(room:getCurrent(), "chuai_used"..player:objectName())
+			return true
+		end
+	end,
+    on_effect = function(self, event, room, player, data, ask_who)
+        local use = data:toCardUse()
+        player:drawCards(1)
+        local u = sgs.CardUseStruct()
+        local slash = sgs.Sanguosha:cloneCard("slash")
+        u.from = player
+        u.card = slash
+        u.to:append(use.from)
+        room:useCard(u, false)
+        if player == use.from and player:isAlive() then
+            player:drawCards(1)
+        end
+    end
+}
+
 local skills = sgs.SkillList()
 if not sgs.Sanguosha:getSkill("lvjigive") then skills:append(Lvjigive) end
 if not sgs.Sanguosha:getSkill("#yuejimod") then skills:append(Yuejimod) end
@@ -2059,6 +2250,9 @@ Ellen:addSkill(Mowu)
 Ellen:addSkill(Youpian)
 Ellen:addSkill(Youpiandis)
 sgs.insertRelatedSkills(extension, "youpian", "#youpiandis")
+
+GasaiYuno:addSkill(Chikuang)
+GasaiYuno:addSkill(Chuai)
 
 sgs.LoadTranslationTable{
     ["hikarikage"] = "光影之章",
@@ -2259,7 +2453,7 @@ sgs.LoadTranslationTable{
     ["suou"] = "塑偶",
     [":suou"] = "摸牌阶段结束时，你可以选择一项:1.观看牌堆顶等同于你空置装备区数量的牌，选择其中至多两张装备牌获得之或者选择一张与你装备区牌（至少一张）花色皆不同的牌获得之。2. 将自己装备区一张牌置于其他角色装备区。",
     ["weizhen"] = "威阵",
-    [":weizhen"] = "<font color=\"green\"><b>每回合限一次，</b></font>:你可以将一名装备区牌数量不小于当前回合角色且与你势力相同的角色的一张装备区牌当杀或闪使用或打出，然后该角色摸一张牌。",
+    [":weizhen"] = "<font color=\"green\"><b>每回合限一次，</b></font>你可以将一名装备区牌数量不小于当前回合角色且与你势力相同的角色的一张装备区牌当杀或闪使用或打出，然后该角色摸一张牌。",
     ["suou_draw"] = "观看牌堆顶并获得对应牌",
     ["suou_move"] = "移动自己一张装备区的牌",
 
@@ -2309,6 +2503,37 @@ sgs.LoadTranslationTable{
     ["zhuimeng"] = "追梦",
     [":zhuimeng"] = "出牌阶段限一次，如果你的手牌为全场最少，你可以把一张手牌当做【偶像之路】使用，如果你的手牌为全场最多，你可以把一张手牌当做【闪耀演唱】使用。",
 
+    ["lord_Oumashu"] = "樱满集",
+    ["@lord_Oumashu"] = "罪恶皇冠",
+    ["#lord_Oumashu"] = "王的诞生",
+    ["designer:lord_Oumashu"] = "光临长夜",
+    ["cv:lord_Oumashu"] = "梶裕贵",
+    ["wangli"] = "王力",
+    [":wangli"] = "主角技，你拥有“虚空基因组”。",
+
+    ["GasaiYuno"] = "我妻由乃",
+    ["@GasaiYuno"] = "未来日记",
+    ["#GasaiYuno"] = "2nd",
+    ["designer:GasaiYuno"] = "FlameHaze",
+    ["cv:GasaiYuno"] = "村田知沙",
+    ["chikuang"] = "痴狂",
+    [":chikuang"] = "当你于回合外获得牌时，若你没有以法指定过目标，可以指定当前回合角色为“暗恋”。当你于回合内进入濒死状态时，若不为周目3（初始周目为1）则周目数+1并将你的体力调整至2。你根据周目数获得以下效果：1或2：“暗恋”出牌阶段开始，你观看其手牌+牌堆顶10张牌并可用一张牌置换其中之一；2或3：“暗恋”求桃阶段结束时，若其仍处于濒死状态，你获得一张“黑化”卡。",
+    ["chuai"] = "除碍",
+    [":chuai"] = "<font color=\"green\"><b>每回合限一次，</b></font>当“暗恋”成为一张黑色牌的目标时（存活玩家中无“暗恋”则改为你成为一张黑色牌的目标时），若目标不为来源，则你可以摸一张牌并视为对来源使用一张杀，然后若你为来源则你额外摸一张牌。",
+    ["%GasaiYuno"] = "“不会刺的哟，因为未来就是这样”",
+    ["~GasaiYuno"] = "呃~啊~",
+    ["chikuang"] = "痴狂",
+    [":chikuang"] = "当你获得其他角色的牌后，可指定其为“暗恋”（限1）。根据周目获得效果：\n≠3，则你于回合内进入濒死状态时，周目+1并将体力调整至2；“暗恋”出牌阶段开始，你观看其手牌+牌堆顶10张牌并可置换其中一张。\n>1，“暗恋”求桃阶段结束，若其仍处于濒死状态，则你将势力修改为“黑幕”。",
+    ["chikuang-Handcard"] = "用一张牌交换其一张手牌", 
+    ["chikuang-DrawPile"] = "用一张牌交换牌堆的牌", 
+    ["@chikuang"] = "选择一张牌用于交换", 
+    ["anlian"] = "暗恋", 
+    ["@zhoumu"] = "周目",
+    ["chikuang$"] = "image=image/animate/chikuang.png",
+    ["$chikuang1"] = "想要伤害雪辉的人，我不会原谅的。",
+    ["$chikuang2"] = "雪辉~！",
+    ["$chikuang3"] = "我的日记是雪辉日记，以10分钟为单位预知雪辉的行动。",
+    ["$chuai1"] = "雪辉由我来保护。",
 }
 
 return {extension}
