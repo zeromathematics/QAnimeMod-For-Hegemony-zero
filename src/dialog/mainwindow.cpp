@@ -143,6 +143,18 @@ public:
     }
 };
 
+void MainWindow::onMaxButtonClicked() {
+    this->showMaximized();
+    if (RoomSceneInstance && RoomSceneInstance->hasAdjustedBg())
+        RoomSceneInstance->_adjustDefaultBg();
+}
+
+void MainWindow::onNormalButtonClicked() {
+    this->showNormal();
+    if (RoomSceneInstance && RoomSceneInstance->hasAdjustedBg())
+        RoomSceneInstance->_adjustDefaultBg();
+}
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), isLeftPressDown(false),
     scene(NULL), ui(new Ui::MainWindow), server(NULL), about_window(NULL),
@@ -291,9 +303,9 @@ MainWindow::MainWindow(QWidget *parent)
     minButton->setToolTip(tr("<font color=%1>Minimize</font>").arg(Config.SkillDescriptionInToolTipColor.name()));
     connect(minButton, &QPushButton::clicked, this, &MainWindow::showMinimized);
     maxButton->setToolTip(tr("<font color=%1>Maximize</font>").arg(Config.SkillDescriptionInToolTipColor.name()));
-    connect(maxButton, &QPushButton::clicked, this, &MainWindow::showMaximized);
+    connect(maxButton, &QPushButton::clicked, this, &MainWindow::onMaxButtonClicked);
     normalButton->setToolTip(tr("<font color=%1>Restore downward</font>").arg(Config.SkillDescriptionInToolTipColor.name()));
-    connect(normalButton, &QPushButton::clicked, this, &MainWindow::showNormal);
+    connect(normalButton, &QPushButton::clicked, this, &MainWindow::onNormalButtonClicked);
     closeButton->setToolTip(tr("<font color=%1>Close</font>").arg(Config.SkillDescriptionInToolTipColor.name()));
     connect(closeButton, &QPushButton::clicked, this, &MainWindow::close);
 
@@ -339,7 +351,7 @@ void MainWindow::mousePressEvent(QMouseEvent *event)
             bool can_move = true;
             if (view && view->scene()) {
                 QPointF pos = view->mapToScene(event->pos());
-                if (scene->itemAt(pos, QTransform()))
+                if (scene->itemAt(pos, QTransform()) && scene->itemAt(pos, QTransform())->zValue() > -100000)
                     can_move = false;
             }
             if (can_move) {
@@ -420,6 +432,9 @@ void MainWindow::mouseMoveEvent(QMouseEvent *event)
     } else if (!isLeftPressDown) {
         region(globalPoint);
     }
+    if (RoomSceneInstance && RoomSceneInstance->hasAdjustedBg()){
+        RoomSceneInstance->_adjustDefaultBg();
+    }
 }
 
 void MainWindow::mouseReleaseEvent(QMouseEvent *)
@@ -436,14 +451,22 @@ void MainWindow::mouseDoubleClickEvent(QMouseEvent *event)
     bool can_change = true;
     if (view && view->scene()) {
         QPointF pos = view->mapToScene(event->pos());
-        if (scene->itemAt(pos, QTransform()))
+        if (scene->itemAt(pos, QTransform()) && scene->itemAt(pos, QTransform())->zValue() > -100000)
             can_change = false;
     }
     if (can_change) {
-        if (windowState() & Qt::WindowMaximized)
+        if (windowState() & Qt::WindowMaximized){
             showNormal();
-        else
+            if (RoomSceneInstance && RoomSceneInstance->hasAdjustedBg()){
+                RoomSceneInstance->_adjustDefaultBg();
+            }
+        }
+        else{
             showMaximized();
+            if (RoomSceneInstance && RoomSceneInstance->hasAdjustedBg()){
+                RoomSceneInstance->_adjustDefaultBg();
+            }
+        }
     }
 }
 #endif
@@ -1025,10 +1048,18 @@ void MainWindow::changeBackground()
 
 void MainWindow::on_actionFullscreen_triggered()
 {
-    if (isFullScreen())
+    if (isFullScreen()){
         showNormal();
-    else
+        if (RoomSceneInstance && RoomSceneInstance->hasAdjustedBg()){
+            RoomSceneInstance->_adjustDefaultBg();
+        }
+    }
+    else{
         showFullScreen();
+        if (RoomSceneInstance && RoomSceneInstance->hasAdjustedBg()){
+            RoomSceneInstance->_adjustDefaultBg();
+        }
+    }
 }
 
 void MainWindow::on_actionMinimize_to_system_tray_triggered()

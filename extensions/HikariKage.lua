@@ -14,13 +14,15 @@ AliceM = sgs.General(extension , "AliceM", "game", 3, false)
 Meirin = sgs.General(extension , "Meirin", "game", 4, false)
 Ellen = sgs.General(extension , "Ellen", "game", 3, false)
 
+Rudeus = sgs.General(extension , "Rudeus", "magic", 3)
 lord_Oumashu = sgs.General(extension , "lord_Oumashu$", "science", 4, true, true)
 GasaiYuno = sgs.General(extension , "GasaiYuno", "science", 3, false)
 --HoshinoAi = sgs.General(extension , "HoshinoAi", "idol", 3, false)
 --TsukimiEiko = sgs.General(extension , "TsukimiEiko", "idol", 3, false)
---ALO_Asuna = sgs.General(extension , "ALO_Asuna", "science", 3, false)
+ALO_Asuna = sgs.General(extension , "ALO_Asuna", "science", 3, false, true)
+lord_Okarin = sgs.General(extension , "lord_Okarin$", "science", 4, true, true)
 
---extension:insertConvertPairs("SE_Asuna", "ALO_Asuna")
+extension:insertConvertPairs("SE_Asuna", "ALO_Asuna")
 
 Shengli = sgs.CreateTriggerSkill{
     name = "shengli",
@@ -986,7 +988,7 @@ Qishi = sgs.CreateTriggerSkill{
 	can_trigger = function(self, event, room, player, data)
         if event == sgs.DamageInflicted then
             local damage = data:toDamage()
-            if player and player:hasSkill(self:objectName()) and damage.damage >= player:getHp() and not player:isKongcheng() and player:getMark("#qinshi") == 0 then
+            if player and player:hasSkill(self:objectName()) and --[[damage.damage >= player:getHp() and]] not player:isKongcheng() and player:getMark("#qinshi") == 0 then
                 return self:objectName()
             end
         end
@@ -2213,6 +2215,322 @@ Chuai = sgs.CreateTriggerSkill{
     end
 }
 
+Jieji = sgs.CreateTriggerSkill{
+	name = "jieji",
+	frequency = sgs.Skill_Compulsory,
+	events = {sgs.Damage, sgs.CardFinished, sgs.CardUsed},
+	on_record = function(self, event, room, player, data)
+        if event == sgs.CardUsed then
+		    local use = data:toCardUse()
+		    if player and player:isAlive() and player:hasSkill("jieji") and not use.card:isKindOf("SkillCard") and not use.to:contains(player) and use.to:length() > 0 then
+				use.card:setFlags("isuse_jieji")
+            end
+		end
+		if event == sgs.Damage then 
+			local damage = data:toDamage()
+			if player and player:isAlive() and player:hasSkill("jieji") and damage.card and not damage.card:isKindOf("SkillCard") then
+				damage.card:setFlags("damage_jieji")
+			end			
+		end
+	end, 
+	can_trigger = function(self, event, room, player, data)
+       if event == sgs.CardFinished then
+			local use = data:toCardUse()
+            if player and player:isAlive() and player:hasSkill("jieji") and not use.card:isKindOf("SkillCard") and not use.to:contains(player) and use.to:length() > 0 and use.card:hasFlag("isuse_jieji") then
+				return self:objectName()
+			end
+        end
+        return ""
+	end,
+	on_cost = function(self, event, room, player, data)
+		if player:hasShownSkill("jieji") or player:askForSkillInvoke(self, data) then
+			room:broadcastSkillInvoke(self:objectName())
+			return true
+		end
+		return false
+	end,
+	on_effect = function(self, event, room, player, data)
+	    if event == sgs.CardFinished then
+		    local use = data:toCardUse()
+			if use.card:hasFlag("damage_jieji") then
+			    room:askForDiscard(player, "jieji", 1, 1, false, true)
+			elseif not use.card:hasFlag("damage_jieji") then
+				local list = room:getDrawPile()
+				if list:length()>0 then
+					local lists = sgs.IntList()
+					for _,g in sgs.qlist(room:getDrawPile()) do  
+					    if use.card:getSuit() ~= sgs.Sanguosha:getCard(g):getSuit() then  
+						   lists:append(g)  
+						end	
+					end
+					if lists:length() > 0 then	
+					   local ids = lists:at(math.random(0, lists:length()-1))  
+					   local card = sgs.Sanguosha:getCard(ids)  
+					   room:obtainCard(player, card)	
+					end
+				end
+			end
+		end	
+	end,
+}
+
+Wuyongvs = sgs.CreateZeroCardViewAsSkill{
+    name = "wuyong",
+    enabled_at_play = function(self, player)
+        return false
+    end,
+    enabled_at_response = function(self, player, pattern)
+        return pattern == "@@wuyong"
+    end,
+    view_as = function(self)
+        local slashType = sgs.Self:property("wuyongslashtype"):toString()
+        local slash = sgs.Sanguosha:cloneCard(slashType, sgs.Card_NoSuit, 0)
+        if slash then
+            slash:setSkillName("wuyong")
+        end
+        return slash
+    end
+}
+
+Wuyong = sgs.CreateTriggerSkill{
+    name = "wuyong",
+    events = {sgs.CardFinished},
+    view_as_skill = Wuyongvs,
+    can_preshow = true,
+    can_trigger = function(self, event, room, player, data)
+        if not player or not player:isAlive() or not player:hasSkill(self:objectName()) or player:hasFlag("wuyong_used") then return "" end
+        local use = data:toCardUse()
+        local card = use.card
+        if card and not card:isKindOf("EquipCard") and not card:isKindOf("SkillCard") and player:getPhase() == sgs.Player_Play then
+            return self:objectName()
+        end
+        return ""
+    end,
+    on_cost = function(self, event, room, player, data, ask_who)
+        if player:askForSkillInvoke(self, data) then
+            room:setPlayerFlag(player, "wuyong_used")
+            room:broadcastSkillInvoke("wuyong", player)
+            return true
+        end
+        return false
+    end,
+    on_effect = function(self, event, room, player, data, ask_who)
+        local choice = room:askForChoice(player, "wuyong", "fire_slash+thunder_slash+ice_slash")
+        room:setPlayerProperty(player, "wuyongslashtype", sgs.QVariant(choice))
+        room:askForUseCard(player, "@@wuyong", "@wuyong", -1, sgs.Card_MethodUse, false)
+        player:setTag("WuyongSlashType", sgs.QVariant())
+    end,
+}
+
+Fushou = sgs.CreateTriggerSkill{
+    name = "fushou",
+    events = {sgs.Damage, sgs.EventPhaseStart},
+    can_preshow = true,
+    on_record = function(self, event, room, player, data)
+        if event == sgs.Damage then
+            local damage = data:toDamage()
+            if player and player:hasSkill(self:objectName()) and damage.nature ~= sgs.DamageStruct_Normal then
+                local type_table = {"fire", "thunder", "ice"}
+                local key = damage.nature == sgs.DamageStruct_Fire and "fire"
+                        or damage.nature == sgs.DamageStruct_Thunder and "thunder"
+                        or damage.nature == sgs.DamageStruct_Ice and "ice"
+                if key then
+                    local types = player:getTag("FushouDamageTypes"):toString():split("+")
+                    if not table.contains(types, key) then
+                        table.insert(types, key)
+                        player:setTag("FushouDamageTypes", sgs.QVariant(table.concat(types, "+")))
+                    end
+                end
+            end
+        end
+    end,
+    can_trigger = function(self, event, room, player, data)
+        if event == sgs.EventPhaseStart and player and player:isAlive() and player:getPhase() == sgs.Player_Start and player:hasSkill(self:objectName()) then
+            local type_str = player:getTag("FushouDamageTypes"):toString()
+            local types = type_str:split("+")
+            local count = #types - 1
+            local effects = 0
+            for i = 1, 3, 1 do
+                if player:getMark("fushou_effect" .. i)>0 then
+                    effects = effects + 1
+                end
+            end
+            if count > effects then
+                return self:objectName()
+            end
+        end
+        return ""
+    end,
+    on_cost = function(self, event, room, player, data, ask_who)
+        if player:askForSkillInvoke(self, data) then
+            room:broadcastSkillInvoke("fushou", player)
+            return true
+        end
+        return false
+    end,
+    on_effect = function(self, event, room, player, data, ask_who)
+        local choices = {}
+        if player:getMark("fushou_effect1") == 0 then table.insert(choices, "fushou_effect1") end
+        if player:getMark("fushou_effect2") == 0 then table.insert(choices, "fushou_effect2") end
+        if player:getMark("fushou_effect3") == 0 then table.insert(choices, "fushou_effect3") end
+
+        if #choices == 0 then return end
+
+        local choice = room:askForChoice(player, "fushou", table.concat(choices, "+"))
+        if choice == "fushou_effect1" then
+            room:setPlayerMark(player, "fushou_effect1", 1)
+            room:notifySkillInvoked(player, "fushou")
+        elseif choice == "fushou_effect2" then
+            room:setPlayerMark(player, "fushou_effect2", 1)
+            room:notifySkillInvoked(player, "fushou")
+        elseif choice == "fushou_effect3" then
+            room:setPlayerMark(player, "fushou_effect3", 1)
+            room:notifySkillInvoked(player, "fushou")
+        end
+    end,
+}
+
+FushouDraw = sgs.CreateTriggerSkill{
+    name = "#fushou_draw",
+    events = {sgs.DrawNCards},
+    frequency = sgs.Skill_Compulsory,
+    priority = 3,
+    can_trigger = function(self, event, room, player, data)
+        if player and player:getMark("fushou_effect1") > 0 then
+            return self:objectName()
+        end
+        return ""
+    end,
+    on_effect = function(self, event, room, player, data)
+        local count = data:toInt() + 1
+        data:setValue(count)
+        room:sendCompulsoryTriggerLog(player, "fushou", true)
+    end,
+}
+
+FushouSwap = sgs.CreateTriggerSkill{
+    name = "#fushou_swap",
+    events = {sgs.EventPhaseStart},
+    can_trigger = function(self, event, room, player, data)
+        if player:getPhase() == sgs.Player_Play and player:getMark("fushou_effect2")>0 then
+            return self:objectName()
+        end
+        return ""
+    end,
+    on_cost = function(self, event, room, player, data, ask_who)
+        return player:askForSkillInvoke("fushou_swap")
+    end,
+    on_effect = function(self, event, room, player, data, ask_who)
+        local to = room:askForPlayerChosen(player, room:getOtherPlayers(player), "fushou", "请选择一名角色交换牌")
+        local card1 = room:askForExchange(player, "fushou", 1, 1, "@fushou-exchange", "", ".|.|.")
+        local card2 = room:askForExchange(to, "fushou", 1, 1, "@fushou-exchange2", "", ".|.|.")
+        if not card1:isEmpty() and not card2:isEmpty() then
+            room:obtainCard(player, card2:first())
+            room:obtainCard(to, card1:first())
+        end
+    end,
+}
+
+FushouFormation = sgs.CreateTriggerSkill{
+    name = "#fushou_formation",
+    events = {sgs.DamageForseen},
+    global = true,
+    can_trigger = function(self, event, room, player, data)
+        local damage = data:toDamage()
+        if not damage.card or damage.card:objectName() == "slash" or not damage.card:isKindOf("Slash") then return "" end
+        local to = damage.to
+        local formation = to:getFormation()
+        if to:isAlive() and room:alivePlayerCount() >= 4 and formation:length()>1 then
+            for _, p in sgs.qlist(room:getAlivePlayers()) do
+                if p:getMark("fushou_effect3") > 0 and formation:contains(p) then
+                    return self:objectName()
+                end
+            end
+        end
+        return ""
+    end,
+    on_effect = function(self, event, room, player, data, ask_who)
+        local damage = data:toDamage()
+        room:doBattleArrayAnimate(damage.to)
+        damage.damage = math.max(0, damage.damage - 1)
+        data:setValue(damage)
+    end,
+}
+
+Shanguang = sgs.CreateTriggerSkill{
+	name = "shanguang",
+	events = {sgs.Damage, sgs.CardFinished, sgs.CardUsed},
+	on_record = function(self, event, room, player, data)
+		if event == sgs.Damage then 
+			local damage = data:toDamage()
+			if player and player:isAlive() and player:hasSkill(self:objectName()) and damage.card and not damage.card:hasFlag("shanguang_card") then
+				damage.card:setFlags("damage_shanguang")
+			end			
+		end
+	end, 
+	can_trigger = function(self, event, room, player, data)
+       if event == sgs.CardFinished then
+			local use = data:toCardUse()
+            if player and player:isAlive() and player:hasSkill(self:objectName()) and not use.card:isKindOf("SkillCard") and not use.card:isKindOf("EquipCard") and (not room:getCurrent():hasFlag("shanguang_used"..player:objectName()) or (use.card:hasFlag("shanguang_card") and not use.card:hasFlag("damage_shanguang"))) then
+				return self:objectName()
+			end
+        end
+        return ""
+	end,
+	on_cost = function(self, event, room, player, data)
+		if player:askForSkillInvoke(self, data) then
+            room:setPlayerFlag(room:getCurrent(), "shanguang_used"..player:objectName())
+			room:broadcastSkillInvoke(self:objectName())
+			return true
+		end
+		return false
+	end,
+	on_effect = function(self, event, room, player, data)
+	    if event == sgs.CardFinished then
+		    local use = data:toCardUse()
+            local card = room:askForUseCard(player, use.card:objectName().."|"..use.card:getSuitString().."|.|.", "@shanguang", -1, sgs.Card_MethodUse, false)
+            if card then
+                card:setFlags("shanguang_card")
+            else
+                player:drawCards(1)
+            end
+		end	
+	end,
+}
+
+ShuiyaoCard = sgs.CreateSkillCard{
+	name = "ShuiyaoCard",
+    target_fixed = true,
+	on_use = function(self, room, source, targets)
+		local ids = room:getNCards(self:getSubcards():length())
+        local dummy = sgs.DummyCard()
+        for var = 1, ids:length(), 1 do   
+            dummy:addSubcard(ids:at(var-1))                
+        end  
+        room:obtainCard(source, dummy)
+	end,
+}
+
+Shuiyao = sgs.CreateViewAsSkill{
+	name="shuiyao",
+	view_filter=function(self,selected,to_select)
+		return #selected == 0  or to_select:getSuit() == selected[1]:getSuit()
+	end,
+	view_as = function(self, cards)
+		if #cards == 0  then return end
+		local new_card = ShuiyaoCard:clone()
+		for var = 1, #cards, 1 do   
+            new_card:addSubcard(cards[var])                
+        end      
+		new_card:setShowSkill(self:objectName())	
+		new_card:setSkillName(self:objectName())		
+		return new_card		
+	end,	
+	enabled_at_play=function(self,player,pattern)
+		return not player:hasUsed("ViewAsSkill_shuiyaoCard")
+	end,
+}
+
 local skills = sgs.SkillList()
 if not sgs.Sanguosha:getSkill("lvjigive") then skills:append(Lvjigive) end
 if not sgs.Sanguosha:getSkill("#yuejimod") then skills:append(Yuejimod) end
@@ -2251,8 +2569,17 @@ Ellen:addSkill(Youpian)
 Ellen:addSkill(Youpiandis)
 sgs.insertRelatedSkills(extension, "youpian", "#youpiandis")
 
+Rudeus:addSkill(Wuyong)
+Rudeus:addSkill(Fushou)
+Rudeus:addSkill(FushouDraw)
+Rudeus:addSkill(FushouSwap)
+Rudeus:addSkill(FushouFormation)
+sgs.insertRelatedSkills(extension, "fushou", "#fushou_draw", "#fushou_swap", "#fushou_formation")
 GasaiYuno:addSkill(Chikuang)
 GasaiYuno:addSkill(Chuai)
+
+ALO_Asuna:addSkill(Shanguang)
+ALO_Asuna:addSkill(Shuiyao)
 
 sgs.LoadTranslationTable{
     ["hikarikage"] = "光影之章",
@@ -2390,7 +2717,7 @@ sgs.LoadTranslationTable{
     ["yueji"] = "跃击",
     [":yueji"] = "出牌阶段限一次，你可以{失去一点体力/弃置一张非装备牌}，视为对一名距离2以内的其他角色使用一张不计次数的{虚拟/对应实体牌为弃置牌}的【杀】。然后若你此次失去体力，此杀造成伤害+1；若你弃置红色牌，目标需要额外使用一张【闪】响应此杀；若你弃置黑色牌，此回合你使用【杀】的额定次数+1。",
     ["qishi"] = "起始",
-    [":qishi"] = "当你受到濒死伤害时，若你没有“侵蚀”标记，你可以展示手牌中所有的红色牌。每展示一张红色牌，此伤害-1。然后若此伤害被防止，你获得一个“侵蚀”标记。<font color=\"#C0C0C0\"><b>永久技，</b></font>准备阶段开始时，若你有“侵蚀”标记，你失去“侵蚀”标记并失去一点体力。",
+    [":qishi"] = "当你受到伤害时，若你没有“侵蚀”标记，你可以展示手牌中所有的红色牌。每展示一张红色牌，此伤害-1。然后若此伤害被防止，你获得一个“侵蚀”标记。<font color=\"#C0C0C0\"><b>永久技，</b></font>准备阶段开始时，若你有“侵蚀”标记，你失去“侵蚀”标记并失去一点体力。",
     ["qinshi"] = "侵蚀",
     ["$yueji1"] = "哈~啊~！！砰！",
     ["$yueji2"] = "没能踢飞",
@@ -2503,6 +2830,21 @@ sgs.LoadTranslationTable{
     ["zhuimeng"] = "追梦",
     [":zhuimeng"] = "出牌阶段限一次，如果你的手牌为全场最少，你可以把一张手牌当做【偶像之路】使用，如果你的手牌为全场最多，你可以把一张手牌当做【闪耀演唱】使用。",
 
+    ["Rudeus"] = "鲁迪乌斯",
+    ["@Rudeus"] = "无职转生～到了异世界就拿出真本事～",
+    ["#Rudeus"] = "龙神的右腕",
+    ["designer:Rudeus"] = "奇洛，光临长夜",
+    ["cv:Rudeus"] = "内山夕实",
+    ["wuyong"] = "无咏「无咏唱魔法」",
+    [":wuyong"] = "出牌阶段限一次，你使用一张非装备牌后，可以指定一种属性【杀】，视为使用一张不计入次数的此牌。",
+    ["fushou"] = "赴守",
+    [":fushou"] = "准备阶段开始时，若你累计造成X种属性伤害，且你获得的效果数小于X，你可以获得一个没有获得过的效果：①摸牌阶段摸牌数+1；②出牌阶段开始时，你可以与一名角色交换一张牌；③阵法技，与你处于同一队列的角色受到属性【杀】造成的伤害-1（允许且至少为0）。",
+    ["qiming"] = "七铭",
+    [":qiming"] = "觉醒技，准备阶段开始时，若你累计造成7次属性伤害，则你增加1点体力上限，回复1点体力，然后你使用属性【杀】无距离次数限制。",
+    ["fushou_effect1"] = "摸牌阶段摸牌数+1",
+    ["fushou_effect2"] = "出牌阶段开始时，你可以与一名角色交换一张牌",
+    ["fushou_effect3"] = "阵法技，与你处于同一队列的角色受到属性【杀】造成的伤害-1（允许且至少为0）",
+
     ["lord_Oumashu"] = "樱满集",
     ["@lord_Oumashu"] = "罪恶皇冠",
     ["#lord_Oumashu"] = "王的诞生",
@@ -2510,6 +2852,8 @@ sgs.LoadTranslationTable{
     ["cv:lord_Oumashu"] = "梶裕贵",
     ["wangli"] = "王力",
     [":wangli"] = "主角技，你拥有“虚空基因组”。",
+    ["voidgenome"] = "虚空基因组",
+    [":voidgenome"] = "",
 
     ["GasaiYuno"] = "我妻由乃",
     ["@GasaiYuno"] = "未来日记",
@@ -2534,6 +2878,19 @@ sgs.LoadTranslationTable{
     ["$chikuang2"] = "雪辉~！",
     ["$chikuang3"] = "我的日记是雪辉日记，以10分钟为单位预知雪辉的行动。",
     ["$chuai1"] = "雪辉由我来保护。",
+
+    ["ALO_Asuna"] = "ALO亚丝娜",
+    ["&ALO_Asuna"] = "亚丝娜",
+    ["@ALO_Asuna"] = "刀剑神域",
+    ["#ALO_Asuna"] = "狂暴补师",
+    ["~ALO_Asuna"] = "对不起呐...再见了...",
+    ["designer:ALO_Asuna"] = "FlameHaze",
+    ["cv:ALO_Asuna"] = "戶松遙",
+    ["shanguang"] = "闪光",
+    [":shanguang"] = "每回合限一次，当你使用一张非装备牌结算后，可以无视距离以及次数限制使用一张与此牌同花色/同名的牌，此牌结算后若未造成伤害，你可以摸一张牌或重复此流程。",
+    ["shuiyao"] = "水妖",
+    [":shuiyao"] = "出牌阶段限一次，你可以弃置x张同花色牌，展示牌堆顶等量牌并获得之，若展示牌之一与弃置牌花色相同，则你可以令一名角色回复1点体力。",
+    
 }
 
 return {extension}

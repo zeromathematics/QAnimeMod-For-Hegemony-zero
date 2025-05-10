@@ -161,6 +161,9 @@ private slots:
     void onVersionInfomationGotten();
     void onChangeLogGotten();
 
+    void onMaxButtonClicked();
+    void onNormalButtonClicked();
+
 signals:
     void about_to_close();
 };

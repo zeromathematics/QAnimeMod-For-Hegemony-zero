@@ -6792,8 +6792,8 @@ VshoujiCard = sgs.CreateSkillCard{
 					local cardB = sgs.Sanguosha:getCard(cardId)
 					if cardB then
 						room:obtainCard(targetB, cardB)
-						if cardB:getSuit() == cardA:getSuit() or cardB:getNumber() == cardA:getNumber() then
-							--can use cardB
+						if cardB:getSuit() == cardA:getSuit() or cardB:getNumber() == cardA:getNumber() and cardB:isAvailable(targetB) then
+							room:askForUseCard(targetB, cardId, "@vshouji2", -1, sgs.Card_MethodUse, false)
 						end
 					end
 				end
@@ -9526,6 +9526,7 @@ sgs.LoadTranslationTable{
 	["~vshouji"]="选择牌交给目标",
 	["@vshouji"]="可以交给 %src 一张牌",
 	["@vshouji1"]="手记：可以选择一名目标",
+	["@vshouji2"]="手记：可以使用此牌",
 	["gongqingDraw"] = "手牌补至体力上限",
 	["gongqingRecover"] = "回复1点体力",
 	["%Violet"] = "“你将不再是道具，而是成为人如其名的人”",

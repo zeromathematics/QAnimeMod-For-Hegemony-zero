@@ -1019,6 +1019,7 @@ zhanmeiCard = sgs.CreateSkillCard{
 		room:throwCard(self, source)
 		if source:isAlive() then
 			local count = self:subcardsLength()
+            source:drawCards(count)
 			local list = sgs.SPlayerList()
 			for _,p in sgs.qlist(room:getOtherPlayers(source)) do
 				if p:getEquips():length() >= source:getEquips():length() then
@@ -5564,8 +5565,8 @@ huaqianDistance = sgs.CreateTargetModSkill{
 	end
 }
 
-qiuyu = sgs.CreateTriggerSkill{
-	name = "qiuyu",
+wenlei = sgs.CreateTriggerSkill{
+	name = "wenlei",
 	events = {sgs.Damaged},	
 	frequency = sgs.Skill_Compulsory,
 	can_trigger = function(self, event, room, player, data)
@@ -5578,7 +5579,7 @@ qiuyu = sgs.CreateTriggerSkill{
 	on_cost = function(self, event, room, player, data)
 		if player:hasShownSkill(self:objectName()) or player:askForSkillInvoke(self, data) then 
 			room:broadcastSkillInvoke(self:objectName(), player)
-		    room:doLightbox("KozueQiuyu$", 999)
+		    room:doLightbox("KozueWenlei$", 999)
 			return true
 		end
 		return false
@@ -5599,7 +5600,7 @@ qiuyu = sgs.CreateTriggerSkill{
 					end
 				end
 				if recoverlist:length() > 0 then
-					local target =  room:askForPlayerChosen(player, recoverlist, self:objectName(), "&qiuyu-recover", true, true)
+					local target =  room:askForPlayerChosen(player, recoverlist, self:objectName(), "&wenlei-recover", true, true)
 					if target then
 						local recover = sgs.RecoverStruct()
 						recover.who = player
@@ -6280,7 +6281,7 @@ sgs.insertRelatedSkills(extension, "xiexing", "#xiexingDistance", "#xiexingVS")
 Kozue:addSkill(huaqian)
 Kozue:addSkill(huaqianDistance)
 sgs.insertRelatedSkills(extension, "huaqian", "#huaqianDistance")
-Kozue:addSkill(qiuyu)
+Kozue:addSkill(wenlei)
 Harewataru:addSkill(jianxing)
 Harewataru:addCompanion("Prism")
 NiceNature:addSkill(yinni)
@@ -6499,7 +6500,7 @@ sgs.LoadTranslationTable{
   ["%Karin"] = "“今夜的目标就决定是·你·了！”",
   
   ["zhanmei"] = "展魅",
-  [":zhanmei"] = "①出牌阶段开始时，你可以弃置任意张牌。然后你选择最多等量名装备区内牌数≥你的其他角色，这些角色选择是否交给你一张基本牌。若你本次获得的牌数＜你已损失的体力值，则你回复1点体力。②当其他角色因你的伤害而进入濒死状态时，你可以变更副将。",
+  [":zhanmei"] = "①出牌阶段开始时，你可以弃置任意张牌，摸等量的牌。然后你选择最多等量名装备区内牌数≥你的其他角色，这些角色选择是否交给你一张基本牌。若你本次获得的牌数＜你已损失的体力值，则你回复1点体力。②当其他角色因你的伤害而进入濒死状态时，你可以变更副将。",
   ["@zhanmei"] = "你可以发动“展魅”",
   ["~zhanmei"] = "选择任意张牌→点击“确定”",
   ["&zhanmei"] = "请选择最多 %src 名角色作为“展魅”的目标",
@@ -7178,12 +7179,12 @@ sgs.LoadTranslationTable{
   ["#huaqianA"] = "“%arg”效果触发，%from 本回合使用牌无距离限制",
   ["$huaqian1"] = "好，那就让我来为你展示一个未知的世界~",
   ["$huaqian2"] = "你想成为怎样的星星呢？",
-  ["qiuyu"] = "秋语",
-  ["KozueQiuyu$"] = "image=image/animate/KozueQiuyu.png",
-  [":qiuyu"] = "锁定技，当你受到伤害后，你摸一张牌并令伤害来源展示你的一张手牌，若为♥，则弃置之，然后你可以令一名角色回复1点体力，否则你重铸此牌。",
-  ["&qiuyu-recover"] = "你可以选择一名角色回复1点体力",
-  ["$qiuyu1"] = "明年再去吧，呐？明天开始的练习，要努力哦？",
-  ["$qiuyu2"] = "不仅是我，沙知前辈也是，再之前的前辈也是，大家每个人……都是反复如此。",
+  ["wenlei"] = "揾泪",
+  ["KozueWenlei$"] = "image=image/animate/KozueQiuyu.png",
+  [":wenlei"] = "锁定技，当你受到伤害后，你摸一张牌并令伤害来源展示你的一张手牌，若为♥，则弃置之，然后你可以令一名角色回复1点体力，否则你重铸此牌。",
+  ["&wenlei-recover"] = "你可以选择一名角色回复1点体力",
+  ["$wenlei1"] = "明年再去吧，呐？明天开始的练习，要努力哦？",
+  ["$wenlei2"] = "不仅是我，沙知前辈也是，再之前的前辈也是，大家每个人……都是反复如此。",
   
   ["Harewataru"] = "索拉·哈雷瓦塔尔",
   ["@Harewataru"] = "Hanging sky! 光之美少女",

@@ -6550,6 +6550,7 @@ dofile "lua/ai/standard-game-ai.lua"
 dofile "lua/ai/standard-real-ai.lua"
 dofile "lua/ai/basara-ai.lua"
 dofile "lua/ai/jiange-defense-ai.lua"
+--dofile "lua/ai/animemod-ai.lua"
 
 local loaded = "standard|standard_cards|maneuvering"
 

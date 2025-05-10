@@ -4127,6 +4127,30 @@ void RoomScene::adjustDefaultBg()
     }
 }
 
+bool RoomScene::hasAdjustedBg()
+{
+    QString bgmusic_path = Config.value("BackgroundMusic", "audio/system/background.ogg").toString();
+
+    int x = 0;
+    for (int i = 1; i < 1000; i++){
+        if (bgmusic_path.contains(QString("audio/system/anime%1.ogg").arg(QString::number(i)))){
+            x = i;
+            break;
+        }
+    }
+    if (x > 0 && QFile::exists(QString("image/backdrop/anime%1.jpg").arg(QString::number(x)))){
+        QString key = QString("tableBganime-%1");
+        QPixmap pixmap = G_ROOM_SKIN.getPixmap(key, QString::number(x));
+        if (pixmap.width() == 1 || pixmap.height() == 1) {
+            // we treat this condition as error and do not use it
+        }
+        else if(m_tableBgPixmapOrig.toImage() == pixmap.toImage()){
+            return true;
+        }
+    }
+    return false;
+}
+
 void RoomScene::revivePlayer(const QString &who)
 {
     if (who == Self->objectName()) {

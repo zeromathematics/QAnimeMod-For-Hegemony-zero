@@ -2681,13 +2681,23 @@ void ServerPlayer::changeToLord()
     real_generals.prepend(name);
     room->setTag(objectName(), real_generals);
 
-    room->setPlayerMark(this, "CompanionEffect", 1);
+    if (hasShownAllGenerals()){
+        room->setPlayerMark(this, "@companion", qMax(getMark("@companion"),1));
+    }
+    else{
+        room->setPlayerMark(this, "CompanionEffect", 1);
+    }
 
     const General *lord = Sanguosha->getGeneral(name);
     const General *deputy = Sanguosha->getGeneral(real_generals.last());
     Q_ASSERT(head != NULL && lord != NULL && deputy != NULL);
     int doubleMaxHp = lord->getMaxHpHead() + deputy->getMaxHpDeputy();
-    room->setPlayerMark(this, "HalfMaxHpLeft", doubleMaxHp % 2);
+    if (hasShownAllGenerals()){
+        room->setPlayerMark(this, "@halfmaxhp", getMark("@halfmaxhp")+doubleMaxHp % 2);
+    }
+    else{
+        room->setPlayerMark(this, "HalfMaxHpLeft", doubleMaxHp % 2);
+    }
 
     int x = getMaxHp();
     int y = x + doubleMaxHp / 2 - (head->getMaxHpHead() + deputy->getMaxHpDeputy()) / 2;

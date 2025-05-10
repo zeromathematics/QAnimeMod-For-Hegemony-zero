@@ -657,7 +657,7 @@ sgs.ai_skill_choice["GameRule:TurnStart"] = function(self, choices, data)
 		if self.player:hasSkill("yishi") and not self.player:hasShownSkill("yishi") then
 			local list = sgs.SPlayerList()
             for _,p in sgs.qlist(self.room:getOtherPlayers(self.player)) do
-                if p:isMale() and p ~= self.player and player:willBeFriendWith(p) then list:append(p) end
+                if p:isMale() and p ~= self.player and self.player:willBeFriendWith(p) then list:append(p) end
             end
             if list:length() > 0 then
 				if self.player:inHeadSkills("yishi") and canShowHead then

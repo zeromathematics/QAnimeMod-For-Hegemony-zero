@@ -140,6 +140,10 @@ public:
                         check = false;
                         break;
                     }
+                    if (p2->getGeneral()->isLord() && player->getKingdom() == p2->getKingdom()){
+                        check = false;
+                        break;
+                    }
                 }
                 const General *lord_general = Sanguosha->getGeneral(lord);
                 if (check && lord_general && !Sanguosha->getBanPackages().contains(lord_general->getPackage()))
@@ -963,7 +967,23 @@ bool GameRule::effect(TriggerEvent triggerEvent, Room *room, ServerPlayer *playe
         }
 
         if (player->getGeneral()->isLord() && player == data.value<DeathStruct>().who) {
+            ServerPlayer *newlord;
+            foreach (ServerPlayer *p, room->getOtherPlayers(player)) {
+                if (p->getKingdom() == player->getKingdom()) {
+                    QString lord = "lord_" + p->getActualGeneral1()->objectName();
+                    const General *lord_general = Sanguosha->getGeneral(lord);
+                    if (lord_general && room->askForSkillInvoke(p, "userdefine:changetolord")){
+                        newlord = p;
+                        p->changeToLord();
+                        p->showGeneral();
+                        break;
+                    }
+                }
+            }
+
             foreach (ServerPlayer *p, room->getOtherPlayers(player, true)) {
+                if (newlord)
+                    break;
                 if (p->getKingdom() == player->getKingdom()) {
                     if (p->hasShownOneGeneral()) {
                         room->setPlayerProperty(p, "role", "careerist");

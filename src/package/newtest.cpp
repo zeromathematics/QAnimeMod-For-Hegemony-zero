@@ -6013,17 +6013,17 @@ public:
         else if (choice == "mengfeng_hide"){
             QList<ServerPlayer *> list;
             foreach(auto p, room->getAlivePlayers()){
-                if (p->hasShownOneGeneral() && !p->isFriendWith(player) && (!(p->getActualGeneral1()->objectName()!="sujiang" || p->getActualGeneral1()->objectName()!="sujiangf") || !(p->getActualGeneral2()->objectName()!="sujiang" || p->getActualGeneral2()->objectName()!="sujiangf")) )
+                if (p->hasShownOneGeneral() && !p->isFriendWith(player) && ((p->hasShownGeneral1() && p->getActualGeneral1()->objectName()!="sujiang" && p->getActualGeneral1()->objectName()!="sujiangf") || (p->hasShownAllGenerals() && p->getActualGeneral2()->objectName()!="sujiang" && p->getActualGeneral2()->objectName()!="sujiangf")) )
                     list << p;
             }
             if (list.length()>0){
                 ServerPlayer *tar = room->askForPlayerChosen(player, list, objectName()+"hide", "@mengfeng", true);
                 if (!tar) return false;
                 QStringList choices;
-                if (tar->hasShownGeneral1() && !(tar->getActualGeneral1()->objectName()!="sujiang" || tar->getActualGeneral1()->objectName()!="sujiangf") ){
+                if (tar->hasShownGeneral1() && (tar->getActualGeneral1()->objectName()!="sujiang" && tar->getActualGeneral1()->objectName()!="sujiangf") ){
                     choices <<tar->getActualGeneral1Name();
                 }
-                if (tar->hasShownGeneral2() && !(tar->getActualGeneral2()->objectName()!="sujiang" || tar->getActualGeneral2()->objectName()!="sujiangf") ){
+                if (tar->hasShownGeneral2() && (tar->getActualGeneral2()->objectName()!="sujiang" && tar->getActualGeneral2()->objectName()!="sujiangf") ){
                     choices << tar->getActualGeneral2Name();
                 }
                 QString general="";
@@ -8283,8 +8283,8 @@ public:
     {
         LaoyueCard *laoyue_card = new LaoyueCard;
         QString pattern = Sanguosha->currentRoomState()->getCurrentCardUsePattern();
-        if (pattern == "peach+analeptic" && Self->getMark("Global_PreventPeach") > 0)
-            pattern = "analeptic";
+        if (pattern.contains("peach+analeptic") && Self->getMark("Global_PreventPeach") > 0)
+            pattern = "analeptic+guangyucard";
         laoyue_card->setUserString(pattern);
         laoyue_card->setSkillName("laoyue");
         laoyue_card->setShowSkill("laoyue");

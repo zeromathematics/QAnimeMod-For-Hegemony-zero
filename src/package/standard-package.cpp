@@ -995,6 +995,7 @@ StandardPackage::StandardPackage()
     patterns["nullification"] = new ExpPattern("Nullification");
     patterns["peach+analeptic+guangyucard"] = new ExpPattern("Peach,Analeptic,GuangyuCard");
     patterns["peach+guangyucard"] = new ExpPattern("Peach,GuangyuCard");
+    patterns["analeptic+guangyucard"] = new ExpPattern("Analeptic,GuangyuCard");
     patterns["nullification+igiari"] = new ExpPattern("Nullification,Igiari");
     patterns["igiari"] = new ExpPattern("Igiari");
     patterns["himitsu"] = new ExpPattern("HimitsuKoudou");
