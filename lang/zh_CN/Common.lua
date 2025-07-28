@@ -297,4 +297,15 @@ CommonTranslationTable = {
 	["rule3-extras"] = "其他规则",
 }
 
+local skills = {}
+for _,name in ipairs(sgs.Sanguosha:getLimitedGeneralNames()) do
+    local general = sgs.Sanguosha:getGeneral(name)
+    for _,s in sgs.qlist(general:getVisibleSkillList()) do
+        table.insert(skills,s:objectName())
+    end
+end
+for _, skill in ipairs(skills) do
+    CommonTranslationTable["docommand_" .. skill] = "指令-"..sgs.Sanguosha:translate(skill)
+end
+
 return CommonTranslationTable

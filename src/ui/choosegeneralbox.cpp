@@ -346,7 +346,7 @@ void ChooseGeneralBox::chooseGeneral(const QStringList &_generals, bool view_onl
         general_item->setFlag(QGraphicsItem::ItemIsFocusable);
         general_item->setZValue(z--);
 
-        if (view_only || single_result) {
+        if (view_only /*|| single_result*/) {
             general_item->setFlag(QGraphicsItem::ItemIsMovable, false);
         } else {
             general_item->setAutoBack(true);
@@ -355,6 +355,7 @@ void ChooseGeneralBox::chooseGeneral(const QStringList &_generals, bool view_onl
                 Button *button = new Button(Sanguosha->translate("convert_general"), 0.45);
                 button->setPos((93 - button->boundingRect().width()) / 2, 130 - button->boundingRect().height());
                 button->setParentItem(general_item);
+                button->setData(1, QVariant::fromValue(single_result));//test
                 button->setObjectName(general);
                 connect(button, &Button::clicked, this, &ChooseGeneralBox::_onConvertButtonClicked);
             }
@@ -717,6 +718,7 @@ void ChooseGeneralBox::_onConvertButtonClicked()
     }
     QList<CardItem *> generals;
     GeneralCardItem *origin_item = new GeneralCardItem(general, 0);
+    origin_item->setData(1,QVariant::fromValue(button->data(1).toBool()));//test
     origin_item->setParentItem(convertContainer);
     origin_item->setFlag(ItemIsMovable, false);
     origin_item->setObjectName(general);
@@ -726,6 +728,7 @@ void ChooseGeneralBox::_onConvertButtonClicked()
 
     foreach (QString name, Sanguosha->getConvertGenerals(general)) {
         GeneralCardItem *item = new GeneralCardItem(name, 0);
+        item->setData(1,QVariant::fromValue(button->data(1).toBool()));//test
         item->setParentItem(convertContainer);
         item->setFlag(ItemIsMovable, false);
         item->setObjectName(name);
@@ -753,6 +756,10 @@ void ChooseGeneralBox::_onConvertClicked()
             item->changeGeneral(source_item->objectName());
             break;
         }
+    }
+    if (source_item->data(1).toBool()){ //test
+        convertContainer->clear();
+        return;
     }
     adjustItems();
 }

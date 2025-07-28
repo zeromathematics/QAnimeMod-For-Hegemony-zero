@@ -6013,7 +6013,7 @@ public:
         else if (choice == "mengfeng_hide"){
             QList<ServerPlayer *> list;
             foreach(auto p, room->getAlivePlayers()){
-                if (p->hasShownOneGeneral() && !p->isFriendWith(player) && ((p->hasShownGeneral1() && p->getActualGeneral1()->objectName()!="sujiang" && p->getActualGeneral1()->objectName()!="sujiangf") || (p->hasShownAllGenerals() && p->getActualGeneral2()->objectName()!="sujiang" && p->getActualGeneral2()->objectName()!="sujiangf")) )
+                if (p->hasShownOneGeneral() && !p->isFriendWith(player) && ((p->hasShownGeneral1() && p->getActualGeneral1()->objectName()!="sujiang" && p->getActualGeneral1()->objectName()!="sujiangf") || (p->hasShownGeneral2() && p->getActualGeneral2()->objectName()!="sujiang" && p->getActualGeneral2()->objectName()!="sujiangf")) )
                     list << p;
             }
             if (list.length()>0){

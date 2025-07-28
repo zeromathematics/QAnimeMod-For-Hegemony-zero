@@ -635,9 +635,9 @@ end
 
 sgs.ai_skill_playerchosen.shunshan = function(self, targets)
 	local source = self.player
+	local room = self.room
 	local from = room:getTag("shunshanTarget"):toPlayer()
     local id = from:property("shunshan_id"):toInt()-1
-	local room = self.room
 	room:setPlayerProperty(from, "shunshan_id", sgs.QVariant())
 	local card = sgs.Sanguosha:getCard(id)
 

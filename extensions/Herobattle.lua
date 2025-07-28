@@ -1697,6 +1697,7 @@ Fenglun = sgs.CreateViewAsSkill{
 		return #selected == 0
 	end,
 	view_as = function(self, cards)
+	    if #cards == 0 then return nil end
         local vs = FenglunCard:clone()
 		for var = 1, #cards, 1 do   
             vs:addSubcard(cards[var])                
@@ -3125,12 +3126,12 @@ ShunshanCard = sgs.CreateSkillCard{
 		end
 		if tos:isEmpty() then return end
 		local tag = sgs.QVariant()
-		tag:setValue(from)
+		tag:setValue(target)
 		room:setTag("shunshanTarget", tag)
 		local to = room:askForPlayerChosen(player, tos, "shunshan", "shunshan_to")
 		if to then
 			local reason = sgs.CardMoveReason(0x09, player:objectName(), "shunshan", "")
-			room:moveCardTo(card, from, to, place, reason)
+			room:moveCardTo(card, target, to, place, reason)
 			if to ~= player then
                 room:askForUseSlashTo(to, room:getAlivePlayers(), "@shunshan-slash", true)
 			end
@@ -3917,7 +3918,31 @@ Moshiglobal = sgs.CreateTriggerSkill{
 	name = "Moshiglobal",
 	global = true,
 	events = {sgs.DamageInflicted, sgs.CardUsed},
-	   priority = 2,
+	priority = 2,
+	on_record = function(self, event, room, player, data)
+		if event == sgs.CardUsed then
+			local use = data:toCardUse()
+			local players = room:findPlayersBySkillName(self:objectName())
+			for _,sp in sgs.qlist(players) do
+				if sp:isAlive() and sp:hasSkill(self:objectName())and player:objectName() == sp:objectName() and player:objectName() == use.from:objectName() and player:objectName() == room:getCurrent():objectName() then
+					if use.card:getTypeId() == sgs.Card_TypeSkill or player:getPhase() == sgs.Player_NotActive then return end
+					if use.card:getSuit() == sgs.Card_Spade and not player:hasFlag("Nekojiyi-Spade") then
+						room:setPlayerFlag(player, "Nekojiyi-Spade")
+						room:setPlayerMark(player, "Nekojiyi_suit", player:getMark("Nekojiyi_suit") + 1)
+					elseif use.card:getSuit() == sgs.Card_Heart and not player:hasFlag("Nekojiyi-Heart") then
+						room:setPlayerFlag(player, "Nekojiyi-Heart")
+						room:setPlayerMark(player, "Nekojiyi_suit", player:getMark("Nekojiyi_suit") + 1)
+					elseif use.card:getSuit() == sgs.Card_Club and not player:hasFlag("Nekojiyi-Club") then
+						room:setPlayerFlag(player, "Nekojiyi-Club")
+						room:setPlayerMark(player, "Nekojiyi_suit", player:getMark("Nekojiyi_suit") + 1)
+					elseif use.card:getSuit() == sgs.Card_Diamond and not player:hasFlag("Nekojiyi-Diamond") then
+						room:setPlayerFlag(player, "Nekojiyi-Diamond")
+						room:setPlayerMark(player, "Nekojiyi_suit", player:getMark("Nekojiyi_suit") + 1)
+					end
+				end	
+			end	
+		end
+	end,
 	can_trigger = function(self, event, room, player, data, sp)
 		if event == sgs.DamageInflicted then
 			local damage = data:toDamage()
@@ -3952,7 +3977,7 @@ Nekojiyi = sgs.CreateTriggerSkill{
 			    end 
 			end
 		end
-		if event == sgs.CardUsed then
+		--[[if event == sgs.CardUsed then
 			local use = data:toCardUse()
 			local players = room:findPlayersBySkillName(self:objectName())
 			for _,sp in sgs.qlist(players) do
@@ -3973,7 +3998,7 @@ Nekojiyi = sgs.CreateTriggerSkill{
 					end
 				end	
 			end	
-		end
+		end]]
 	end,
 	can_trigger = function(self, event, room, player, data)
 	    if event == sgs.EventPhaseStart and player:getPhase() == sgs.Player_RoundStart then
@@ -6911,6 +6936,7 @@ Xieyuvs = sgs.CreateZeroCardViewAsSkill{
 Xieyu = sgs.CreateTriggerSkill{
     name = "xieyu",
 	view_as_skill = Xieyuvs,
+	can_preshow = true,
     events = {sgs.CardUsed, sgs.CardFinished, sgs.EventPhaseChanging},
 	on_record = function(self, event, room, player, data)
 		if event ~= sgs.EventPhaseChanging then return end

@@ -191,3 +191,8 @@ sgs.ai_skill_askforag.lvji = function(self, card_ids)
 		end
 	end
 end
+
+--Enju
+sgs.ai_skill_invoke.qishi = function(self, data)
+	return self:willShowForAttack() or self:willShowForDefence()
+end
