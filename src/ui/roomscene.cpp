@@ -4138,16 +4138,25 @@ bool RoomScene::hasAdjustedBg()
             break;
         }
     }
-    if (x > 0 && QFile::exists(QString("image/backdrop/anime%1.jpg").arg(QString::number(x)))){
+    if (!this || m_tableBgPixmapOrig.isNull())
+        return false;
+
+    QImage img = m_tableBgPixmapOrig.toImage();
+    if (img.isNull() || img.width() == 0 || img.height() == 0)
+        return false;
+
+   if (x > 0 && QFile::exists(QString("image/backdrop/anime%1.jpg").arg(QString::number(x)))){
         QString key = QString("tableBganime-%1");
         QPixmap pixmap = G_ROOM_SKIN.getPixmap(key, QString::number(x));
         if (pixmap.width() == 1 || pixmap.height() == 1) {
+            return false;
             // we treat this condition as error and do not use it
         }
         else if(m_tableBgPixmapOrig.toImage() == pixmap.toImage()){
             return true;
         }
     }
+
     return false;
 }
 

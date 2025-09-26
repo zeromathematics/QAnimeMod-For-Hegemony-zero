@@ -840,6 +840,7 @@ void MainWindow::enterRoom()
 
 void MainWindow::gotoStartScene()
 {
+    RoomSceneInstance = NULL; //test
     if (server != NULL) {
         server->deleteLater();
         server = NULL;
