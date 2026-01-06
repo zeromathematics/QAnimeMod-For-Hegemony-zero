@@ -720,7 +720,8 @@ Jizou = sgs.CreateTriggerSkill{
                 room:clearAG()
                 room:clearAG(ask_who)
                 if id > -1 then
-                    local to = room:askForPlayerChosen(ask_who, room:getOtherPlayers(ask_who), self:objectName())                           
+                    local to = room:askForPlayerChosen(ask_who, room:getOtherPlayers(ask_who), self:objectName())
+					room:doLightbox("jizou$", 800)
 				    local use = sgs.CardUseStruct()
 				    use.from = ask_who
 				    use.to:append(to)
@@ -755,8 +756,8 @@ Jizou = sgs.CreateTriggerSkill{
 	end,
 }
 
-GuangjianCard = sgs.CreateSkillCard{
-	name = "GuangjianCard",
+guangjianCard = sgs.CreateSkillCard{
+	name = "guangjianCard",
     will_throw = false,
 	filter = function(self, targets, to_select) 
 		if #targets <1 and sgs.Self:objectName() ~= to_select:objectName() and to_select:getPile("guangjian"):length() == 0 then
@@ -772,7 +773,7 @@ GuangjianCard = sgs.CreateSkillCard{
 	end,
 }
 
-Guangjianvs=sgs.CreateViewAsSkill{
+guangjianvs=sgs.CreateViewAsSkill{
 	name="guangjian",
 	n=2,
 	view_filter=function(self,selected,to_select)
@@ -785,7 +786,7 @@ Guangjianvs=sgs.CreateViewAsSkill{
 	end,
 	view_as = function(self, cards)
 		if #cards == 0  then return end
-		local new_card = GuangjianCard:clone()
+		local new_card = guangjianCard:clone()
 		for var = 1, #cards, 1 do   
             new_card:addSubcard(cards[var])                
         end      
@@ -798,9 +799,9 @@ Guangjianvs=sgs.CreateViewAsSkill{
 	end,
 }
 
-Guangjian = sgs.CreateTriggerSkill{
+guangjian = sgs.CreateTriggerSkill{
     name = "guangjian",
-    view_as_skill = Guangjianvs,
+    view_as_skill = guangjianvs,
 	events = {sgs.CardFinished, sgs.CardUsed},
     on_record = function(self, event, room, player, data)
         if event == sgs.CardUsed then
@@ -1418,7 +1419,7 @@ Xujian = sgs.CreateTriggerSkill{
 			end
 		end
 		if event == sgs.EventPhaseStart then
-			if player:askForSkillInvoke(self, data) then
+			if player:askForSkillInvoke("xujiangive") then
 				room:broadcastSkillInvoke(self:objectName(), player)
 				return true
 			end
@@ -2944,7 +2945,7 @@ Elaina:addSkill(Lvji)
 Elaina:addSkill(Fahui)
 extension:insertRelatedAttachSkill("lvji", "lvjigive")
 Aiz:addSkill(Jizou)
-Origami:addSkill(Guangjian)
+Origami:addSkill(guangjian)
 Origami:addSkill(Rilun)
 Enju:addSkill(Yueji)
 Enju:addSkill(Qishi)
@@ -3083,6 +3084,7 @@ sgs.LoadTranslationTable{
     ["jizouHand"] = "展示所有手牌",
     ["jizouDrawPile"] = "展示牌堆顶的两张牌",
     ["&jizouShow"] = "请选择两张要展示的手牌",
+	["jizou$"] = "image=image/animate/jizou.png",
     ["$jizou1"] = "Tempest",
     ["$jizou2"] = "风啊",
     ["$jizou3"] = "微型劲风",
@@ -3137,6 +3139,7 @@ sgs.LoadTranslationTable{
     ["%Inori"] = "“集，拜托你了，使用我的力量”",
     ["xujian"] = "虚剑",
     [":xujian"] = "①其他角色获得你的牌后，可以令其获得效果V直到其回合结束：使用杀次数+1且无视防具。②出牌阶段开始，若你的另一张人物牌为“樱满集”则获得效果V直到回合结束，否则若另一张人物牌明置可以交给一名其他角色一张牌。",
+	["xujiangive"] = "虚剑：可以交给其他角色一张牌",
     ["wange"] = "挽歌",
     [":wange"] = "<font color=\"green\"><b>每回合限一次，</b></font>当其他角色获得你区域的仅一张牌时，此牌记为“挽歌”牌直到其失去此牌。其他角色使用“挽歌”牌后，你可以摸一张牌或视为对其使用一张音。当你阵亡时，视为对任意名其他角色使用一张音。",
     ["wangeA"] = "挽歌-标记此牌",
@@ -3166,7 +3169,7 @@ sgs.LoadTranslationTable{
     ["$jieji2"] = "喔是喔，那你已经满足了吧。",
     ["qianggan"] = "强感",
     ["qianggan$"] = "image=image/animate/qianggan.png",
-    [":qianggan"] = "<font color=\"green\"><b>每回合限一次，</b></font>①当前回合角色使用的杀被闪抵消时，若其在你攻击范围内，则你可以选择：\n1、获得牌堆x张不同花色牌（x为2与你手牌花色数之差）；\n2、使用一张手牌（不计次数）。",
+    [":qianggan"] = "<font color=\"green\"><b>每回合限一次，</b></font>当前回合角色使用的杀被闪抵消时，若其在你攻击范围内，则你可以选择：\n1、获得牌堆x张不同花色牌（x为2与你手牌花色数之差）；\n2、使用一张手牌（不计次数）。",
     ["choice-qianggan-obtain"] = "获得牌堆x张不同花色牌（x为2与你手牌花色数之差）",
     ["choice-qianggan-use"] = "使用一张手牌（不计次数）",
     ["@qianggan_use"] = "选择将要使用的手牌",
@@ -3179,25 +3182,35 @@ sgs.LoadTranslationTable{
     ["#AliceM"] = "七色的人偶使",
     ["%AliceM"] = "“只有锐气还是不减呢”",
     ["designer:AliceM"] = "网瘾少年",
-    ["cv:AliceM"] = "",
+    ["cv:AliceM"] = "清都ありさ",
+	["~AliceM"] = "我还没.....我只是还没认真起来而已。",
     ["suou"] = "塑偶",
     [":suou"] = "摸牌阶段结束时，你可以选择一项:1.观看牌堆顶等同于你空置装备区数量的牌，选择其中至多两张装备牌获得之或者选择一张与你装备区牌（至少一张）花色皆不同的牌获得之。2. 将自己装备区一张牌置于其他角色装备区。",
+	["$suou1"] = "呵呵，那就让我们拉开人偶剧的帷幕吧。",
+	["$suou2"] = "这样一来，离我制造完全自主行动的人偶的目标又近一步了呢。",
     ["weizhen"] = "威阵",
     [":weizhen"] = "<font color=\"green\"><b>每回合限一次，</b></font>你可以将一名装备区牌数量不小于当前回合角色且与你势力相同的角色的一张装备区牌当杀或闪使用或打出，然后该角色摸一张牌。",
     ["suou_draw"] = "观看牌堆顶并获得对应牌",
     ["suou_move"] = "移动自己一张装备区的牌",
+	["$weizhen1"] = "来，过来吧，人偶们。谢幕的时间到了。",
+	["$weizhen2"] = "就此结束还太早了。",
 
     ["Meirin"] = "红美铃",
     ["@Meirin"] = "東方project",
     ["#Meirin"] = "华人小姑娘",
     ["%Meirin"] = "“先手必胜！”",
     ["designer:Meirin"] = "网瘾少年",
-    ["cv:Meirin"] = "",
+    ["cv:Meirin"] = "小松未可子",
+	["~Meirin"] = "会挨咲夜小姐骂的啦。",
     ["taiji"] = "太极",
 	[":taiji"] = "当你使用杀指定唯一目标/成为杀的目标时，你可以弃置一张牌进行一次判定，然后目标/来源须弃置一张牌（无牌不弃）进行一次判定。若判定牌颜色相同则此杀不计入本回合使用次数/此杀无效，你选择获得一张判定牌；否则目标/来源选择获得一张判定牌。",
 	["@taiji-discard"] = "太极：弃置一张牌",
+    ["$taiji1"] = "放马过来。",
+    ["$taiji2"] = "要上喽~",
     ["hongquan"] = "虹拳",
     [":hongquan"] = "结束阶段结束时，你可以选择一名有手牌的其他角色观看其所有手牌，若其手牌花色数小于本回合进入弃牌堆的牌的花色数，你视为对其使用一张无距离限制的杀。",
+	["$hongquan1"] = "喝啊~",
+    ["$hongquan2"] = "完 全 胜 利 哈！",
 
     ["Ellen"] = "艾琳",
 	["@Ellen"] = "魔女之家",
@@ -3335,21 +3348,6 @@ sgs.LoadTranslationTable{
 	[":yiling"] = "其他角色的出牌阶段开始时，你可以弃置装备区里至少一张牌，摸等量的牌，然后令其于此阶段内拥有“死蝶”。",
 	["@yiling"] = "役灵：你可以弃置装备区任意张牌，令 %src 于此阶段内拥有<font color=\"#FFFF00\"><b>死蝶</b></font> ",
 	["~yiling"] = "选择任意张装备区的牌 -> “确定”",
-
-    ["lord_Okarin"] = "冈部伦太郎",
-    ["@lord_Okarin"] = "命运石之门",
-    ["#lord_Okarin"] = "LabmemNo.001",
-    ["designer:lord_Okarin"] = "光临长夜",
-    ["cv:lord_Okarin"] = "宫野真守",
-    ["juxian"] = "聚贤",
-    [":juxian"] = "主角技，你拥有“未来道具研究所”。",
-    ["gadgetlab"] = "未来道具研究所",
-    [":gadgetlab"] = "一名科学势力角色准备阶段开始时，其可以交给你一张牌，然后其根据此技能发动次数X选择获得以下一个技能至其回合结束：X ≥ 1， “时线”； X ≥ 2， “星祈”；X ≥ 3， “骇客”； X ≥ 4， “助手”。",
-    ["biandong"] = "变动",
-    [":biandong"] = "当你于出牌阶段外获得牌时，若场上有“智能手机”，你可以将其置于你装备区；当一名角色失去其装备区的“智能手机”后，你可以令其摸2张牌。",
-    ["jueze"] = "抉择「弧光灯计划」",
-    [":jueze"] = "一名科学势力角色出牌阶段开始时，若其受伤且其人物牌上有“时空存档”，你可以进行一次判定，然后你弃置一张与判定牌颜色相同/不同的牌，令其获得“假象”/“跳跃”至其下次出牌阶段开始前；锁定技，你使用“假象”无次数限制。",
-   
     
 }
 

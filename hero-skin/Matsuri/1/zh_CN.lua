@@ -1,0 +1,3 @@
+sgs.LoadSkinTransltionTable {
+	["illustrator:Matsuri"] = "",
+}

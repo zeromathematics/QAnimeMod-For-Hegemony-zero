@@ -111,7 +111,8 @@ CommonTranslationTable = {
 	["female"] = "女性",
 	["discardPile"] = "弃牌堆",
 	["drawPileTop"] = "牌堆顶",
-	["drawPileBottom"] = "牌堆底",
+	["drawPileBottom"] = "牌堆对应位置",
+	---["drawPileBottom"] = "牌堆底",
 
 	["yourself"] = "你",
 
@@ -194,8 +195,10 @@ CommonTranslationTable = {
 	["$JileiShowAllCards"] = "%from 展示了不能弃置的手牌 %card",
 	["$PutCard"] = "%from 的 %card 被置于牌堆顶",
 	["#PutCard"] = "%from 的 %arg 张牌被置于牌堆顶",
-	["$PutCardToDrawPileBottom"] = "%from 的 %card 被置于牌堆底",
-	["#PutCardToDrawPileBottom"] = "%from 的 %arg 张牌被置于牌堆底",
+	["$PutCardToDrawPileBottom"] = "%from 的 %card 被置于牌堆对应位置",
+	["#PutCardToDrawPileBottom"] = "%from 的 %arg 张牌被置于牌堆对应位置",
+	---["$PutCardToDrawPileBottom"] = "%from 的 %card 被置于牌堆底",
+	---["#PutCardToDrawPileBottom"] = "%from 的 %arg 张牌被置于牌堆底",
 	["normal_nature"] = "无属性",
 	["fire_nature"] = "火焰属性",
 	["thunder_nature"] = "雷电属性",
