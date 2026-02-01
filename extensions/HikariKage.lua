@@ -20,6 +20,8 @@ GasaiYuno = sgs.General(extension , "GasaiYuno", "science", 3, false)
 Yuyuko = sgs.General(extension , "Yuyuko", "game", 4, false)
 Yuyuko:addCompanion("Youmu")
 
+lord_SE_Eren = sgs.General(extension, "lord_SE_Eren$", "science", 4, true, true)
+
 --ALO_Asuna = sgs.General(extension , "ALO_Asuna", "science", 3, false, true)
 --ALO_Asuna:addCompanion("Kirito")
 --ALO_Asuna:addCompanion("Yuuki")
@@ -29,6 +31,7 @@ Yuyuko:addCompanion("Youmu")
 --TsukimiEiko = sgs.General(extension , "TsukimiEiko", "idol", 3, false)
 
 extension:insertConvertPairs("SE_Asuna", "ALO_Asuna")
+extension:insertConvertPairs("SE_Eren", "lord_Eren")
 
 GlobalzhuzhenCard = sgs.CreateSkillCard{
     name = "GlobalzhuzhenCard",
@@ -2925,6 +2928,393 @@ Yiling = sgs.CreateTriggerSkill{
     end
 }
 
+Jinji = sgs.CreateTriggerSkill{
+    name = "jinji$",
+    events = {sgs.Damaged, sgs.DamageCaused, sgs.PreCardUsed, sgs.TurnStart},
+    on_record = function(self, event, room, player, data)
+
+    end,
+    can_trigger = function(self, event, room, player, data)
+        if event == sgs.Damaged then
+            local players = room:findPlayersBySkillName(self:objectName())
+            local damage = data:toDamage()
+            for _,sp in sgs.qlist(players) do
+                if sp:isFriendWith(player) then
+                    local list = {}
+                    for i = 1, damage.damage, 1 do
+                        table.insert(list, self:objectName())
+                    end
+                    return table.concat(list, ","), sp
+                end
+            end
+        end
+        if event == sgs.DamageCaused then
+            local damage = data:toDamage()
+            if player:isAlive() and player:hasSkill(self:objectName()) and damage.to:getMark("@quzhu")>0 and damage.card and (damage.card:isKindOf("Slash") or damage.card:isKindOf("Duel")) then
+                return self:objectName()
+            end
+        end
+        if event == sgs.PreCardUsed then
+            local use = data:toCardUse()
+            if not use.card or not (use.card:isKindOf("Slash") or use.card:isKindOf("Duel")) then return "" end
+            local n = 0
+            for _,p in sgs.qlist(room:getAlivePlayers()) do
+                n = n + p:getMark("@quzhu")
+            end
+            if player:isAlive() and player:hasSkill(self:objectName()) and n > 1 and use.to:length() == 1 and use.to:at(0):getMark("@quzhu") > 0 then
+                return self:objectName()
+            end
+        end
+        if event == sgs.TurnStart then
+            if player:isAlive() and player:hasSkill(self:objectName()) then
+                return self:objectName()
+            end
+        end
+        return ""
+    end,
+    on_cost = function(self, event, room, player, data, ask_who)
+        if event == sgs.Damaged and ask_who:askForSkillInvoke(self, data) then
+            return true
+        end
+        if event == sgs.DamageCaused then
+            local damage = data:toDamage()
+            local to = sgs.QVariant()
+            to:setValue(damage.to)
+            if player:askForSkillInvoke("quzhudamage", to) then
+               return true
+            end
+        end
+        if event == sgs.PreCardUsed and player:askForSkillInvoke("quzhuaddtarget", data) then
+            return true
+        end
+        if event == sgs.TurnStart then
+            if player:hasShownSkill(self:objectName()) or player:askForSkillInvoke("erenfate", data) then
+                return true
+            end
+        end
+        return false
+    end,
+    on_effect = function(self, event, room, player, data, ask_who)
+        if event == sgs.Damaged then
+            local damage = data:toDamage()
+            if damage.from then
+                damage.from:gainMark("@quzhu", 1)
+                room:setFixedDistance(ask_who, damage.from, 1)
+            else
+                local target = room:askForPlayerChosen(ask_who, room:getAlivePlayers(), self:objectName())
+                target:gainMark("@quzhu", 1)
+                room:setFixedDistance(ask_who, target, 1)
+            end
+            if ask_who:getMark("jinji_first") == 0 then 
+                room:setPlayerMark(ask_who, "jinji_first", 1)
+                room:doLightbox("Erenattack1$", 1000)
+            end
+        end 
+        if event == sgs.DamageCaused then
+            local damage = data:toDamage()
+            damage.damage = damage.damage + 1
+            data:setValue(damage)
+        end
+        if event == sgs.PreCardUsed then
+           local use = data:toCardUse()
+           local list = room:getAlivePlayers()
+           room:sortByActionOrder(list)
+           for _,p in sgs.qlist(list) do
+              if p:getMark("@quzhu") > 0 and not use.to:contains(p) then
+                use.to:append(p)
+              end
+           end
+           data:setValue(use)
+        end
+        if event == sgs.TurnStart then
+            -- 第一部分：重置状态
+            if (not ask_who:faceUp() or ask_who:isChained()) and ask_who:askForSkillInvoke("erenfate_normalize") then
+                if not ask_who:faceUp() then
+                    ask_who:turnOver()
+                end
+                room:setPlayerProperty(ask_who, "chained", sgs.QVariant(false))
+                
+                local choices = "eren_damage"
+                if ask_who:getPile("roads"):length() > 0 then
+                    choices = choices .. "+discard_road"
+                end
+                
+                local choice = room:askForChoice(ask_who, "erenfate", choices)
+                if choice == "eren_damage" then
+                    local damage = sgs.DamageStruct()
+                    damage.from = nil
+                    damage.to = ask_who
+                    room:damage(damage)
+                else
+                    room:fillAG(ask_who:getPile("roads"), ask_who)
+                    local id = room:askForAG(ask_who, ask_who:getPile("roads"), false, self:objectName())
+                    room:clearAG(ask_who)
+                    room:throwCard(id, ask_who, ask_who)
+                end
+            end
+            
+            -- 第二部分：弃置判定牌
+            if ask_who:isAlive() and ask_who:getJudgingArea():length() > 0 
+            and ask_who:askForSkillInvoke("erenfate_discardjudge", data) then
+                local id0 = room:askForCardChosen(ask_who, ask_who, "j", self:objectName())
+                room:throwCard(id0, ask_who, ask_who)
+                
+                local choices = "eren_damage"
+                if ask_who:getPile("roads"):length() > 0 then
+                    choices = choices .. "+discard_road"
+                end
+                
+                local choice = room:askForChoice(ask_who, "erenfate", choices)
+                if choice == "eren_damage" then
+                    local damage = sgs.DamageStruct()
+                    damage.from = nil
+                    damage.to = ask_who
+                    room:damage(damage)
+                else
+                    room:fillAG(ask_who:getPile("roads"), ask_who)
+                    local id = room:askForAG(ask_who, ask_who:getPile("roads"), false, self:objectName())
+                    room:clearAG(ask_who)
+                    room:throwCard(id, ask_who, ask_who)
+                end
+            end
+            
+            -- 第三部分：观星预知
+            if ask_who:isAlive() and ask_who:askForSkillInvoke("erenfate_seefuture", data) then
+                local n = 0
+                local alive_players = room:getAlivePlayers()
+                
+                for _, p in sgs.qlist(alive_players) do
+                    if p:getMark("@quzhu") > 0 then
+                        n = n + 1
+                    end
+                    if ask_who:isFriendWith(p) then
+                        n = n + 1
+                    end
+                end
+                
+                local shenzhi = room:getNCards(n, false)
+                
+                -- 创建日志消息
+                local log = sgs.LogMessage()
+                log.type = "$ViewDrawPile"
+                log.from = ask_who
+                log.card_str = table.concat(sgs.QList2Table(shenzhi), "+")
+                room:sendLog(log)
+                
+                room:askForGuanxing(ask_who, shenzhi)
+                
+                local choices = "eren_damage"
+                if ask_who:getPile("roads"):length() > 0 then
+                    choices = choices .. "+discard_road"
+                end
+                
+                local choice = room:askForChoice(ask_who, "erenfate", choices)
+                if choice == "eren_damage" then
+                    local damage = sgs.DamageStruct()
+                    damage.from = nil
+                    damage.to = ask_who
+                    room:damage(damage)
+                else
+                    room:fillAG(ask_who:getPile("roads"), ask_who)
+                    local id = room:askForAG(ask_who, ask_who:getPile("roads"), false, self:objectName())
+                    room:clearAG(ask_who)
+                    room:throwCard(id, ask_who, ask_who)
+                end
+            end
+        end
+    end
+}
+
+Shizu = sgs.CreateTriggerSkill{
+    name = "shizu",
+    events = {sgs.Damage, sgs.Damaged, sgs.TargetChosen},
+    on_record = function(self, event, room, player, data)
+
+    end,
+    can_trigger = function(self, event, room, player, data)
+        if event == sgs.Damage or event == sgs.Damaged then
+            local players = room:findPlayersBySkillName(self:objectName())
+            local damage = data:toDamage()
+            local list = {}
+            local times = {}
+            for _,sp in sgs.qlist(players) do
+               if player:isAlive() and player:isFriendWith(sp) and sp:getPile("roads"):length() < 13 then
+                   table.insert(list, sp:objectName())
+               end
+            end
+            for i = 1, damage.damage, 1 do
+                table.insert(times, self:objectName())
+            end
+            if #list > 0 then return table.concat(times, ",").."->"..table.concat(list,"+") end
+        end
+        if event == sgs.TargetChosen then
+            local use = data:toCardUse()
+            if player:isAlive() and player:hasSkill(self:objectName()) and use.card and (use.card:isKindOf("Slash") or use.card:isKindOf("Duel")) then
+                local list = {}
+                for _,p in sgs.qlist(use.to) do
+                   for _,id in sgs.qlist(player:getPile("roads")) do
+                       local c = sgs.Sanguosha:getCard(id)
+                       if c:getNumber() > 10 or c:getNumber() == 1 then
+                          table.insert(list, p:objectName())
+                          break
+                       end
+                   end
+                end
+                if #list > 0 then
+                    return self:objectName().."->"..table.concat(list, "+")
+                end
+            end
+        end
+        return ""
+    end,
+    on_cost = function(self, event, room, player, data, ask_who)
+        if event == sgs.Damage or event == sgs.Damaged then
+            local who = sgs.QVariant()
+            who:setValue(player)
+            if ask_who:askForSkillInvoke(self, who) then
+                return true
+            end
+        end
+        if event == sgs.TargetChosen then
+            local who = sgs.QVariant()
+            who:setValue(player)
+            if ask_who:askForSkillInvoke("zahyo", who) then
+                return true
+            end
+        end
+        return false
+    end,
+    on_effect = function(self, event, room, player, data, ask_who)
+        if event == sgs.Damage or event == sgs.Damaged then
+            local card
+            for _,id in sgs.qlist(room:getDrawPile()) do
+                local c = sgs.Sanguosha:getCard(id)
+                if c:getSuitString() == "heart" or c:getSuitString() == "spade" then
+                    card = c
+                    break
+                end
+            end
+            if card then player:addToPile("roads", card) end
+        end
+        if event == sgs.TargetChosen then
+            local use = data:toCardUse()  
+            local list0 = sgs.IntList()
+            local roads = ask_who:getPile("roads")
+            for _, id in sgs.qlist(roads) do
+                local card = sgs.Sanguosha:getCard(id)
+                if card:getNumber() > 10 or card:getNumber() == 1 then
+                    list0:append(id)
+                end
+            end
+    
+            if list0:length() > 0 then
+                room:fillAG(list0, ask_who)
+                local id = room:askForAG(ask_who, list0, false, self:objectName())
+                room:clearAG(ask_who)
+                room:throwCard(id, ask_who, ask_who)
+            end
+    
+            local index = ask_who:startCommand(self:objectName())
+            local dest = nil
+            if index == 0 then
+                local alive_players = room:getAlivePlayers()
+                dest = room:askForPlayerChosen(ask_who, alive_players, "command_shizu", "@command-damage")
+                if dest then
+                    room:doAnimate(1, ask_who:objectName(), dest:objectName())
+                end
+            end
+            room:setEmotion(player, "skills/zahyo")
+            local alls = room:getOtherPlayers(ask_who)
+            room:sortByActionOrder(alls)
+            
+            for _, anjiang in sgs.qlist(alls) do
+                if anjiang:hasShownOneGeneral() then
+                    continue
+                end
+                
+                local kingdom = ask_who:getKingdom()
+                local lord = nil
+                local num = 0
+                
+                local all_true_players = room:getAllPlayers(true)
+                for _, p in sgs.qlist(all_true_players) do
+                    if p:getKingdom() ~= kingdom then
+                        continue
+                    end
+                    local tag_list = room:getTag(p:objectName()):toStringList()
+                    if #tag_list > 0 then
+                        local general = sgs.Sanguosha:getGeneral(tag_list[1])
+                        if general:isLord() then
+                            lord = p
+                        end
+                    end
+                    
+                    if p:hasShownOneGeneral() and p:getRole() ~= "careerist" then
+                        num = num + 1
+                    end
+                    
+                end
+                
+                -- 判断是否达到上限
+                local full = false
+                if ask_who:getRole() == "careerist" then
+                    full = true
+                elseif (lord == nil or not lord:hasShownGeneral1()) then
+                    local total_players = room:getPlayers():length()
+                    if num >= math.floor(total_players / 2) then
+                        full = true
+                    end
+                end
+                
+                if anjiang:getKingdom() == kingdom and not full then
+                    anjiang:askForGeneralShow(false, true)
+                else
+                    room:askForChoice(anjiang, self:objectName(), "cannot_showgeneral+cancel", data)
+                end
+            end
+        
+            local other_players = room:getOtherPlayers(ask_who)
+            local has
+            for _, p in sgs.qlist(other_players) do
+                if not p:hasShownOneGeneral() then
+                    continue
+                end                
+                if p:isFriendWith(ask_who) then
+                    local prompt = "shizu-slash:" .. player:objectName()
+                    if not room:askForUseSlashTo(p, player, prompt, false) then
+                        p:doCommandForcely(self:objectName(), index, ask_who, dest)
+                    end
+                    has = true
+                end
+            end
+            if not has then
+                local list = sgs.SPlayerList()
+                list:append(ask_who)
+                if ask_who ~= player then list:append(player) end
+                local target = room:askForPlayerChosen(ask_who, list, self:objectName())
+                target:doCommandForcely(self:objectName(), index, ask_who, dest)
+            end
+        end
+    end
+}
+
+Mieshi = sgs.CreateTriggerSkill{
+    name = "mieshi",
+    events = {sgs.Dying},
+    on_record = function(self, event, room, player, data)
+
+    end,
+    can_trigger = function(self, event, room, player, data)
+        return ""
+    end,
+    on_cost = function(self, event, room, player, data, ask_who)
+        return false
+    end,
+    on_effect = function(self, event, room, player, data, ask_who)
+        
+    end
+}
+
 local skills = sgs.SkillList()
 if not sgs.Sanguosha:getSkill("lvjigive") then skills:append(Lvjigive) end
 if not sgs.Sanguosha:getSkill("#yuejimod") then skills:append(Yuejimod) end
@@ -2980,6 +3370,10 @@ GasaiYuno:addSkill(Chuai)
 
 Yuyuko:addSkill(Sidie)
 Yuyuko:addSkill(Yiling)
+
+lord_SE_Eren:addSkill(Jinji)
+lord_SE_Eren:addSkill(Shizu)
+lord_SE_Eren:addSkill(Mieshi)
 
 sgs.LoadTranslationTable{
     ["hikarikage"] = "光影之章",

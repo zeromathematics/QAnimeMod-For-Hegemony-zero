@@ -1443,7 +1443,7 @@ sgs.ai_use_priority.xiuxingCard = 10
 --虹之丘真白
 
 sgs.ai_skill_invoke.shangyuan = function(self, data)
-  return ((self:isEnemy(data:toPlayer()) and data:toPlayer():getHp() == 1) or (self:Friend(data:toPlayer()) and not data:toPlayer():isWounded())) and self:willShowForDefence()
+  return ((self:isEnemy(data:toPlayer()) and data:toPlayer():getHp() == 1) or (self:isFriend(data:toPlayer()) and not data:toPlayer():isWounded())) and self:willShowForDefence()
 end
 
 sgs.ai_skill_invoke.chaoshi = true
