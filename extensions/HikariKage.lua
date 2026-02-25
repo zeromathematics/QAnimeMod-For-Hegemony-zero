@@ -21,6 +21,7 @@ Yuyuko = sgs.General(extension , "Yuyuko", "game", 4, false)
 Yuyuko:addCompanion("Youmu")
 
 lord_SE_Eren = sgs.General(extension, "lord_SE_Eren$", "science", 4, true, true)
+Founding_Titan = sgs.General(extension, "Founding_Titan", "god", 5, true, true)
 
 --ALO_Asuna = sgs.General(extension , "ALO_Asuna", "science", 3, false, true)
 --ALO_Asuna:addCompanion("Kirito")
@@ -2999,15 +3000,17 @@ Jinji = sgs.CreateTriggerSkill{
             local damage = data:toDamage()
             if damage.from then
                 damage.from:gainMark("@quzhu", 1)
+                room:broadcastSkillInvoke(self:objectName(), player)
                 room:setFixedDistance(ask_who, damage.from, 1)
             else
                 local target = room:askForPlayerChosen(ask_who, room:getAlivePlayers(), self:objectName())
                 target:gainMark("@quzhu", 1)
+                room:broadcastSkillInvoke(self:objectName(), player)
                 room:setFixedDistance(ask_who, target, 1)
             end
             if ask_who:getMark("jinji_first") == 0 then 
                 room:setPlayerMark(ask_who, "jinji_first", 1)
-                room:doLightbox("Erenattack1$", 1000)
+                room:doLightbox("Erenattack1$", 2000)
             end
         end 
         if event == sgs.DamageCaused then
@@ -3301,17 +3304,26 @@ Shizu = sgs.CreateTriggerSkill{
 Mieshi = sgs.CreateTriggerSkill{
     name = "mieshi",
     events = {sgs.Dying},
-    on_record = function(self, event, room, player, data)
-
-    end,
     can_trigger = function(self, event, room, player, data)
+        local dying = data:toDying()
+        if dying.who and player == dying.who and player:hasSkill(self:objectName()) and player:getPile("roads"):length() >= 13 then
+            return self:objectName()
+        end
         return ""
     end,
     on_cost = function(self, event, room, player, data, ask_who)
-        return false
+        return true
     end,
     on_effect = function(self, event, room, player, data, ask_who)
-        
+        --room:setPlayerProperty(player, "kingdom" ,sgs.QVariant("careerist"))
+        room:broadcastSkillInvoke(self:objectName(), player)
+        room:doLightbox("eren_ymir$", 3500)
+        room:setPlayerProperty(player, "role" ,sgs.QVariant("careerist"))
+        room:setPlayerProperty(player, "maxhp", sgs.QVariant(5))
+        room:setPlayerProperty(player, "hp", sgs.QVariant(5))
+        player:showGeneral(true)
+        room:transformHeadGeneralTo(player, "Founding_Titan")
+        player:removeGeneral(false)
     end
 }
 
