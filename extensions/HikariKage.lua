@@ -31,7 +31,7 @@ lord_SE_Eren = sgs.General(extension, "lord_SE_Eren$", "science", 4, true, true)
 --TsukimiEiko = sgs.General(extension , "TsukimiEiko", "idol", 3, false)
 
 extension:insertConvertPairs("SE_Asuna", "ALO_Asuna")
-extension:insertConvertPairs("SE_Eren", "lord_Eren")
+extension:insertConvertPairs("SE_Eren", "lord_SE_Eren")
 
 GlobalzhuzhenCard = sgs.CreateSkillCard{
     name = "GlobalzhuzhenCard",

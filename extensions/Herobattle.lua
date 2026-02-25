@@ -5944,7 +5944,7 @@ Baolie= sgs.CreateTriggerSkill{
 		end,
 		on_cost = function(self, event, room, player, data)
 			if event == sgs.DrawNCards and player:askForSkillInvoke(self, data) then
-				room:broadcastSkillInvoke(self:objectName(). player)
+				room:broadcastSkillInvoke(self:objectName(), player)
 				return true
 			end
 			return false
