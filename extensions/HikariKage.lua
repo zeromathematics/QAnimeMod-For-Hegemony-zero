@@ -2951,7 +2951,7 @@ Jinji = sgs.CreateTriggerSkill{
         end
         if event == sgs.DamageCaused then
             local damage = data:toDamage()
-            if player:isAlive() and player:hasSkill(self:objectName()) and damage.to:getMark("@quzhu")>0 and damage.card and (damage.card:isKindOf("Slash") or damage.card:isKindOf("Duel")) then
+            if player:isAlive() and player:hasSkill(self:objectName()) and damage.to:getMark("@quzhu")>0 and damage.card and (damage.card:isKindOf("Slash") or damage.card:isKindOf("Duel")) and damage.card:getSkillName() == "quzhu_card" then
                 return self:objectName()
             end
         end
@@ -2962,7 +2962,7 @@ Jinji = sgs.CreateTriggerSkill{
             for _,p in sgs.qlist(room:getAlivePlayers()) do
                 n = n + p:getMark("@quzhu")
             end
-            if player:isAlive() and player:hasSkill(self:objectName()) and n > 1 and use.to:length() == 1 and use.to:at(0):getMark("@quzhu") > 0 then
+            if player:isAlive() and player:hasSkill(self:objectName()) and n > 1 and use.to:length() == 1 and use.to:at(0):getMark("@quzhu") > 0 and not room:getCurrent():hasFlag("quzhu_used"..player:objectName()) then
                 return self:objectName()
             end
         end
@@ -2986,6 +2986,8 @@ Jinji = sgs.CreateTriggerSkill{
             end
         end
         if event == sgs.PreCardUsed and player:askForSkillInvoke("quzhuaddtarget", data) then
+            room:setPlayerFlag(room:getCurrent(), "quzhu_used"..player:objectName())
+            data:toCardUse().card:setSkillName("quzhu_card")
             return true
         end
         if event == sgs.TurnStart then
@@ -3000,25 +3002,30 @@ Jinji = sgs.CreateTriggerSkill{
             local damage = data:toDamage()
             if damage.from then
                 damage.from:gainMark("@quzhu", 1)
-                room:broadcastSkillInvoke(self:objectName(), player)
                 room:setFixedDistance(ask_who, damage.from, 1)
             else
                 local target = room:askForPlayerChosen(ask_who, room:getAlivePlayers(), self:objectName())
                 target:gainMark("@quzhu", 1)
-                room:broadcastSkillInvoke(self:objectName(), player)
                 room:setFixedDistance(ask_who, target, 1)
             end
             if ask_who:getMark("jinji_first") == 0 then 
                 room:setPlayerMark(ask_who, "jinji_first", 1)
+                room:broadcastSkillInvoke(self:objectName(), 1, player)
+                room:getThread():delay(4000)
                 room:doLightbox("Erenattack1$", 2000)
+            else
+                room:broadcastSkillInvoke(self:objectName(), math.random(2,5), ask_who)
             end
         end 
         if event == sgs.DamageCaused then
+            room:broadcastSkillInvoke(self:objectName(), math.random(2,5), player)
             local damage = data:toDamage()
             damage.damage = damage.damage + 1
             data:setValue(damage)
         end
         if event == sgs.PreCardUsed then
+           room:broadcastSkillInvoke(self:objectName(), 6, player)
+           room:doLightbox("Erenattack2$", 2000)
            local use = data:toCardUse()
            local list = room:getAlivePlayers()
            room:sortByActionOrder(list)
@@ -3036,7 +3043,7 @@ Jinji = sgs.CreateTriggerSkill{
                     ask_who:turnOver()
                 end
                 room:setPlayerProperty(ask_who, "chained", sgs.QVariant(false))
-                
+                room:broadcastSkillInvoke(self:objectName(), math.random(2,5), player)
                 local choices = "eren_damage"
                 if ask_who:getPile("roads"):length() > 0 then
                     choices = choices .. "+discard_road"
@@ -3061,7 +3068,7 @@ Jinji = sgs.CreateTriggerSkill{
             and ask_who:askForSkillInvoke("erenfate_discardjudge", data) then
                 local id0 = room:askForCardChosen(ask_who, ask_who, "j", self:objectName())
                 room:throwCard(id0, ask_who, ask_who)
-                
+                room:broadcastSkillInvoke(self:objectName(), math.random(2,5), player)
                 local choices = "eren_damage"
                 if ask_who:getPile("roads"):length() > 0 then
                     choices = choices .. "+discard_road"
@@ -3094,7 +3101,7 @@ Jinji = sgs.CreateTriggerSkill{
                         n = n + 1
                     end
                 end
-                
+                if math.random(1,3) == 1 then room:doLightbox("Seefuture$", 1000) end
                 local shenzhi = room:getNCards(n, false)
                 
                 -- 创建日志消息
@@ -3103,7 +3110,7 @@ Jinji = sgs.CreateTriggerSkill{
                 log.from = ask_who
                 log.card_str = table.concat(sgs.QList2Table(shenzhi), "+")
                 room:sendLog(log)
-                
+                room:broadcastSkillInvoke(self:objectName(), math.random(2,5), player)
                 room:askForGuanxing(ask_who, shenzhi)
                 
                 local choices = "eren_damage"
@@ -3131,9 +3138,6 @@ Jinji = sgs.CreateTriggerSkill{
 Shizu = sgs.CreateTriggerSkill{
     name = "shizu",
     events = {sgs.Damage, sgs.Damaged, sgs.TargetChosen},
-    on_record = function(self, event, room, player, data)
-
-    end,
     can_trigger = function(self, event, room, player, data)
         if event == sgs.Damage or event == sgs.Damaged then
             local players = room:findPlayersBySkillName(self:objectName())
@@ -3152,7 +3156,7 @@ Shizu = sgs.CreateTriggerSkill{
         end
         if event == sgs.TargetChosen then
             local use = data:toCardUse()
-            if player:isAlive() and player:hasSkill(self:objectName()) and use.card and (use.card:isKindOf("Slash") or use.card:isKindOf("Duel")) then
+            if player:isAlive() and player:hasSkill(self:objectName()) and use.card and (use.card:isKindOf("Slash") or use.card:isKindOf("Duel")) and not room:getCurrent():hasFlag("zahyo_used"..player:objectName()) then
                 local list = {}
                 for _,p in sgs.qlist(use.to) do
                    for _,id in sgs.qlist(player:getPile("roads")) do
@@ -3175,6 +3179,7 @@ Shizu = sgs.CreateTriggerSkill{
             local who = sgs.QVariant()
             who:setValue(player)
             if ask_who:askForSkillInvoke(self, who) then
+                room:broadcastSkillInvoke(self:objectName(), math.random(1, 3), player)
                 return true
             end
         end
@@ -3182,6 +3187,7 @@ Shizu = sgs.CreateTriggerSkill{
             local who = sgs.QVariant()
             who:setValue(player)
             if ask_who:askForSkillInvoke("zahyo", who) then
+                room:setPlayerFlag(room:getCurrent(), "zahyo_used"..ask_who:objectName())
                 return true
             end
         end
@@ -3195,6 +3201,14 @@ Shizu = sgs.CreateTriggerSkill{
                 if c:getSuitString() == "heart" or c:getSuitString() == "spade" then
                     card = c
                     break
+                end
+            end
+            if player:getPile("roads"):length() > 7 and math.random(1, 3) == 1 then
+                room:broadcastSkillInvoke(self:objectName(), 4, player)
+                if math.random(1, 2) == 1 then
+                    room:doLightbox("zahyospace1$")
+                else
+                    room:doLightbox("zahyospace2$")
                 end
             end
             if card then player:addToPile("roads", card) end
@@ -3226,6 +3240,7 @@ Shizu = sgs.CreateTriggerSkill{
                     room:doAnimate(1, ask_who:objectName(), dest:objectName())
                 end
             end
+            room:broadcastSkillInvoke(self:objectName(), math.random(5, 6), ask_who)
             room:setEmotion(player, "skills/zahyo")
             local alls = room:getOtherPlayers(ask_who)
             room:sortByActionOrder(alls)

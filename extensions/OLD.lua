@@ -1698,7 +1698,7 @@ if not sgs.Sanguosha:getSkill("zhenzhu") then skills:append(zhenzhu) end
 sgs.Sanguosha:addSkills(skills)
 
 sgs.LoadTranslationTable{
-  ["OLD"] = "旧番测试包",
+  ["OLD"] = "光影·旧包",
 	
   ["Matsuri"] = "四方茉莉",
   ["@Matsuri"] = "SOLA",
@@ -1708,7 +1708,6 @@ sgs.LoadTranslationTable{
   ["illustrator:Matsuri"] = "",
   ["%Matsuri"] = "“如果可以的话，能让我最后再许一次愿吗？三人一起看到的..那个时候的天空..无法到达的..那遥远的约定之地”",
   ["~Matsuri"] = "亡语",
-  
   
   ["jiqiong"] = "冀穹",
   [":jiqiong"] = "你的偶数轮开始/失去体力后，可以亮出牌堆两端的牌，若其均可使用则你使用其中之一，否则弃置之。",
