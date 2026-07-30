@@ -3342,6 +3342,103 @@ Mieshi = sgs.CreateTriggerSkill{
     end
 }
 
+-- 地鸣
+Rumbling = sgs.CreateTriggerSkill{
+    name = "rumbling",
+    frequency = sgs.Skill_Compulsory,
+    events = {sgs.EventPhaseStart},
+    can_trigger = function(self, event, room, player, data)
+        local road_pile = "roads"
+        local alive_count = room:alivePlayerCount()
+        local A = math.floor((alive_count + 1) / 2)
+        if player:getPhase() == sgs.Player_Start and player:hasSkill(self:objectName()) and player:getPile(road_pile):length() >= A then
+            return self:objectName()
+        end
+        return ""
+    end,
+    on_cost = function(self, event, room, player, data, ask_who)
+        if player:hasShownSkill(self:objectName()) or player:askForSkillInvoke(self, data) then
+            return true
+        end
+    end,
+    on_effect = function(self, event, room, player, data, ask_who)
+        local road_pile = "roads"
+        local alive_count = room:alivePlayerCount()
+        local A = math.floor((alive_count + 1) / 2)
+        if player:getPile(road_pile):length() < A then
+            return false
+        end
+        room:sendCompulsoryTriggerLog(player, self:objectName(), true)
+        -- 弃置A张“道路”
+        local dummy = sgs.Sanguosha:cloneCard("slash", sgs.Card_NoSuit, 0)
+        dummy:deleteLater()
+
+        local pile_ids = player:getPile(road_pile)
+        for i = 0, A - 1, 1 do
+            dummy:addSubcard(pile_ids:at(i))
+        end
+
+        local reason = sgs.CardMoveReason(
+            sgs.CardMoveReason_S_REASON_REMOVE_FROM_PILE,
+            player:objectName(),
+            self:objectName(),
+            ""
+        )
+        room:throwCard(dummy, reason, player)
+        room:broadcastSkillInvoke(self:objectName())
+        room:doLightbox("rumbling"..math.random(1,2).."$")
+
+        -- 令其他角色依次响应
+        local others = room:getOtherPlayers(player)
+        local target_list = sgs.QList2Table(others)
+
+        for _, p in ipairs(target_list) do
+            if p:isAlive() then
+                local quzhu = p:getMark("@quzhu")
+
+                -- X至多为2
+                local X = math.min(quzhu, 2)
+                -- Y至多为1
+                local Y = math.min(quzhu, 1)
+
+                local need_jink = 1 + X
+                local damage_num = 1 + Y
+
+                local success = true
+
+                for i = 1, need_jink, 1 do
+                    local jink = room:askForCard(
+                        p,
+                        "jink",
+                        "@diming-jink:" .. player:objectName() .. ":" .. tostring(need_jink) .. ":" .. tostring(i),
+                        data,
+                        sgs.Card_MethodResponse,
+                        player,
+                        false,
+                        self:objectName()
+                    )
+
+                    if not jink then
+                        success = false
+                        break
+                    end
+                end
+
+                if not success then
+                    local damage = sgs.DamageStruct()
+                    damage.from = player
+                    damage.to = p
+                    damage.damage = damage_num
+                    damage.reason = self:objectName()
+                    room:damage(damage)
+                end
+            end
+        end
+
+        return false
+    end
+}
+
 local skills = sgs.SkillList()
 if not sgs.Sanguosha:getSkill("lvjigive") then skills:append(Lvjigive) end
 if not sgs.Sanguosha:getSkill("#yuejimod") then skills:append(Yuejimod) end
@@ -3401,6 +3498,8 @@ Yuyuko:addSkill(Yiling)
 lord_SE_Eren:addSkill(Jinji)
 lord_SE_Eren:addSkill(Shizu)
 lord_SE_Eren:addSkill(Mieshi)
+
+Founding_Titan:addSkill(Rumbling)
 
 sgs.LoadTranslationTable{
     ["hikarikage"] = "光影之章",
@@ -3694,7 +3793,7 @@ sgs.LoadTranslationTable{
     ["fushou"] = "赴守",
     [":fushou"] = "准备阶段开始时，若你累计造成X种属性伤害，且你获得的效果数小于X，你可以获得一个没有获得过的效果：①摸牌阶段摸牌数+1；②出牌阶段开始时，你可以与一名角色交换一张牌；③阵法技，与你处于同一队列的角色受到属性【杀】造成的伤害-1（允许且至少为0）。",
     ["qiming"] = "七铭",
-    [":qiming"] = "觉醒技，准备阶段开始时，若你累计造成7次属性伤害，则你增加1点体力上限，回复1点体力，然后你使用属性【杀】无距离次数限制。",
+    [":qiming"] = "唤醒技，准备阶段开始时，若你累计造成7次属性伤害，则你增加1点体力上限，回复1点体力，然后你使用属性【杀】无距离次数限制。",
     ["fushou_effect1"] = "摸牌阶段摸牌数+1",
     ["fushou_effect2"] = "出牌阶段开始时，你可以与一名角色交换一张牌",
     ["fushou_effect3"] = "阵法技，与你处于同一队列的角色受到属性【杀】造成的伤害-1（允许且至少为0）",

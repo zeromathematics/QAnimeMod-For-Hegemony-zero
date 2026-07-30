@@ -72,6 +72,7 @@ CommonTranslationTable = {
 	["scienceskill"] = "科学技，",
 	["gameskill"] = "游戏技，",
     ["idolskill"] = "偶像技，",
+	["wake"] = "唤醒技，",
 
 	["spade_char"] = "♠",
 	["club_char"] = "♣",

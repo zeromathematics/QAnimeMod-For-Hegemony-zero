@@ -1,6 +1,7 @@
 extension = sgs.Package("OLD", sgs.Package_GeneralPack)
 
 Matsuri = sgs.General(extension, "Matsuri", "real", 3, false)
+KazamiKazuki = sgs.General(extension, "KazamiKazuki", "real", 3, false)
 Youko = sgs.General(extension, "Youko", "magic", 3, false)
 Yomi = sgs.General(extension, "Yomi", "science", 3, false)
 Testarossa = sgs.General(extension, "Testarossa", "science", 4, false)
@@ -473,6 +474,52 @@ yehuo = sgs.CreateTriggerSkill{
     end,
 }]]
 
+--掩护
+yanhu = sgs.CreateTriggerSkill{
+	name = "yanhu",
+    events = {sgs.TargetConfirming},
+	can_trigger = function(self, event, room, player, data)
+		if event == sgs.TargetConfirming then
+		   local use = data:toCardUse()
+           local card = use.card
+		   local players = room:findPlayersBySkillName(self:objectName())
+		   for _,sp in sgs.qlist(players) do
+                if (card:isKindOf("Slash") or card:isKindOf("Duel")) and player ~= sp and sp:getHandcardNum() > 0 then
+                    return self:objectName(), sp
+                end
+		   end
+		end
+		return ""
+	end,
+	on_cost = function(self, event, room, player, data, sp)
+		if event == sgs.TargetConfirming and sp:askForSkillInvoke(self, data) then
+		   local card = room:askForCard(sp, ".|.|.|hand", "@yanhu-discard", data, self:objectName())
+		   if card then
+			    if card:isKindOf("BasicCard") then
+			       room:setPlayerProperty(sp, "yanhu_card", sgs.QVariant("basic"))
+		        end
+				if card:isKindOf("TrickCard") then
+			       room:setPlayerProperty(sp, "yanhu_card", sgs.QVariant("trick"))
+		        end
+			   return true
+		   end
+		end
+		return false
+	end,
+	on_effect = function(self, event, room, player, data, sp)
+	    if event == sgs.TargetConfirming then
+			local use = data:toCardUse()
+			use.to:removeOne(player)
+			use.to:append(sp)
+			data:setValue(use)
+			local type = sp:property("yanhu_card"):toString()
+			if type == "basic" then sp:drawCards(1) end
+			if type == "trick" then
+
+			end
+		end	
+	end
+}
 
 ---缩地
 suodi = sgs.CreateTriggerSkill{
@@ -1671,6 +1718,7 @@ zhenzhu = sgs.CreateTriggerSkill{
 Matsuri:addSkill(jiqiong)
 Matsuri:addSkill(huaishi)
 Matsuri:addSkill(yehuo)
+KazamiKazuki:addSkill(yanhu)
 Youko:addSkill(suodi)
 Youko:addSkill(sheyanyouko)
 Yomi:addSkill(chuling)
@@ -1708,6 +1756,19 @@ sgs.LoadTranslationTable{
   ["illustrator:Matsuri"] = "",
   ["%Matsuri"] = "“如果可以的话，能让我最后再许一次愿吗？三人一起看到的..那个时候的天空..无法到达的..那遥远的约定之地”",
   ["~Matsuri"] = "亡语",
+
+  ["KazamiKazuki"] = "风见一姬",
+  ["@KazamiKazuki"] = "灰色三部曲",
+  ["#KazamiKazuki"] = "天才少女",
+  ["designer:KazamiKazuki"] = "Yuuki",
+  ["yanhu"] = "掩护",
+  [":yanhu"] = "当一名其他角色成为【杀】或【决斗】的目标时，你可以弃置一张手牌，然后将此【杀】或【决斗】的目标转移为自己，若你弃置的为基本牌你摸一张牌，弃置的为锦囊牌你视为使用一张【杀】。",
+  ["zhutao"] = "助逃",
+  ["xingcun"] = "幸存",
+  ["$xingcun"] = "不会吧？真的吗？",
+  ["$yanhu"] = "你知道吗，我一定会帮你，所以不用担心，明白吗？",
+  ["$zhutao"] = "绝对不能回头，快点...跑起来！",
+  ["~KazamiKazuki"] = "不要紧，我不会死的，我们一定会再见面的",
   
   ["jiqiong"] = "冀穹",
   [":jiqiong"] = "你的偶数轮开始/失去体力后，可以亮出牌堆两端的牌，若其均可使用则你使用其中之一，否则弃置之。",

@@ -46,6 +46,7 @@ config = {
 		deputy = "#00FFFF",
 		array = "#800080",
 		lord = "#FFA500",
+		wake = "#AA0000",
 		linkage = "#EE00FF",
         state = "#9D00FF",
 		clubskill = "#C71585",
