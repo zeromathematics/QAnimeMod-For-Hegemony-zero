@@ -3,6 +3,7 @@ extension = sgs.Package("OLD", sgs.Package_GeneralPack)
 Matsuri = sgs.General(extension, "Matsuri", "real", 3, false)
 KazamiKazuki = sgs.General(extension, "KazamiKazuki", "real", 3, false)
 Youko = sgs.General(extension, "Youko", "magic", 3, false)
+Frieren = sgs.General(extension, "Frieren", "magic", 3, false)
 Yomi = sgs.General(extension, "Yomi", "science", 3, false)
 Testarossa = sgs.General(extension, "Testarossa", "science", 4, false)
 Asa = sgs.General(extension, "Asa", "game", 3, false)
@@ -741,7 +742,588 @@ sheyanyouko = sgs.CreateTriggerSkill{
 	end,
 }
 
+Qianban = sgs.CreateTriggerSkill{
+    name = "qianban",
+    frequency = sgs.Skill_Compulsory,
+    events = {sgs.CardUsed},
 
+    can_trigger = function(self, event, room, player, data)
+        if not player or not player:isAlive() then
+            return ""
+        end
+
+        if not player:hasSkill(self:objectName()) then
+            return ""
+        end
+
+        local use = data:toCardUse()
+        if not use.card or use.card:isKindOf("SkillCard") then
+            return ""
+        end
+
+        -- “使用黑桃牌”，不包括单纯打出或响应的牌
+        if use.card:getSuit() ~= sgs.Card_Spade then
+            return ""
+        end
+
+        -- 按当前回合分别记录次数。
+        -- 技能拥有者在其他角色回合使用黑桃牌，也可以触发一次。
+        local current = room:getCurrent()
+        if not current then
+            return ""
+        end
+
+        local flag_name = "qianban_used_" .. player:objectName()
+        if current:hasFlag(flag_name) then
+            return ""
+        end
+
+        return self:objectName()
+    end,
+
+    on_cost = function(self, event, room, player, data, ask_who)
+        -- 国战暗将处理：
+        -- 已经明置时锁定发动；未明置时允许玩家决定是否明置发动。
+        if player:hasShownSkill(self:objectName())
+            or player:askForSkillInvoke(self, data) then
+
+            local current = room:getCurrent()
+            if current then
+                room:setPlayerFlag(
+                    current,
+                    "qianban_used_" .. player:objectName()
+                )
+            end
+
+            return true
+        end
+
+        return false
+    end,
+
+    on_effect = function(self, event, room, player, data, ask_who)
+        room:sendCompulsoryTriggerLog(
+            player,
+            self:objectName(),
+            true
+        )
+        room:broadcastSkillInvoke(
+            self:objectName(),
+            player
+        )
+
+        -- “一名角色”包括芙莉莲自己，且锁定技不能取消选择。
+        local target = room:askForPlayerChosen(
+            player,
+            room:getAlivePlayers(),
+            self:objectName(),
+            "@qianban-target",
+            false,
+            true
+        )
+
+        if not target or not target:isAlive() then
+            return false
+        end
+
+        -- 由被选择的角色声明一种非黑桃花色。
+        local choice = room:askForChoice(
+            target,
+            self:objectName(),
+            "heart+diamond+club"
+        )
+
+        local suit = sgs.Card_NoSuit
+
+        if choice == "heart" then
+            suit = sgs.Card_Heart
+        elseif choice == "diamond" then
+            suit = sgs.Card_Diamond
+        elseif choice == "club" then
+            suit = sgs.Card_Club
+        end
+
+        if suit == sgs.Card_NoSuit then
+            return false
+        end
+
+        -- 公示被选择角色声明的花色。
+        local log = sgs.LogMessage()
+        log.type = "#ChooseSuit"
+        log.from = target
+        log.arg = sgs.Card_Suit2String(suit)
+        room:sendLog(log)
+
+        -- 收集牌堆中所有符合声明花色的牌。
+        local candidates = sgs.IntList()
+
+        for _, id in sgs.qlist(room:getDrawPile()) do
+            local card = sgs.Sanguosha:getCard(id)
+            if card and card:getSuit() == suit then
+                candidates:append(id)
+            end
+        end
+
+        -- 从符合花色的牌中等概率随机取得一张。
+        if candidates:length() > 0 then
+            local index = math.random(0, candidates:length() - 1)
+            local id = candidates:at(index)
+            local card = sgs.Sanguosha:getCard(id)
+
+            if card then
+                room:obtainCard(target, card)
+            end
+        end
+
+        return false
+    end,
+}
+
+JimoCard = sgs.CreateSkillCard{
+    name = "jimoCard",
+    target_fixed = true,
+    will_throw = false,
+    handling_method = sgs.Card_MethodNone,
+
+    on_use = function(self, room, source, targets)
+        if self:getSubcards():length() ~= 1 then
+            return
+        end
+
+        local id = self:getSubcards():first()
+        local card = sgs.Sanguosha:getCard(id)
+
+        if not card then
+            return
+        end
+
+        -- 再次确认该牌仍在芙莉莲的手牌区内，
+        -- 并且仍然是一张普通锦囊牌。
+        if room:getCardPlace(id) ~= sgs.Player_PlaceHand
+            or not card:isNDTrick() then
+            return
+        end
+
+        -- 展示选择的普通锦囊牌。
+        room:showCard(source, id)
+
+        -- 将此牌标记为“术式”。
+        room:setCardFlag(card, "jimo_shushi")
+
+        -- 记录“术式”的实体牌ID。
+        -- 加1是为了避免实体牌ID为0时与“没有术式”混淆。
+        room:setPlayerMark(
+            source,
+            "jimo_shushi_id",
+            id + 1
+        )
+
+        room:broadcastSkillInvoke("jimo", source)
+
+        -- 从牌堆中查找所有【杀】。
+        local slash_list = sgs.IntList()
+
+        for _, slash_id in sgs.qlist(room:getDrawPile()) do
+            local slash = sgs.Sanguosha:getCard(slash_id)
+
+            if slash and slash:isKindOf("Slash") then
+                slash_list:append(slash_id)
+            end
+        end
+
+        -- 随机获得其中一张【杀】。
+        if slash_list:length() > 0 then
+            local index = math.random(0, slash_list:length() - 1)
+            local slash_id = slash_list:at(index)
+            local slash = sgs.Sanguosha:getCard(slash_id)
+
+            if slash then
+                room:obtainCard(source, slash)
+            end
+        end
+
+        -- 本回合使用【杀】的次数上限+1。
+        room:setPlayerFlag(source, "jimo_slash")
+    end,
+}
+
+JimoVS = sgs.CreateOneCardViewAsSkill{
+    name = "jimo",
+
+    view_filter = function(self, card)
+        -- 只能选择手牌中的普通锦囊牌。
+        return not card:isEquipped()
+            and card:isNDTrick()
+    end,
+
+    view_as = function(self, card)
+        local skill_card = JimoCard:clone()
+        skill_card:addSubcard(card)
+        skill_card:setSkillName(self:objectName())
+        skill_card:setShowSkill(self:objectName())
+        return skill_card
+    end,
+
+    enabled_at_play = function(self, player)
+        -- 按照当前项目的技能牌历史记录格式，
+        -- 保证出牌阶段限一次。
+        return not player:hasUsed(
+            "ViewAsSkill_jimoCard"
+        )
+    end,
+}
+
+Jimo = sgs.CreateTriggerSkill{
+    name = "jimo",
+    view_as_skill = JimoVS,
+
+    events = {
+        sgs.CardsMoveOneTime,
+        sgs.EventPhaseChanging
+    },
+
+    on_record = function(self, event, room, player, data)
+        if event == sgs.CardsMoveOneTime then
+            local move = data:toMoveOneTime()
+
+            if not move.from then
+                return
+            end
+
+            local from = findPlayerByObjectName(move.from:objectName())
+            local mark = from:getMark("jimo_shushi_id")
+
+            if mark <= 0 then
+                return
+            end
+
+            local shushi_id = mark - 1
+
+            -- 只有“术式”本身从原角色的手牌区离开时，
+            -- 才清除对应标记。
+            if move.from_places:contains(sgs.Player_PlaceHand)
+                and move.card_ids:contains(shushi_id) then
+
+                local card = sgs.Sanguosha:getCard(shushi_id)
+
+                if card then
+                    room:setCardFlag(
+                        card,
+                        "-jimo_shushi"
+                    )
+                end
+
+                room:setPlayerMark(
+                    from,
+                    "jimo_shushi_id",
+                    0
+                )
+            end
+        end
+
+        if event == sgs.EventPhaseChanging then
+            local change = data:toPhaseChange()
+
+            if change.to ~= sgs.Player_NotActive then
+                return
+            end
+
+            -- 本回合结束时，无论“术式”是否仍在手中，
+            -- 都清除“术式”标记。
+            local mark = player:getMark("jimo_shushi_id")
+
+            if mark > 0 then
+                local id = mark - 1
+                local card = sgs.Sanguosha:getCard(id)
+
+                if card then
+                    room:setCardFlag(
+                        card,
+                        "-jimo_shushi"
+                    )
+                end
+
+                room:setPlayerMark(
+                    player,
+                    "jimo_shushi_id",
+                    0
+                )
+            end
+
+            -- 清除额外使用【杀】次数的临时状态。
+            if player:hasFlag("jimo_slash") then
+                room:setPlayerFlag(
+                    player,
+                    "-jimo_slash"
+                )
+            end
+        end
+    end,
+
+    can_trigger = function(self, event, room, player, data)
+        -- 此触发技仅负责记录和清理，
+        -- 不进入技能发动结算。
+        return ""
+    end,
+}
+
+JimoMod = sgs.CreateTargetModSkill{
+    name = "#jimomod",
+    pattern = "Slash",
+
+    residue_func = function(self, player, card)
+        if player:hasFlag("jimo_slash") then
+            return 1
+        end
+
+        return 0
+    end,
+}
+
+-- 判断一张牌是否为“术式”
+
+-- 应与“集魔”设置的牌 Flag 保持一致
+
+local function isShushi(card)
+    return card and card:hasFlag("jimo_shushi")
+end
+
+-- 将角色列表中的角色名保存下来
+
+local function getPlayerNames(players)
+    local names = {}
+	if not players then return names end
+    for _, p in sgs.qlist(players) do
+        table.insert(names, p:objectName())
+    end
+    return names
+end
+
+-- 判断一个角色名是否属于最初目标
+local function containsPlayerName(names, player)
+    if not player then
+        return false
+    end
+    for _, name in ipairs(names) do
+        if name == player:objectName() then
+            return true
+        end
+    end
+    return false
+end
+
+-- 获得当前可以被“扩术”增加的目标
+local function getModaoExtraTargets(room, player, use)
+    local targets = sgs.SPlayerList()
+    local empty_targets = sgs.PlayerList()
+    for _, p in sgs.qlist(room:getAlivePlayers()) do
+        if not use.to:contains(p)
+            and use.card:targetFilter(empty_targets, p, player)
+            and not player:isProhibited(p, use.card) then
+            targets:append(p)
+        end
+    end
+    return targets
+end
+
+-- 获得当前仍可被“守式”取消的原目标
+-- 扩术后来增加的目标不会进入此列表
+local function getModaoOriginalTargets(room, use, original_names)
+    local targets = sgs.SPlayerList()
+    for _, p in sgs.qlist(use.to) do
+        if containsPlayerName(original_names, p) then
+            targets:append(p)
+        end
+    end
+    return targets
+end
+
+Modao = sgs.CreateTriggerSkill{
+    name = "modao",
+    events = {
+        sgs.PreCardUsed,
+        sgs.TrickCardCanceling
+    },
+    can_preshow = true,
+
+    on_record = function(self, event, room, player, data)
+        if event ~= sgs.PreCardUsed or not player then
+            return
+        end
+
+        local use = data:toCardUse()
+
+        -- 记录本回合使用过的黑桃牌数。
+        -- “-Clear”标记会在当前回合结束时自动清除。
+        if use.card
+            and not use.card:isKindOf("SkillCard")
+            and use.card:getSuit() == sgs.Card_Spade then
+
+            room:addPlayerMark(player, "modao_spade-Clear", 1)
+        end
+    end,
+
+    can_trigger = function(self, event, room, player, data)
+        if event == sgs.PreCardUsed then
+            local use = data:toCardUse()
+
+            if player
+                and player:isAlive()
+                and player:hasSkill(self:objectName())
+                and player:getMark("modao_used-Clear") == 0
+                and isShushi(use.card) then
+
+                return self:objectName()
+            end
+        end
+
+        if event == sgs.TrickCardCanceling then
+            local effect = data:toCardEffect()
+
+            -- 参考优吉欧“绽放”：
+            -- 返回 true，阻止【金色宣言】抵消这张牌。
+            if effect.card and effect.card:hasFlag("modao_pofa") then
+                return self:objectName()
+            end
+        end
+
+        return ""
+    end,
+
+    on_cost = function(self, event, room, player, data, ask_who)
+        if event == sgs.TrickCardCanceling then
+            return true
+        end
+
+        -- 不额外询问发动：进入效果后直接显示可选项目和“取消”。
+        -- 若首先选择“取消”，则不消耗每回合次数。
+        return true
+    end,
+
+    on_effect = function(self, event, room, player, data, ask_who)
+        if event == sgs.TrickCardCanceling then
+            return true
+        end
+
+        local use = data:toCardUse()
+        if not use.card then
+            return false
+        end
+
+        -- 必须在执行“扩术”前保存原始目标。
+        local original_names = getPlayerNames(use.to)
+
+        -- 当前这张牌若为黑桃牌，on_record 已将其计算在内。
+        local x = player:getMark("modao_spade-Clear")
+        x = math.max(1, math.min(3, x))
+
+        local invoked = false
+        local pofa_used = false
+
+        for i = 1, x do
+            local choices = {}
+
+            -- “破法”不能重复选择。
+            if not pofa_used then
+                table.insert(choices, "modao_pofa")
+            end
+
+            -- 只有存在合法的额外目标时，才显示“扩术”。
+            local extra_targets = getModaoExtraTargets(room, player, use)
+            if not extra_targets:isEmpty() then
+                table.insert(choices, "modao_kuoshu")
+            end
+
+            -- 只有尚有原目标可以取消时，才显示“守式”。
+            local original_targets =
+                getModaoOriginalTargets(room, use, original_names)
+
+            if not original_targets:isEmpty() then
+                table.insert(choices, "modao_shoushi")
+            end
+
+            -- 所有效果均不可选时，直接结束。
+            if #choices == 0 then
+                break
+            end
+
+            -- 玩家可以少于 X 次执行，故始终加入“取消”。
+            table.insert(choices, "cancel")
+
+            local choice = room:askForChoice(
+                player,
+                self:objectName(),
+                table.concat(choices, "+"),
+                data
+            )
+
+            if choice == "cancel" then
+                break
+            end
+
+            -- 第一次真正选择效果时，才消耗本回合次数。
+            if not invoked then
+                invoked = true
+                room:setPlayerMark(player, "modao_used-Clear", 1)
+                room:broadcastSkillInvoke(self:objectName(), player)
+            end
+
+            if choice == "modao_pofa" then
+                pofa_used = true
+                use.card:setFlags("modao_pofa")
+
+            elseif choice == "modao_kuoshu" then
+                -- 每次选择“扩术”后重新取得合法目标。
+                extra_targets = getModaoExtraTargets(room, player, use)
+
+                if not extra_targets:isEmpty() then
+                    local target = room:askForPlayerChosen(
+                        player,
+                        extra_targets,
+                        self:objectName(),
+                        "@modao-kuoshu",
+                        false,
+                        true
+                    )
+
+                    if target then
+                        use.to:append(target)
+                    end
+                end
+
+            elseif choice == "modao_shoushi" then
+                -- 始终从最初的目标名单中筛选：
+                -- “扩术”增加的目标不能被“守式”取消。
+                original_targets =
+                    getModaoOriginalTargets(use, original_names)
+
+                if not original_targets:isEmpty() then
+                    local target = room:askForPlayerChosen(
+                        player,
+                        original_targets,
+                        self:objectName(),
+                        "@modao-shoushi",
+                        false,
+                        true
+                    )
+
+                    if target then
+                        sgs.Room_cancelTarget(use, target)
+                        -- player:gainMark("@armor", 1)
+                    end
+                end
+            end
+        end
+
+        if invoked then
+            -- 所有选择结束后统一排序、统一写回。
+            room:sortByActionOrder(use.to)
+            data:setValue(use)
+        end
+
+        return false
+    end
+}
 
 ---除灵
 chulingCard = sgs.CreateSkillCard{
@@ -1721,6 +2303,10 @@ Matsuri:addSkill(yehuo)
 KazamiKazuki:addSkill(yanhu)
 Youko:addSkill(suodi)
 Youko:addSkill(sheyanyouko)
+Frieren:addSkill(Qianban)
+Frieren:addSkill(Jimo)
+Frieren:addSkill(Modao)
+sgs.insertRelatedSkills(extension, "jimo", "#jimomod")
 Yomi:addSkill(chuling)
 Yomi:addSkill(luanhonglian)
 Yomi:addSkill(eling)
@@ -1743,6 +2329,7 @@ if not sgs.Sanguosha:getSkill("#tehuaSt") then skills:append(tehuaSt) end
 if not sgs.Sanguosha:getSkill("tehuaglobal") then skills:append(tehuaglobal) end
 if not sgs.Sanguosha:getSkill("mohuanMaxCards") then skills:append(mohuanMaxCards) end
 if not sgs.Sanguosha:getSkill("zhenzhu") then skills:append(zhenzhu) end
+if not sgs.Sanguosha:getSkill("#jimomod") then skills:append(JimoMod) end
 sgs.Sanguosha:addSkills(skills)
 
 sgs.LoadTranslationTable{
@@ -1823,7 +2410,33 @@ sgs.LoadTranslationTable{
   ["$sheyanyouko1"] = "嘿~还挺结实的嘛，那么看来就算我这么做你也死不了咯。",
   ["$sheyanyouko2"] = "死了吗？",
   ["$sheyanyouko3"] = "邪炎。",
-  
+
+    ["Frieren"] = "芙莉莲",
+    ["@Frieren"] = "葬送的芙莉莲",
+    ["#Frieren"] = "葬送的魔法使",
+
+    ["designer:Frieren"] = "晴空",
+    ["cv:Frieren"] = "种崎敦美",
+
+    ["%Frieren"] = "“因为勇者欣梅尔就是这么做的。”",
+    ["~Frieren"] = "人类的时间，果然过得很快呢……",
+
+   ["qianban"] = "牵绊",
+   [":qianban"] = "锁定技，<font color=\"green\"><b>每回合限一次，</b></font>当你使用一张黑桃牌时，你选择一名角色，令其声明一种非黑桃花色，其随机获得牌堆中一张该花色的牌。",
+   ["@qianban-target"] ="牵绊：请选择一名角色，其声明一种非黑桃花色",
+    ["jimo"] = "集魔",
+    [":jimo"] = "出牌阶段限一次，你可以展示一张手牌中的普通锦囊牌，称为“术式”，直到其离开你的手牌区或本回合结束。然后你随机获得牌堆中的一张【杀】，且本回合使用【杀】的次数上限＋1。",
+    ["jimoCard"] = "集魔",
+    ["jimo_shushi"] = "术式",
+    ["modao"] = "魔导",
+    [":modao"] = "每回合限一次，当你使用“术式”时，你可以依次执行至多X次下列一项，且可以重复选择“扩术”或“守式”：破法，此牌不能被【金色宣言】响应；扩术，为此牌增加一名合法目标；守式，取消此牌的一名原目标，然后你获得1点护甲。X为你本回合使用过的黑桃牌数，至少为1，至多为3。",
+
+    ["modao_pofa"] = "破法",
+    ["modao_kuoshu"] = "扩术",
+    ["modao_shoushi"] = "守式",
+
+    ["@modao-kuoshu"] = "魔导·扩术：请选择一名额外目标",
+    ["@modao-shoushi"] = "魔导·守式：请选择此牌的一名原目标",
   
   ["Yomi"] = "谏山黄泉",
   ["@Yomi"] = "食灵",
