@@ -522,6 +522,256 @@ yanhu = sgs.CreateTriggerSkill{
 	end
 }
 
+-- 助逃
+Zhutao = sgs.CreateTriggerSkill{
+    name = "zhutao",
+    events = {sgs.Dying},
+    can_preshow = true,
+
+    can_trigger = function(self, event, room, player, data)
+        if event ~= sgs.Dying then
+            return ""
+        end
+
+        local dying = data:toDying()
+
+        if player
+            and player:isAlive()
+            and dying.who == player
+            and player:hasSkill(self:objectName())
+            and not room:getOtherPlayers(player):isEmpty() then
+
+            return self:objectName()
+        end
+
+        return ""
+    end,
+
+    on_cost = function(self, event, room, player, data, ask_who)
+        local targets = room:getOtherPlayers(player)
+
+        local target = room:askForPlayerChosen(
+            player,
+            targets,
+            self:objectName(),
+            "@zhutao-choose",
+            true,
+            true
+        )
+
+        if not target then
+            return false
+        end
+
+        room:setPlayerProperty(
+            player,
+            "zhutao_target",
+            sgs.QVariant(target:objectName())
+        )
+
+        room:broadcastSkillInvoke(self:objectName(), player)
+        return true
+    end,
+
+    on_effect = function(self, event, room, player, data, ask_who)
+        local target_name =
+            player:property("zhutao_target"):toString()
+
+        room:setPlayerProperty(
+            player,
+            "zhutao_target",
+            sgs.QVariant()
+        )
+
+        local target = findPlayerByObjectName(target_name)
+        if not target or not target:isAlive() then
+            return false
+        end
+
+        -- 只有目标原本没有“幸存”时，才由“助逃”授予技能。
+        -- 此标记用于防止到期时误删目标本来就有的“幸存”。
+        if not target:hasSkill("xingcun") then
+            room:acquireSkill(target, "xingcun")
+            room:setPlayerMark(target, "zhutao_xingcun", 1)
+        end
+
+        -- 标记其正受到“助逃”的持续效果。
+        room:setPlayerMark(target, "zhutao_effect", 1)
+
+        -- 若在目标自己的当前回合内获得“幸存”，
+        -- 当前回合结束不算“其下个回合结束”，故需要跳过一次清理。
+        if room:getCurrent()
+            and room:getCurrent():objectName()
+                == target:objectName() then
+
+            room:setPlayerMark(
+                target,
+                "zhutao_wait_next_turn",
+                1
+            )
+        else
+            room:setPlayerMark(
+                target,
+                "zhutao_wait_next_turn",
+                0
+            )
+        end
+
+        return false
+    end
+}
+
+-- “助逃”的全局到期清理
+ZhutaoClear = sgs.CreateTriggerSkill{
+    name = "#zhutao-clear",
+    global = true,
+    events = {
+        sgs.EventPhaseChanging,
+        sgs.Death
+    },
+
+    on_record = function(self, event, room, player, data)
+        if event == sgs.EventPhaseChanging then
+            local change = data:toPhaseChange()
+
+            if change.to ~= sgs.Player_NotActive
+                or player:getMark("zhutao_effect") == 0 then
+
+                return
+            end
+
+            -- 若“幸存”是在目标本回合内获得的，
+            -- 本次回合结束只消除等待标记，不移除技能。
+            if player:getMark("zhutao_wait_next_turn") > 0 then
+                room:setPlayerMark(
+                    player,
+                    "zhutao_wait_next_turn",
+                    0
+                )
+
+                return
+            end
+
+            room:setPlayerMark(player, "zhutao_effect", 0)
+            room:setPlayerMark(
+                player,
+                "zhutao_wait_next_turn",
+                0
+            )
+
+            -- 只移除确实由“助逃”授予的“幸存”。
+            if player:getMark("zhutao_xingcun") > 0 then
+                room:setPlayerMark(
+                    player,
+                    "zhutao_xingcun",
+                    0
+                )
+
+                if player:hasSkill("xingcun") then
+                    room:detachSkillFromPlayer(
+                        player,
+                        "xingcun"
+                    )
+                end
+            end
+
+        elseif event == sgs.Death then
+            local death = data:toDeath()
+            local dead = death.who
+
+            if dead then
+                room:setPlayerMark(dead, "zhutao_effect", 0)
+                room:setPlayerMark(dead, "zhutao_xingcun", 0)
+                room:setPlayerMark(
+                    dead,
+                    "zhutao_wait_next_turn",
+                    0
+                )
+            end
+        end
+    end,
+
+    can_trigger = function(self, event, room, player, data)
+        return ""
+    end
+}
+
+-- 幸存
+Xingcun = sgs.CreateTriggerSkill{
+    name = "xingcun",
+    events = {sgs.Dying},
+
+    can_trigger = function(self, event, room, player, data)
+        local dying = data:toDying()
+        if not dying or not dying.who then
+            return ""
+        end
+
+        local owners = room:findPlayersBySkillName(self:objectName())
+        for _, sp in sgs.qlist(owners) do
+            if sp:isAlive()
+                and sp:isFriendWith(dying.who)
+                and (sp:isWounded()
+                    or sp:getHandcardNum() < sp:getMaxHp()) then
+                return self:objectName(), sp
+            end
+        end
+
+        return ""
+    end,
+
+    on_cost = function(self, event, room, player, data, ask_who)
+        if ask_who:askForSkillInvoke(self, data) then
+            room:broadcastSkillInvoke(self:objectName(), ask_who)
+            return true
+        end
+
+        return false
+    end,
+
+    on_effect = function(self, event, room, player, data, ask_who)
+        local choices = {}
+
+        -- 已满体力时不提供回复选项
+        if ask_who:isWounded() then
+            table.insert(choices, "xingcun_recover")
+        end
+
+        -- 手牌数达到或超过体力上限时不提供补牌选项
+        if ask_who:getHandcardNum() < ask_who:getMaxHp() then
+            table.insert(choices, "xingcun_draw")
+        end
+
+        if #choices == 0 then
+            return false
+        end
+
+        local choice = room:askForChoice(
+            ask_who,
+            self:objectName(),
+            table.concat(choices, "+"),
+            data
+        )
+
+        if choice == "xingcun_recover" then
+            local recover = sgs.RecoverStruct()
+            recover.who = ask_who
+            recover.recover = 1
+            room:recover(ask_who, recover, true)
+
+        elseif choice == "xingcun_draw" then
+            local draw_num =
+                ask_who:getMaxHp() - ask_who:getHandcardNum()
+
+            if draw_num > 0 then
+                ask_who:drawCards(draw_num, self:objectName())
+            end
+        end
+
+        return false
+    end
+}
+
 ---缩地
 suodi = sgs.CreateTriggerSkill{
 	name = "suodi",
@@ -2301,6 +2551,9 @@ Matsuri:addSkill(jiqiong)
 Matsuri:addSkill(huaishi)
 Matsuri:addSkill(yehuo)
 KazamiKazuki:addSkill(yanhu)
+KazamiKazuki:addSkill(Zhutao)
+KazamiKazuki:addRelateSkill("xingcun")
+sgs.insertRelatedSkills(extension, "zhutao", "#zhutao-clear")
 Youko:addSkill(suodi)
 Youko:addSkill(sheyanyouko)
 Frieren:addSkill(Qianban)
@@ -2330,6 +2583,8 @@ if not sgs.Sanguosha:getSkill("tehuaglobal") then skills:append(tehuaglobal) end
 if not sgs.Sanguosha:getSkill("mohuanMaxCards") then skills:append(mohuanMaxCards) end
 if not sgs.Sanguosha:getSkill("zhenzhu") then skills:append(zhenzhu) end
 if not sgs.Sanguosha:getSkill("#jimomod") then skills:append(JimoMod) end
+if not sgs.Sanguosha:getSkill("#zhutao-clear") then skills:append(ZhutaoClear) end
+if not sgs.Sanguosha:getSkill("xingcun") then skills:append(Xingcun) end
 sgs.Sanguosha:addSkills(skills)
 
 sgs.LoadTranslationTable{
@@ -2351,7 +2606,12 @@ sgs.LoadTranslationTable{
   ["yanhu"] = "掩护",
   [":yanhu"] = "当一名其他角色成为【杀】或【决斗】的目标时，你可以弃置一张手牌，然后将此【杀】或【决斗】的目标转移为自己，若你弃置的为基本牌你摸一张牌，弃置的为锦囊牌你视为使用一张【杀】。",
   ["zhutao"] = "助逃",
+  [":zhutao"] = "当你进入濒死状态时，你可以选择一名其他角色，令其获得技能“幸存”，直到其下个回合结束。",
+  ["@zhutao-choose"] = "助逃：你可以选择一名其他角色，令其获得“幸存”直到其下个回合结束",
   ["xingcun"] = "幸存",
+  [":xingcun"] = "当一名与你同势力的角色进入濒死状态时，你可以选择一项：1.回复1点体力；2.将手牌摸至体力上限。",
+  ["xingcun_recover"] = "回复1点体力",
+  ["xingcun_draw"] = "将手牌摸至体力上限",
   ["$xingcun"] = "不会吧？真的吗？",
   ["$yanhu"] = "你知道吗，我一定会帮你，所以不用担心，明白吗？",
   ["$zhutao"] = "绝对不能回头，快点...跑起来！",
