@@ -406,28 +406,40 @@ bool GameRule::effect(TriggerEvent triggerEvent, Room *room, ServerPlayer *playe
                 log.arg = new_kingdom;
                 room->sendLog(log);
                 }*/
-                if (player->getActualGeneral1()->getKingdom().contains("|")) {
-                    if (!player->getActualGeneral2()->getKingdom().contains("|")){
-                        player->setKingdom(player->getActualGeneral2()->getKingdom());
-                    }
-                    else{
-                        QStringList list;
-                        foreach(auto s, player->getActualGeneral1()->getKingdom().split("|")){
-                            if ( player->getActualGeneral2()->getKingdom().split("|").contains(s)){
-                                list << s;
+                // 双将模式才需要协调主将与副将的势力。
+                // 单将3v3没有 actual_general2，不能进入这段。
+                if (room->getMode() != "06_3v3") {
+                    if (player->getActualGeneral1()->getKingdom().contains("|")) {
+                        if (!player->getActualGeneral2()->getKingdom().contains("|")) {
+                            player->setKingdom(
+                                player->getActualGeneral2()->getKingdom()
+                            );
+                        } else {
+                            QStringList list;
+
+                            foreach (auto s,
+                                     player->getActualGeneral1()->getKingdom().split("|")) {
+                                if (player->getActualGeneral2()
+                                        ->getKingdom().split("|").contains(s)) {
+                                    list << s;
+                                }
+                            }
+
+                            foreach (auto v, list) {
+                                if (player->getMark("globalkingdom_" + v) > 0) {
+                                    player->setKingdom(v);
+                                    break;
+                                }
                             }
                         }
-                        //QString choice = room->askForChoice(player, "Revolution_AskForKingdom", list.join("+"));
-                        foreach(auto v, list){
-                            if (player->getMark("globalkingdom_"+v)>0){
-                                player->setKingdom(v);
-                                break;
-                            }
-                        }
+                    } else if (
+                        player->getActualGeneral1()->getKingdom() == "careerist"
+                        && !player->getActualGeneral2()->getKingdom().contains("|")
+                    ) {
+                        player->setKingdom(
+                            player->getActualGeneral2()->getKingdom()
+                        );
                     }
-                }
-                else if (player->getActualGeneral1()->getKingdom() == "careerist" && !player->getActualGeneral2()->getKingdom().contains("|")){
-                    player->setKingdom(player->getActualGeneral2()->getKingdom());
                 }
                 foreach (const Skill *skill, player->getVisibleSkillList()) {
                     if (skill->getFrequency() == Skill::Limited && !skill->getLimitMark().isEmpty() && (!skill->isLordSkill() || player->hasLordSkill(skill->objectName()))) {

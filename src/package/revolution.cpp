@@ -3022,6 +3022,7 @@ public:
             }
             room->setPlayerFlag(player, "liufang_clear");
             if (n>0){
+              room->doAnimate(2, "anim=skills/liufang");
               room->broadcastSkillInvoke(objectName());
               room->loseHp(player, n);
             }

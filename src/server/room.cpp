@@ -5375,8 +5375,15 @@ void Room::startGame()
         const General *general1 = Sanguosha->getGeneral(generals.first());
         const General *general2 = Sanguosha->getGeneral(generals.last());
         if (mode == "06_3v3"){
-            handleUsedGeneral(generals.first());
+            const QString general_name = generals.first();
+
+            player->setGeneralName(general_name);
+            player->setActualGeneral1Name(general_name);
+            player->setGender(general1->getGender());
+
+            handleUsedGeneral(general_name);
              Q_ASSERT(general1);
+
             player->setMaxHp(qMax( general1->getMaxHpHead(), general1->getMaxHpDeputy()));
             player->setHp(player->getMaxHp());
             // setup AI
@@ -6370,6 +6377,11 @@ void Room::preparePlayers()
     foreach (ServerPlayer *player, m_players) {
         QString general1_name = tag[player->objectName()].toStringList().at(0);
         if (mode == "06_3v3"){
+            const General *general = Sanguosha->getGeneral(general1_name);
+            if (!general)
+                continue;
+
+            player->setGender(general->getGender());
             if (!player->property("Duanchang").toString().split(",").contains("head")) {
                 foreach (const Skill *skill, Sanguosha->getGeneral(general1_name)->getVisibleSkillList(true, true))
                     player->addSkill(skill->objectName());

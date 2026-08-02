@@ -464,6 +464,8 @@ public:
     {
         if (event == CardsMoveOneTime && TriggerSkill::triggerable(player)) {
              CardsMoveOneTimeStruct move = data.value<CardsMoveOneTimeStruct>();
+             if (move.from && move.from->objectName() == player->objectName())
+                 return QStringList();
              if (move.reason.m_reason != CardMoveReason::S_REASON_USE && move.reason.m_reason != CardMoveReason::S_REASON_LETUSE && move.to_place == Player::DiscardPile && player->getMark("guangyu_used2") == 0){
                  foreach(int id, move.card_ids){
                      if (Sanguosha->getCard(id)->getSuitString() == "heart")

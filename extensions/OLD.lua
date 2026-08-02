@@ -1392,26 +1392,51 @@ Modao = sgs.CreateTriggerSkill{
     name = "modao",
     events = {
         sgs.PreCardUsed,
-        sgs.TrickCardCanceling
+        sgs.TrickCardCanceling,
+		sgs.EventPhaseChanging,
+		sgs.CardFinished
     },
     can_preshow = true,
 
     on_record = function(self, event, room, player, data)
-        if event ~= sgs.PreCardUsed or not player then
-            return
-        end
+		-- 每个回合结束时清除所有角色的魔导回合记录
+		if event == sgs.EventPhaseChanging then
+			local change = data:toPhaseChange()
 
-        local use = data:toCardUse()
+			if change.to == sgs.Player_NotActive then
+				for _, p in sgs.qlist(room:getAllPlayers()) do
+					room:setPlayerMark(p, "modao_used-Clear", 0)
+					room:setPlayerMark(p, "modao_spade-Clear", 0)
+				end
+			end
 
-        -- 记录本回合使用过的黑桃牌数。
-        -- “-Clear”标记会在当前回合结束时自动清除。
-        if use.card
-            and not use.card:isKindOf("SkillCard")
-            and use.card:getSuit() == sgs.Card_Spade then
+			return
+		end
 
-            room:addPlayerMark(player, "modao_spade-Clear", 1)
-        end
-    end,
+		-- 清除“破法”的卡牌Flag，避免该牌以后仍然不能被金色宣言响应
+		if event == sgs.CardFinished then
+			local use = data:toCardUse()
+
+			if use.card and use.card:hasFlag("modao_pofa") then
+				room:setCardFlag(use.card, "-modao_pofa")
+			end
+
+			return
+		end
+
+		if event ~= sgs.PreCardUsed or not player then
+			return
+		end
+
+		local use = data:toCardUse()
+
+		if use.card
+			and not use.card:isKindOf("SkillCard")
+			and use.card:getSuit() == sgs.Card_Spade then
+
+			room:addPlayerMark(player, "modao_spade-Clear", 1)
+		end
+	end,
 
     can_trigger = function(self, event, room, player, data)
         if event == sgs.PreCardUsed then
@@ -1545,7 +1570,7 @@ Modao = sgs.CreateTriggerSkill{
                 -- 始终从最初的目标名单中筛选：
                 -- “扩术”增加的目标不能被“守式”取消。
                 original_targets =
-                    getModaoOriginalTargets(use, original_names)
+                    getModaoOriginalTargets(room, use, original_names)
 
                 if not original_targets:isEmpty() then
                     local target = room:askForPlayerChosen(
@@ -1558,7 +1583,7 @@ Modao = sgs.CreateTriggerSkill{
                     )
 
                     if target then
-                        sgs.Room_cancelTarget(use, target)
+                        use.to:removeOne(target)
                         -- player:gainMark("@armor", 1)
                     end
                 end
@@ -1742,8 +1767,6 @@ eling = sgs.CreateTriggerSkill{
 		end
     end,
 }
-
-
 
 leiguang = sgs.CreateTriggerSkill{
 	name = "leiguang" ,
@@ -2689,7 +2712,7 @@ sgs.LoadTranslationTable{
     ["jimoCard"] = "集魔",
     ["jimo_shushi"] = "术式",
     ["modao"] = "魔导",
-    [":modao"] = "每回合限一次，当你使用“术式”时，你可以依次执行至多X次下列一项，且可以重复选择“扩术”或“守式”：破法，此牌不能被【金色宣言】响应；扩术，为此牌增加一名合法目标；守式，取消此牌的一名原目标，然后你获得1点护甲。X为你本回合使用过的黑桃牌数，至少为1，至多为3。",
+    [":modao"] = "<font color=\"green\"><b>每回合限一次，</b></font>当你使用“术式”时，你可以依次执行至多X次下列一项，且可以重复选择“扩术”或“守式”：破法，此牌不能被【金色宣言】响应；扩术，为此牌增加一名合法目标；守式，取消此牌的一名原目标，然后你获得1点护甲。X为你本回合使用过的黑桃牌数，至少为1，至多为3。",
 
     ["modao_pofa"] = "破法",
     ["modao_kuoshu"] = "扩术",

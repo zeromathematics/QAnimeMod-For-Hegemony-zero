@@ -3439,6 +3439,162 @@ Rumbling = sgs.CreateTriggerSkill{
     end
 }
 
+-- 终结：装备牌、锦囊牌视为【杀】
+ZhongjieFilter = sgs.CreateFilterSkill{
+    name = "#zhongjie-filter",
+
+    view_filter = function(self, card)
+        return card:isKindOf("EquipCard")
+            or card:isKindOf("TrickCard")
+    end,
+
+    view_as = function(self, card)
+        local slash = sgs.Sanguosha:cloneCard(
+            "slash",
+            card:getSuit(),
+            card:getNumber()
+        )
+        slash:setSkillName("zhongjie")
+
+        local wrapped =
+            sgs.Sanguosha:getWrappedCard(card:getEffectiveId())
+
+        wrapped:takeOver(slash)
+        wrapped:setSkillName("zhongjie")
+        wrapped:setModified(true)
+
+        return wrapped
+    end
+}
+
+
+-- 终结：使用【杀】无距离限制
+ZhongjieDistance = sgs.CreateTargetModSkill{
+    name = "#zhongjie-distance",
+    pattern = "Slash",
+
+    distance_limit_func = function(self, player, card)
+        if player
+            and player:hasSkill("zhongjie")
+            and card
+            and card:isKindOf("Slash") then
+
+            return 1000
+        end
+
+        return 0
+    end
+}
+
+
+-- 终结主体
+Zhongjie = sgs.CreateTriggerSkill{
+    name = "zhongjie",
+    frequency = sgs.Skill_Compulsory,
+
+    events = {
+        sgs.CardFinished,
+        sgs.CardsMoveOneTime
+    },
+
+    can_trigger = function(self, event, room, player, data)
+        -- 使用【杀】结算完毕
+        if event == sgs.CardFinished then
+            local use = data:toCardUse()
+
+            if player
+                and player:isAlive()
+                and player:hasSkill(self:objectName())
+                and use.from == player
+                and use.card
+                and use.card:isKindOf("Slash")
+                and player:getPile("roads"):length() > 0 then
+
+                return self:objectName()
+            end
+        end
+
+        -- 从“道路”牌堆失去牌后，检查是否已经失去所有道路
+        if event == sgs.CardsMoveOneTime then
+            local move = data:toMoveOneTime()
+
+            -- move.from是Player，需要重新取得ServerPlayer
+            if move.from
+                and move.from_pile_names
+                --and move.from_pile_names:contains("roads") 
+                and move.from_places:contains(sgs.Player_PlaceSpecial) then
+
+                local owner = room:findPlayerByObjectName(
+                    move.from:objectName()
+                )
+
+                if owner
+                    and owner:isAlive()
+                    and owner:hasSkill(self:objectName())
+                    and owner:getPile("roads"):isEmpty() then
+
+                    return self:objectName(), owner
+                end
+            end
+        end
+
+        return ""
+    end,
+
+    on_cost = function(self, event, room, player, data, ask_who)
+        room:sendCompulsoryTriggerLog(
+            ask_who,
+            self:objectName(),
+            true
+        )
+
+        return true
+    end,
+
+    on_effect = function(self, event, room, player, data, ask_who)
+        if event == sgs.CardFinished then
+            local roads = ask_who:getPile("roads")
+
+            if roads:isEmpty() then
+                return false
+            end
+
+            -- 选择一张“道路”弃置
+            room:fillAG(roads, ask_who)
+
+            local id = room:askForAG(
+                ask_who,
+                roads,
+                false,
+                self:objectName()
+            )
+
+            room:clearAG(ask_who)
+
+            if id >= 0 then
+                local reason = sgs.CardMoveReason(
+                    sgs.CardMoveReason_S_REASON_REMOVE_FROM_PILE,
+                    ask_who:objectName(),
+                    self:objectName(),
+                    ""
+                )
+
+                room:throwCard(sgs.Sanguosha:getCard(id), reason, ask_who)
+            end
+
+        elseif event == sgs.CardsMoveOneTime then
+            -- 失去最后一张“道路”后立即死亡
+            if ask_who:isAlive()
+                and ask_who:getPile("roads"):isEmpty() then
+
+                room:killPlayer(ask_who)
+            end
+        end
+
+        return false
+    end
+}
+
 local skills = sgs.SkillList()
 if not sgs.Sanguosha:getSkill("lvjigive") then skills:append(Lvjigive) end
 if not sgs.Sanguosha:getSkill("#yuejimod") then skills:append(Yuejimod) end
@@ -3446,6 +3602,12 @@ if not sgs.Sanguosha:getSkill("#yishimax") then skills:append(YishiMax) end
 if not sgs.Sanguosha:getSkill("xujianvs") then skills:append(XujianVS) end
 if not sgs.Sanguosha:getSkill("taijiglobal") then skills:append(Taijiglobal) end
 if not sgs.Sanguosha:getSkill("globalzhuzhen") then skills:append(Globalzhuzhen) end
+if not sgs.Sanguosha:getSkill("#zhongjie-filter") then
+    skills:append(ZhongjieFilter)
+end
+if not sgs.Sanguosha:getSkill("#zhongjie-distance") then
+    skills:append(ZhongjieDistance)
+end
 sgs.Sanguosha:addSkills(skills)
 
 Ruri:addSkill(Shengli)
@@ -3500,6 +3662,17 @@ lord_SE_Eren:addSkill(Shizu)
 lord_SE_Eren:addSkill(Mieshi)
 
 Founding_Titan:addSkill(Rumbling)
+Founding_Titan:addSkill(Zhongjie)
+sgs.insertRelatedSkills(
+    extension,
+    "zhongjie",
+    "#zhongjie-filter"
+)
+sgs.insertRelatedSkills(
+    extension,
+    "zhongjie",
+    "#zhongjie-distance"
+)
 
 sgs.LoadTranslationTable{
     ["hikarikage"] = "光影之章",
@@ -3614,7 +3787,7 @@ sgs.LoadTranslationTable{
 
     ["Origami"] = "鸢一折纸",
     ["@Origami"] = "Date A Live",
-    ["#Origami"] = "歼灭天使",
+    ["#Origami"] = "灭绝天使",
     ["designer:Origami"] = "Yuuki，FlameHaze",
     ["cv:Origami"] = "富㭴美铃",
     ["%Origami"] = "“我要、杀死它。杀死那个――天使”",
