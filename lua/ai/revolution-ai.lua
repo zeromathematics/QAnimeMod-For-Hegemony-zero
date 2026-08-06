@@ -677,6 +677,12 @@ sgs.ai_skill_playerchosen.jinji = function(self, targets, max_num, min_num)
   end
 end
 
+sgs.ai_skill_invoke.shizu = function(self, data)
+  local damage = data:toDamage()
+  if damage.from and damage.from:getKingdom()==self.player:getKingdom() then return false end
+  return true
+end
+
 sgs.ai_skill_choice.docommand_shizu = function(self, choices, data)
    local n = data:toInt()
    if n==1 or n==2 then
