@@ -64,7 +64,7 @@ CommonTranslationTable = {
 	["head"] = "主将技，",
 	["deputy"] = "副将技，",
 	["array"] = "阵法技，",
-	["lord"] = "主角技，",
+	["lordskill"] = "主角技，",
 	["linkage"] = "连携技，",
 	["state"] = "状态技，",
 	["magicskill"] = "魔法技，",
@@ -253,6 +253,7 @@ CommonTranslationTable = {
 	["custom"] = "自定义模式",
 	["UnknowNick"] = "",
 	["DefaultIllustrator"] = "",
+	["3v3_direction"] = "牌的结算方向",
 
 	["@waked"] = "觉醒",
 

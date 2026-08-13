@@ -115,19 +115,40 @@ sgs.ai_skill_invoke["suodi"] = function(self, data)
   return true
 end
 
-sgs.ai_skill_playerchosen["suodi"] = function(self, targets)
-	local friends = {}
-	for _,player in ipairs(self.friends) do
-		if player:isAlive() and ((player:getJudgingArea():length() > 0 and not noNeedToRemoveJudgeArea(player)) or (not friend:isNude()))then
-			table.insert(friends, player)
-		end
-	end
-	if #friends > 0 then
-		self:sort(friends)
-		return friends[#friends]
-	end
-end
+sgs.ai_skill_playerchosen.suodi = function(self, targets)
+    local target_list = sgs.QList2Table(targets)
+    local friends = {}
 
+    for _, player in ipairs(target_list) do
+        if self:isFriend(player)
+            and player:isAlive()
+            and (
+                (
+                    player:getJudgingArea():length() > 0
+                    and not noNeedToRemoveJudgeArea(player)
+                )
+                or not player:isNude()
+            ) then
+
+            table.insert(friends, player)
+        end
+    end
+
+    if #friends == 0 then
+        return nil
+    end
+
+    -- 优先处理有不利判定牌的友方。
+    for _, friend in ipairs(friends) do
+        if friend:getJudgingArea():length() > 0
+            and not noNeedToRemoveJudgeArea(friend) then
+            return friend
+        end
+    end
+
+    self:sort(friends, "defense")
+    return friends[1]
+end
 
 local sheyanyouko_skill = {}
 sheyanyouko_skill.name = "sheyanyouko"
@@ -483,3 +504,569 @@ sgs.ai_skill_use_func["#zhuanqingCard"] = function(card,use,self)
 end
 
 sgs.ai_skill_invoke.zhenzhu = true
+
+
+local function frierenWillShow(self)
+    return self:willShowForAttack()
+        or self:willShowForDefence()
+end
+
+-- 芙莉莲【牵绊】
+sgs.ai_skill_invoke.qianban = function(self, data)
+    if not frierenWillShow(self) then
+        return false
+    end
+    return true
+end
+
+
+-- 选择获得牌的角色。
+sgs.ai_skill_playerchosen.qianban = function(self, targets)
+    local candidates = sgs.QList2Table(targets)
+    local friends = {}
+
+    for _, p in ipairs(candidates) do
+        if self:isFriend(p) then
+            table.insert(friends, p)
+        end
+    end
+
+    -- 正常情况下targets包含自己，因此至少有一名友方。
+    if #friends == 0 then
+        return self.player
+    end
+
+    -- 优先援助空城的友方。
+    local kongcheng_friends = {}
+    for _, p in ipairs(friends) do
+        if p:isKongcheng()
+            and not p:hasShownSkill("kongcheng") then
+            table.insert(kongcheng_friends, p)
+        end
+    end
+
+    if #kongcheng_friends > 0 then
+        self:sort(kongcheng_friends, "defense")
+        return kongcheng_friends[1]
+    end
+
+    -- 其次援助手牌少且防御较弱的友方。
+    table.sort(friends, function(a, b)
+        if a:getHandcardNum() ~= b:getHandcardNum() then
+            return a:getHandcardNum() < b:getHandcardNum()
+        end
+
+        return sgs.getDefense(a) < sgs.getDefense(b)
+    end)
+
+    return friends[1]
+end
+
+
+-- 被选择的角色声明一种非黑桃花色。
+sgs.ai_skill_choice.qianban = function(self, choices, data)
+    local available = choices:split("+")
+
+    local function canChoose(choice)
+        return table.contains(available, choice)
+    end
+
+    -- 濒危或受伤时优先红桃：
+    -- 红桃牌中通常包含【桃】及较多防御、恢复资源。
+    if (self.player:getHp() <= 2 or self:isWeak(self.player))
+        and canChoose("heart") then
+        return "heart"
+    end
+
+    -- 缺少【闪】时也优先红桃。
+    if self:getCardsNum("Jink") == 0
+        and canChoose("heart") then
+        return "heart"
+    end
+
+    -- 出牌阶段且需要进攻资源时选择方块。
+    -- 方块通常具有较多进攻牌和装备牌。
+    if self.player:getPhase() == sgs.Player_Play
+        and self:getCardsNum("Slash") == 0
+        and canChoose("diamond") then
+        return "diamond"
+    end
+
+    -- 手牌较少时，梅花通常能提供较丰富的功能牌。
+    if self.player:getHandcardNum() <= 2
+        and canChoose("club") then
+        return "club"
+    end
+
+    -- 常态优先级：红桃保命，梅花补充功能，方块偏进攻。
+    if canChoose("heart") then
+        return "heart"
+    elseif canChoose("club") then
+        return "club"
+    elseif canChoose("diamond") then
+        return "diamond"
+    end
+
+    return available[1]
+end
+
+-- 选择友方获得牌属于友善行为。
+sgs.ai_playerchosen_intention.qianban = -20
+
+-- 芙莉莲【集魔】
+
+local jimo_skill = {}
+jimo_skill.name = "jimo"
+table.insert(sgs.ai_skills, jimo_skill)
+
+jimo_skill.getTurnUseCard = function(self, inclusive)
+    if not frierenWillShow(self) then
+        return
+    end
+
+    if self.player:hasUsed("ViewAsSkill_jimoCard") then
+        return
+    end
+
+    if self.player:isKongcheng() then
+        return
+    end
+
+    -- 至少需要一张手牌中的普通锦囊牌。
+    local has_trick = false
+
+    for _, card in sgs.qlist(self.player:getHandcards()) do
+        if card:isNDTrick() then
+            has_trick = true
+            break
+        end
+    end
+
+    if not has_trick then
+        return
+    end
+
+    return sgs.Card_Parse("#jimoCard:.:&jimo")
+end
+
+
+sgs.ai_skill_use_func["#jimoCard"] = function(card, use, self)
+    local usable_tricks = {}
+    local other_tricks = {}
+
+    for _, c in sgs.qlist(self.player:getHandcards()) do
+        if c:isNDTrick() then
+            -- 能在当前出牌阶段主动使用的锦囊，才有机会立即触发【魔导】。
+            if c:isAvailable(self.player) then
+                table.insert(usable_tricks, c)
+            else
+                table.insert(other_tricks, c)
+            end
+        end
+    end
+
+    local selected
+
+    if #usable_tricks > 0 then
+        -- 比较所有能够使用的普通锦囊，选择使用价值最高者，
+        -- 使【魔导】强化落在本回合最值得使用的锦囊上。
+        table.sort(usable_tricks, function(a, b)
+            local value_a = self:getUseValue(a)
+            local value_b = self:getUseValue(b)
+
+            if value_a ~= value_b then
+                return value_a > value_b
+            end
+
+            -- 使用价值相同时，优先选择保留价值较低者。
+            return self:getKeepValue(a) < self:getKeepValue(b)
+        end)
+
+        selected = usable_tricks[1]
+    elseif #other_tricks > 0 then
+        -- 没有能立即使用的锦囊时，【集魔】本身仍能获得一张杀
+        -- 并增加出杀次数，因此选择保留价值最低的普通锦囊展示。
+        table.sort(other_tricks, function(a, b)
+            local keep_a = self:getKeepValue(a)
+            local keep_b = self:getKeepValue(b)
+
+            if keep_a ~= keep_b then
+                return keep_a < keep_b
+            end
+
+            return self:getUseValue(a) < self:getUseValue(b)
+        end)
+
+        selected = other_tricks[1]
+    end
+
+    if not selected then
+        return
+    end
+
+    use.card = sgs.Card_Parse(
+        "#jimoCard:" ..
+        selected:getEffectiveId() ..
+        ":&jimo"
+    )
+end
+
+-- 应在使用普通锦囊和普通【杀】之前发动。
+sgs.ai_use_priority.jimoCard = 9.8
+sgs.ai_use_value.jimoCard = 8
+
+-- 芙莉莲【魔导】
+
+-- 计算某张锦囊对目标的收益。
+-- 正数：希望该目标受到此牌影响；
+-- 负数：希望取消该目标；
+-- 0：暂时无法准确判断。
+local function modaoTargetValue(self, card, target)
+    if not card or not target then
+        return 0
+    end
+
+    local intention = getTrickIntention(
+        card:getClassName(),
+        target
+    )
+
+    if intention > 0 then
+        -- 伤害、控制、拆牌类锦囊
+        if self:isEnemy(target) then
+            return 10
+        elseif self:isFriend(target) then
+            return -10
+        end
+    elseif intention < 0 then
+        -- 摸牌、恢复、辅助类锦囊
+        if self:isFriend(target) then
+            return 10
+        elseif self:isEnemy(target) then
+            return -10
+        end
+    end
+
+    -- 对部分常见牌进行补充判断。
+    if card:isKindOf("Duel")
+        or card:isKindOf("FireAttack")
+        or card:isKindOf("Drowning")
+        or card:isKindOf("Snatch")
+        or card:isKindOf("Dismantlement") then
+
+        if self:isEnemy(target) then
+            return 8
+        elseif self:isFriend(target) then
+            return -8
+        end
+    end
+
+    if card:isKindOf("ExNihilo") then
+        if self:isFriend(target) then
+            return 10
+        elseif self:isEnemy(target) then
+            return -10
+        end
+    end
+
+    return 0
+end
+
+
+local function modaoContainsChoice(choices, choice)
+    return table.contains(choices:split("+"), choice)
+end
+
+
+local function modaoPlayerInUse(use, player, state)
+    if not use or not player then
+        return false
+    end
+
+    local name = player:objectName()
+
+    -- 已经被守式取消的原目标不再视为当前目标。
+    if state
+        and state.removed
+        and state.removed[name] then
+        return false
+    end
+
+    if use.to and use.to:contains(player) then
+        return true
+    end
+
+    -- 记录扩术后来增加的目标。
+    if state
+        and state.added
+        and state.added[name] then
+        return true
+    end
+
+    return false
+end
+
+
+local function modaoInitState(self, use)
+    if not use or not use.card then
+        return nil
+    end
+
+    local key = use.card:toString()
+
+    if not self.modao_state
+        or self.modao_state.key ~= key then
+
+        self.modao_state = {
+            key = key,
+            choice = nil,
+            added = {},
+            removed = {}
+        }
+    end
+
+    return self.modao_state
+end
+
+
+-- 寻找最值得扩术增加的合法目标。
+local function modaoBestExtraTarget(self, use, state)
+    if not use or not use.card then
+        return nil, 0
+    end
+
+    local best_target
+    local best_value = 0
+    local empty_targets = sgs.PlayerList()
+
+    for _, p in sgs.qlist(self.room:getAlivePlayers()) do
+        if not modaoPlayerInUse(use, p, state)
+            and use.card:targetFilter(
+                empty_targets,
+                p,
+                self.player
+            )
+            and not self.player:isProhibited(p, use.card) then
+
+            local value = modaoTargetValue(
+                self,
+                use.card,
+                p
+            )
+
+            if value > best_value then
+                best_value = value
+                best_target = p
+            end
+        end
+    end
+
+    return best_target, best_value
+end
+
+
+-- 寻找最应该由守式取消的原目标。
+local function modaoWorstOriginalTarget(self, use, state)
+    if not use or not use.card or not use.to then
+        return nil, 0
+    end
+
+    local worst_target
+    local worst_value = 0
+
+    for _, p in sgs.qlist(use.to) do
+        local name = p:objectName()
+
+        -- 扩术目标不能成为守式目标；
+        -- 已经被取消的目标也不再计算。
+        if not state.added[name]
+            and not state.removed[name] then
+
+            local value = modaoTargetValue(
+                self,
+                use.card,
+                p
+            )
+
+            if value < worst_value then
+                worst_value = value
+                worst_target = p
+            end
+        end
+    end
+
+    return worst_target, worst_value
+end
+
+
+-- 判断破法是否有正收益。
+local function modaoShouldPofa(self, use, state)
+    if not use or not use.card or not use.to then
+        return false
+    end
+
+    local total_value = 0
+    local effective_targets = 0
+
+    for _, p in sgs.qlist(use.to) do
+        local name = p:objectName()
+
+        if not state.removed[name] then
+            total_value = total_value
+                + modaoTargetValue(self, use.card, p)
+
+            effective_targets = effective_targets + 1
+        end
+    end
+
+    for name, added in pairs(state.added) do
+        if added and not state.removed[name] then
+            local p = findPlayerByObjectName(name)
+
+            if p and p:isAlive()
+                and not use.to:contains(p) then
+                total_value = total_value
+                    + modaoTargetValue(self, use.card, p)
+
+                effective_targets = effective_targets + 1
+            end
+        end
+    end
+
+    -- 牌对我方整体有利时，才值得防止金色宣言响应。
+    return effective_targets > 0 and total_value > 0
+end
+
+
+sgs.ai_skill_choice.modao = function(self, choices, data)
+    local use = data:toCardUse()
+
+    if not use or not use.card then
+        return "cancel"
+    end
+
+    local state = modaoInitState(self, use)
+
+    if not state then
+        return "cancel"
+    end
+
+    state.choice = nil
+
+    -- 第一优先：取消会伤害友方或帮助敌方的原目标。
+    if modaoContainsChoice(choices, "modao_shoushi") then
+        local target, value =
+            modaoWorstOriginalTarget(self, use, state)
+
+        if target and value < 0 then
+            state.choice = "modao_shoushi"
+            return state.choice
+        end
+    end
+
+    -- 第二优先：增加一名明确具有正收益的目标。
+    if modaoContainsChoice(choices, "modao_kuoshu") then
+        local target, value =
+            modaoBestExtraTarget(self, use, state)
+
+        if target and value > 0 then
+            state.choice = "modao_kuoshu"
+            return state.choice
+        end
+    end
+
+    -- 第三优先：当前牌对己方整体有利时选择破法。
+    if modaoContainsChoice(choices, "modao_pofa")
+        and modaoShouldPofa(self, use, state) then
+
+        state.choice = "modao_pofa"
+        return state.choice
+    end
+
+    state.choice = "cancel"
+    return "cancel"
+end
+
+
+sgs.ai_skill_playerchosen.modao = function(self, targets)
+    local candidates = sgs.QList2Table(targets)
+
+    if #candidates == 0 then
+        return nil
+    end
+
+    local state = self.modao_state
+
+    if not state then
+        return candidates[1]
+    end
+
+    if state.choice == "modao_kuoshu" then
+        local best_target
+        local best_value = -1000
+
+        for _, p in ipairs(candidates) do
+            local value = modaoTargetValue(
+                self,
+                self.player:getRoom():getCurrentCardUseCard(),
+                p
+            )
+
+            if value > best_value then
+                best_value = value
+                best_target = p
+            end
+        end
+
+        -- getCurrentCardUseCard()在部分旧版引擎中可能不存在，
+        -- 此时改用choice阶段保存的术式牌。
+        if not best_target and state.card then
+            for _, p in ipairs(candidates) do
+                local value =
+                    modaoTargetValue(self, state.card, p)
+
+                if value > best_value then
+                    best_value = value
+                    best_target = p
+                end
+            end
+        end
+
+        best_target = best_target or candidates[1]
+
+        state.added[best_target:objectName()] = true
+        return best_target
+    end
+
+    if state.choice == "modao_shoushi" then
+        local worst_target
+        local worst_value = 1000
+
+        for _, p in ipairs(candidates) do
+            local value
+
+            if state.card then
+                value = modaoTargetValue(
+                    self,
+                    state.card,
+                    p
+                )
+            else
+                -- 没有取得牌对象时，至少保证优先取消友方。
+                value = self:isFriend(p) and -10 or 10
+            end
+
+            if value < worst_value then
+                worst_value = value
+                worst_target = p
+            end
+        end
+
+        worst_target = worst_target or candidates[1]
+
+        state.removed[worst_target:objectName()] = true
+        return worst_target
+    end
+
+    return candidates[1]
+end

@@ -475,51 +475,257 @@ yehuo = sgs.CreateTriggerSkill{
     end,
 }]]
 
+--掩护的距离修正
+YanhuDistance = sgs.CreateDistanceSkill{
+    name = "#yanhu-distance",
+
+    correct_func = function(self, from, to)
+        if not from or not to then
+            return 0
+        end
+
+        --来源计算与原目标的距离增加
+        return from:getMark(
+            "yanhu_distance_" .. to:objectName()
+        )
+    end,
+}
+
 --掩护
-yanhu = sgs.CreateTriggerSkill{
-	name = "yanhu",
-    events = {sgs.TargetConfirming},
-	can_trigger = function(self, event, room, player, data)
-		if event == sgs.TargetConfirming then
-		   local use = data:toCardUse()
-           local card = use.card
-		   local players = room:findPlayersBySkillName(self:objectName())
-		   for _,sp in sgs.qlist(players) do
-                if (card:isKindOf("Slash") or card:isKindOf("Duel")) and player ~= sp and sp:getHandcardNum() > 0 then
+Yanhu = sgs.CreateTriggerSkill{
+    name = "yanhu",
+    can_preshow = true,
+
+    events = {
+        sgs.TargetConfirming,
+        sgs.EventPhaseChanging,
+    },
+
+    on_record = function(
+        self, event, room, player, data
+    )
+        if event ~= sgs.EventPhaseChanging then
+            return
+        end
+
+        local change =
+            data:toPhaseChange()
+
+        if change.to ~= sgs.Player_NotActive then
+            return
+        end
+
+        --每个回合结束时，重置所有角色本回合的发动次数
+        for _, p in sgs.qlist(
+            room:getAllPlayers(true)
+        ) do
+            room:setPlayerMark(
+                p,
+                "yanhu_used",
+                0
+            )
+        end
+
+        --原目标的回合结束时，
+        --清除所有角色计算与其距离的“掩护”修正
+        for _, from in sgs.qlist(
+            room:getAllPlayers(true)
+        ) do
+            room:setPlayerMark(
+                from,
+                "yanhu_distance_"
+                    .. player:objectName(),
+                0
+            )
+        end
+    end,
+
+    can_trigger = function(
+        self, event, room, player, data
+    )
+        if event ~= sgs.TargetConfirming then
+            return ""
+        end
+
+        if not player
+            or player:isDead() then
+            return ""
+        end
+
+        local use =
+            data:toCardUse()
+
+        if not use.card
+            or not use.from then
+            return ""
+        end
+
+        --只处理【杀】和【相爱相杀】
+        --当前项目中的【相爱相杀】属于Duel
+        if not use.card:isKindOf("Slash")
+            and not use.card:isKindOf("Duel") then
+            return ""
+        end
+
+        --确认player确实仍是此牌的目标
+        if not use.to:contains(player) then
+            return ""
+        end
+
+        local protectors =
+            room:findPlayersBySkillName(
+                self:objectName()
+            )
+
+        for _, sp in sgs.qlist(protectors) do
+            if sp:isAlive()
+                and sp ~= player
+                and sp ~= use.from
+                and not sp:isNude()
+                and sp:getMark("yanhu_used") == 0
+                and not use.to:contains(sp) then
+
+                --满足其中一项即可：
+                --1. 与原目标势力相同；
+                --2. 原目标在掩护者攻击范围内
+                local same_kingdom =
+                    sp:isFriendWith(player)
+
+                local in_range =
+                    sp:inMyAttackRange(player)
+
+                if same_kingdom or in_range then
                     return self:objectName(), sp
                 end
-		   end
-		end
-		return ""
-	end,
-	on_cost = function(self, event, room, player, data, sp)
-		if event == sgs.TargetConfirming and sp:askForSkillInvoke(self, data) then
-		   local card = room:askForCard(sp, ".|.|.|hand", "@yanhu-discard", data, self:objectName())
-		   if card then
-			    if card:isKindOf("BasicCard") then
-			       room:setPlayerProperty(sp, "yanhu_card", sgs.QVariant("basic"))
-		        end
-				if card:isKindOf("TrickCard") then
-			       room:setPlayerProperty(sp, "yanhu_card", sgs.QVariant("trick"))
-		        end
-			   return true
-		   end
-		end
-		return false
-	end,
-	on_effect = function(self, event, room, player, data, sp)
-	    if event == sgs.TargetConfirming then
-			local use = data:toCardUse()
-			use.to:removeOne(player)
-			use.to:append(sp)
-			data:setValue(use)
-			local type = sp:property("yanhu_card"):toString()
-			if type == "basic" then sp:drawCards(1) end
-			if type == "trick" then
+            end
+        end
 
-			end
-		end	
-	end
+        return ""
+    end,
+
+    on_cost = function(
+        self, event, room, player, data, ask_who
+    )
+        if event ~= sgs.TargetConfirming then
+            return false
+        end
+
+        if not ask_who
+            or ask_who:isDead()
+            or ask_who:isNude() then
+            return false
+        end
+
+        local target_data =
+            sgs.QVariant()
+
+        target_data:setValue(player)
+
+        if not ask_who:askForSkillInvoke(
+                self,
+                target_data
+            ) then
+            return false
+        end
+
+        --可以弃置手牌或装备区中的一张牌
+        local discarded =
+            room:askForDiscard(
+                ask_who,
+                self:objectName(),
+                1,
+                1,
+                true,
+                true,
+                "@yanhu-discard:"
+                    .. player:objectName()
+            )
+
+        if not discarded then
+            return false
+        end
+
+        --弃牌成功后才记录本回合已经发动
+        room:setPlayerMark(
+            ask_who,
+            "yanhu_used",
+            1
+        )
+
+        room:broadcastSkillInvoke(
+            self:objectName(),
+            ask_who
+        )
+
+        return true
+    end,
+
+    on_effect = function(
+        self, event, room, player, data, ask_who
+    )
+        if event ~= sgs.TargetConfirming then
+            return false
+        end
+
+        local use =
+            data:toCardUse()
+
+        if not use.card
+            or not use.from
+            or not use.to:contains(player) then
+            return false
+        end
+
+        local source =
+            use.from
+
+        local original_target =
+            player
+
+        --将原目标移除
+        use.to:removeOne(
+            original_target
+        )
+
+        --将掩护者加入目标
+        if not use.to:contains(ask_who) then
+            use.to:append(ask_who)
+        end
+
+        room:sortByActionOrder(
+            use.to
+        )
+
+        data:setValue(use)
+
+        --掩护者摸一张牌
+        ask_who:drawCards(
+            1,
+            self:objectName()
+        )
+
+        --令牌的来源计算与原目标的距离+1
+        local mark_name =
+            "yanhu_distance_"
+            .. original_target:objectName()
+
+        room:setPlayerMark(
+            source,
+            mark_name,
+            source:getMark(mark_name) + 1
+        )
+
+        --掩护者成为新目标后，
+        --令其正常经历TargetConfirming
+        room:getThread():trigger(
+            sgs.TargetConfirming,
+            room,
+            ask_who,
+            data
+        )
+
+        return false
+    end,
 }
 
 -- 助逃
@@ -1236,12 +1442,20 @@ Jimo = sgs.CreateTriggerSkill{
         if event == sgs.CardsMoveOneTime then
             local move = data:toMoveOneTime()
 
-            if not move.from then
-                return
-            end
+			if not move.from then
+				return
+			end
 
-            local from = findPlayerByObjectName(move.from:objectName())
-            local mark = from:getMark("jimo_shushi_id")
+            local from = findPlayerByObjectName(
+				move.from:objectName(),
+				true
+			)
+
+			if not from then
+				return
+			end
+
+			local mark = from:getMark("jimo_shushi_id")
 
             if mark <= 0 then
                 return
@@ -1584,7 +1798,7 @@ Modao = sgs.CreateTriggerSkill{
 
                     if target then
                         use.to:removeOne(target)
-                        -- player:gainMark("@armor", 1)
+                        player:gainMark("@armor", 1)
                     end
                 end
             end
@@ -2573,10 +2787,15 @@ zhenzhu = sgs.CreateTriggerSkill{
 Matsuri:addSkill(jiqiong)
 Matsuri:addSkill(huaishi)
 Matsuri:addSkill(yehuo)
-KazamiKazuki:addSkill(yanhu)
+KazamiKazuki:addSkill(Yanhu)
 KazamiKazuki:addSkill(Zhutao)
 KazamiKazuki:addRelateSkill("xingcun")
 sgs.insertRelatedSkills(extension, "zhutao", "#zhutao-clear")
+sgs.insertRelatedSkills(
+    extension,
+    "yanhu",
+    "#yanhu-distance"
+)
 Youko:addSkill(suodi)
 Youko:addSkill(sheyanyouko)
 Frieren:addSkill(Qianban)
@@ -2608,6 +2827,11 @@ if not sgs.Sanguosha:getSkill("zhenzhu") then skills:append(zhenzhu) end
 if not sgs.Sanguosha:getSkill("#jimomod") then skills:append(JimoMod) end
 if not sgs.Sanguosha:getSkill("#zhutao-clear") then skills:append(ZhutaoClear) end
 if not sgs.Sanguosha:getSkill("xingcun") then skills:append(Xingcun) end
+if not sgs.Sanguosha:getSkill(
+        "#yanhu-distance"
+    ) then
+    skills:append(YanhuDistance)
+end
 sgs.Sanguosha:addSkills(skills)
 
 sgs.LoadTranslationTable{
@@ -2627,7 +2851,9 @@ sgs.LoadTranslationTable{
   ["#KazamiKazuki"] = "天才少女",
   ["designer:KazamiKazuki"] = "Yuuki",
   ["yanhu"] = "掩护",
-  [":yanhu"] = "当一名其他角色成为【杀】或【决斗】的目标时，你可以弃置一张手牌，然后将此【杀】或【决斗】的目标转移为自己，若你弃置的为基本牌你摸一张牌，弃置的为锦囊牌你视为使用一张【杀】。",
+  [":yanhu"] = "<font color=\"green\"><b>每回合限一次，</b></font>当一名与你势力相同的其他角色，或在你攻击范围内的其他角色成为【杀】或【相爱相杀】的目标时，你可以弃置一张牌，将此牌的目标转移为你，然后摸一张牌，并令此牌的来源计算与原目标的距离＋1，直到原目标的回合结束。",
+  ["@yanhu-discard"] = "掩护：你可以弃置一张牌，代替 %src 成为此牌的目标",
+  ["#yanhu-distance"] = "掩护",
   ["zhutao"] = "助逃",
   [":zhutao"] = "当你进入濒死状态时，你可以选择一名其他角色，令其获得技能“幸存”，直到其下个回合结束。",
   ["@zhutao-choose"] = "助逃：你可以选择一名其他角色，令其获得“幸存”直到其下个回合结束",

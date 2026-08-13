@@ -156,7 +156,7 @@ void GeneralCardItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 }
 
 ChooseGeneralBox::ChooseGeneralBox()
-    : general_number(0), single_result(false), m_viewOnly(false),
+    : general_number(0), single_result(false), m_viewOnly(false), can_convert(false),
     confirm(new Button(tr("fight"), 0.6)),
     progress_bar(NULL)
 {
@@ -292,9 +292,69 @@ static bool sortByKingdom(const QString &gen1, const QString &gen2)
 
 }
 
+void ChooseGeneralBox::updateConvertButton(GeneralCardItem *item)
+{
+    if (item == NULL)
+        return;
+
+    //删除该人物牌原来的“人物替换”按钮
+    foreach (QGraphicsItem *child, item->childItems()) {
+        QGraphicsObject *object = child->toGraphicsObject();
+        Button *button = qobject_cast<Button *>(object);
+
+        if (button != NULL && button->property("convert_button").toBool()) {
+            delete button;
+            break;
+        }
+    }
+
+    if (m_viewOnly || !can_convert)
+        return;
+
+    /*
+     * 如果自由选到的是ALO_Asuna，则找到其转换关系的主人物SE_Asuna。
+     * 普通人物的getMainGenerals()返回自身。
+     */
+    QString source = Sanguosha->getMainGenerals(item->objectName());
+
+    if (Sanguosha->getConvertGenerals(source).isEmpty())
+        return;
+
+    //用于_onConvertClicked定位这张人物牌
+    item->setProperty("source", source);
+
+    Button *button =
+        new Button(Sanguosha->translate("convert_general"), 0.45);
+
+    button->setProperty("convert_button", true);
+    button->setPos((93 - button->boundingRect().width()) / 2,
+        130 - button->boundingRect().height());
+    button->setParentItem(item);
+    button->setData(1, QVariant::fromValue(single_result));
+    button->setObjectName(source);
+
+    connect(button, &Button::clicked,
+        this, &ChooseGeneralBox::_onConvertButtonClicked);
+}
+
+void ChooseGeneralBox::_onGeneralChanged()
+{
+    GeneralCardItem *item =
+        qobject_cast<GeneralCardItem *>(sender());
+
+    if (item == NULL)
+        return;
+
+    updateConvertButton(item);
+
+    if (!single_result)
+        adjustItems();
+}
+
 void ChooseGeneralBox::chooseGeneral(const QStringList &_generals, bool view_only, bool single_result, const QString &reason, const Player *player, const bool can_convert)
 {
     //repaint background
+    this->can_convert = can_convert;
     QStringList generals = _generals;
     this->single_result = single_result;
     if (view_only)
@@ -351,20 +411,23 @@ void ChooseGeneralBox::chooseGeneral(const QStringList &_generals, bool view_onl
         } else {
             general_item->setAutoBack(true);
             connect(general_item, &GeneralCardItem::released, this, &ChooseGeneralBox::_adjust);
-            if (!Sanguosha->getConvertGenerals(general).isEmpty() && can_convert) {
+            /*if (!Sanguosha->getConvertGenerals(general).isEmpty() && can_convert) {
                 Button *button = new Button(Sanguosha->translate("convert_general"), 0.45);
                 button->setPos((93 - button->boundingRect().width()) / 2, 130 - button->boundingRect().height());
                 button->setParentItem(general_item);
                 button->setData(1, QVariant::fromValue(single_result));//test
                 button->setObjectName(general);
                 connect(button, &Button::clicked, this, &ChooseGeneralBox::_onConvertButtonClicked);
-            }
+            }*/
+            updateConvertButton(general_item);
         }
 
         if (!view_only) {
-            connect(general_item, &GeneralCardItem::clicked, this, &ChooseGeneralBox::_onItemClicked);
-            if (!single_result)
-                connect(general_item, &GeneralCardItem::general_changed, this, &ChooseGeneralBox::adjustItems);
+            connect(general_item, &GeneralCardItem::clicked,
+                this, &ChooseGeneralBox::_onItemClicked);
+
+            connect(general_item, &GeneralCardItem::general_changed,
+                this, &ChooseGeneralBox::_onGeneralChanged);
         }
 
         if (!single_result && !view_only) {

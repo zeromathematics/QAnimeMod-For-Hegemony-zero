@@ -172,7 +172,7 @@ private:
     QRadioButton *official_3v3_radiobutton;
     QComboBox *official_3v3_ComboBox;
     QComboBox *role_choose_ComboBox;
-    QCheckBox *exclude_disaster_checkbox;
+    //QCheckBox *exclude_disaster_checkbox;
 
 private slots:
     void onOkButtonClicked();

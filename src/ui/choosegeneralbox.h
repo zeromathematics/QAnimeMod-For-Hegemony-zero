@@ -83,6 +83,8 @@ private:
     int general_number;
     bool single_result;
     bool m_viewOnly;
+    bool can_convert;
+
     QList<GeneralCardItem *> items, selected;
     static const int top_dark_bar = 27;
     static const int top_blank_width = 42;
@@ -101,12 +103,14 @@ private:
     CardContainer *convertContainer;
 
     void _initializeItems();
+    void updateConvertButton(GeneralCardItem *item);
 
 private slots:
     void _adjust();
     void _onItemClicked();
     void _onConvertButtonClicked();
     void _onConvertClicked();
+    void _onGeneralChanged();
 };
 
 #endif // _CHOOSE_GENERAL_BOX_H

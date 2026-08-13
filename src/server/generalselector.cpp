@@ -293,9 +293,13 @@ void GeneralSelector::calculateDeputyValue(const ServerPlayer *player, const QSt
     }
 }
 
-QString GeneralSelector::select3v3(ServerPlayer *, const QStringList &candidates)
+QString GeneralSelector::select3v3(ServerPlayer *,
+                                   const QStringList &candidates)
 {
-    return selectHighest(priority_3v3_table, candidates, 5);
+    if (candidates.isEmpty())
+        return QString();
+
+    return candidates.at(qrand() % candidates.length());
 }
 
 QString GeneralSelector::selectHighest(const QHash<QString, int> &table, const QStringList &candidates, int default_value)
@@ -329,10 +333,9 @@ QStringList GeneralSelector::arrange3v3(ServerPlayer *player)
 {
     QStringList arranged = player->getSelected();
     qShuffle(arranged);
-    arranged = arranged.mid(0, 3);
 
-    qSort(arranged.begin(), arranged.end(), CompareByMaxHp);
-    arranged.swap(0, 1);
+    if (arranged.length() > 6)
+        arranged = arranged.mid(0, 6);
 
     return arranged;
 }

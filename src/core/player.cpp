@@ -2040,6 +2040,24 @@ bool Player::isFriendWith(const Player *player) const
     if (this == player)
         return true;
 
+    // 3v3完全按照身份划分冷暖阵营，与人物势力无关
+        if (Config.GameMode == "06_3v3") {
+            bool self_warm
+                    = role == "lord" || role == "loyalist";
+            bool self_cool
+                    = role == "renegade" || role == "rebel";
+
+            bool target_warm
+                    = player->role == "lord"
+                    || player->role == "loyalist";
+            bool target_cool
+                    = player->role == "renegade"
+                    || player->role == "rebel";
+
+            return (self_warm && target_warm)
+                    || (self_cool && target_cool);
+        }
+
     if (role == "careerist" && player->role == "careerist"){
         if (property("CareeristFriend").toString() == player->objectName() || player->property("CareeristFriend").toString() == objectName() ||player->property("CareeristFriend") == property("CareeristFriend").toString() ) return true;
     }
@@ -2055,12 +2073,15 @@ bool Player::isFriendWith(const Player *player) const
 
 bool Player::willBeFriendWith(const Player *player) const
 {
-    if (this == player)
-        return true;
-    if (isFriendWith(player))
-        return true;
     if (player == NULL)
         return false;
+    if (this == player)
+        return true;
+    // 3v3身份从开局起完全公开，未来敌友关系不会变化
+        if (Config.GameMode == "06_3v3")
+            return isFriendWith(player);
+    if (isFriendWith(player))
+        return true;
     if (!player->hasShownOneGeneral())
         return false;
     if (!hasShownOneGeneral()) {

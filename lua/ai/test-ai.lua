@@ -285,443 +285,266 @@ sgs.ai_skill_playerchosen.lichang = function(self, targets)
   return targets:at(0)
 end
 
---逢坂大河（有待提高）
-sgs.ai_skill_invoke.zhudao = function(self , data)
-    if not (self:willShowForAttack() or self:willShowForDefence()) then
-		 return false
-	end
-    return true
-end
---来源
-sgs.ai_skill_playerchosen.Laiyuan = function(self, targets)
-	local source = self.player
+-- 竹刀、思绪共用AI
 
-	for _,player in ipairs(self.friends) do
-		if player:isAlive() and player:getJudgingArea():length() > 0 and not noNeedToRemoveJudgeArea(player) then
+-- 判断角色是否缺少此装备对应的装备栏
+local function needEquipSlot(player, card)
+	if card:isKindOf("Weapon") then
+		return not player:getWeapon()
+	elseif card:isKindOf("Armor") then
+		return not player:getArmor()
+	elseif card:isKindOf("DefensiveHorse") then
+		return not player:getDefensiveHorse()
+	elseif card:isKindOf("OffensiveHorse") then
+		return not player:getOffensiveHorse()
+	elseif card:isKindOf("Treasure") then
+		return not player:getTreasure()
+	end
+
+	return false
+end
+
+-- 是否有队友适合接收此装备
+local function hasFriendForEquip(self, card)
+	for _, friend in ipairs(self.friends) do
+		if friend:isAlive() and needEquipSlot(friend, card) then
+			return true
+		end
+	end
+
+	return false
+end
+
+-- 是否是值得选择的牌来源
+local function isUsefulZhudaoSource(self, player)
+	if not player or player:isAllNude() then
+		return false
+	end
+
+	-- 优先帮助队友移走有害判定牌
+	if self:isFriend(player)
+		and player:getJudgingArea():length() > 0
+		and not noNeedToRemoveJudgeArea(player) then
+		return true
+	end
+
+	if not self:isEnemy(player) then
+		return false
+	end
+
+	-- 不轻易帮助具有失去装备收益的敌人
+	if not player:hasShownSkills(
+			sgs.lose_equip_skill .. "|zhudao"
+		) then
+
+		for _, card in sgs.qlist(player:getEquips()) do
+			if hasFriendForEquip(self, card) then
+				return true
+			end
+		end
+	end
+
+	-- 敌方有手牌时可以作为保底来源
+	return not player:isKongcheng()
+end
+
+-- 竹刀发动判断
+sgs.ai_skill_invoke.zhudao = function(self, data)
+	if not (
+		self:willShowForAttack()
+		or self:willShowForDefence()
+	) then
+		return false
+	end
+
+	local targets = data:toPlayerList()
+	if targets and not targets:isEmpty() then
+		for _, player in sgs.qlist(targets) do
+			if isUsefulZhudaoSource(self, player) then
+				return true
+			end
+		end
+	end
+
+	-- 兼容未通过data传递候选人的版本
+	for _, player in sgs.qlist(
+		self.room:getAlivePlayers()
+	) do
+		if isUsefulZhudaoSource(self, player) then
+			return true
+		end
+	end
+
+	return false
+end
+
+-- 选择牌的来源
+sgs.ai_skill_playerchosen.Laiyuan = function(self, targets)
+	local enemies = {}
+
+	for _, player in sgs.qlist(targets) do
+		-- 第一优先：帮助队友移走有害判定牌
+		if self:isFriend(player)
+			and player:getJudgingArea():length() > 0
+			and not noNeedToRemoveJudgeArea(player) then
 			return player
 		end
-	end
 
-	if not source:getArmor() then
-		for _,player in ipairs(self.enemies) do
-			if player:isAlive() and player:getArmor() and not player:hasSkills(sgs.lose_equip_skill) then
-				return player
-			end
-		end
-	end
-	if not source:getDefensiveHorse() then
-		for _,player in ipairs(self.enemies) do
-			if player:isAlive() and player:getDefensiveHorse() and not player:hasSkills(sgs.lose_equip_skill) then
-				return player
-			end
-		end
-	end
-	if not source:getWeapon() then
-		for _,player in ipairs(self.enemies) do
-			if player:isAlive() and player:getWeapon() and not player:hasSkills(sgs.lose_equip_skill) then
-				return player
-			end
-		end
-	end
-	if not source:getOffensiveHorse() then
-		for _,player in ipairs(self.enemies) do
-			if player:isAlive() and player:getOffensiveHorse() and not player:hasSkills(sgs.lose_equip_skill) then
-				return player
-			end
+		if self:isEnemy(player) then
+			table.insert(enemies, player)
 		end
 	end
 
-	if #self.enemies == 1 then
-		for _,badpeople in ipairs(self.enemies) do
-			if badpeople:isAlive() then
-				return badpeople
-			end
-		end
-	end
+	-- 第二优先：敌方有适合转移的装备
+	for _, enemy in ipairs(enemies) do
+		if not enemy:hasShownSkills(
+			sgs.lose_equip_skill .. "|zhudao"
+			) then
 
-	for _,player in ipairs(self.friends) do
-		if player:isAlive() and not player:getWeapon() then
-			for _,badpeople in ipairs(self.enemies) do
-				if badpeople:isAlive() and badpeople:getWeapon() then
-					return badpeople
+			for _, card in sgs.qlist(enemy:getEquips()) do
+				if hasFriendForEquip(self, card) then
+					return enemy
 				end
 			end
 		end
 	end
 
-	for _,player in ipairs(self.friends) do
-		if player:isAlive() and not player:getOffensiveHorse() then
-			for _,badpeople in ipairs(self.enemies) do
-				if badpeople:isAlive() and badpeople:getOffensiveHorse() then
-					return badpeople
-				end
-			end
+	-- 第三优先：从敌方手牌中取牌
+	self:sort(enemies, "handcard")
+	for i = #enemies, 1, -1 do
+		if not enemies[i]:isKongcheng() then
+			return enemies[i]
 		end
 	end
-	for _,player in ipairs(self.friends) do
-		if player:isAlive() and not player:getArmor() then
-			for _,badpeople in ipairs(self.enemies) do
-				if badpeople:isAlive() and badpeople:getArmor() then
-					return badpeople
-				end
-			end
-		end
-	end
-	for _,player in ipairs(self.friends) do
-		if player:isAlive() and not player:getDefensiveHorse() then
-			for _,badpeople in ipairs(self.enemies) do
-				if badpeople:isAlive() and badpeople:getDefensiveHorse() then
-					return badpeople
-				end
-			end
-		end
-	end
-	return
+
+	return enemies[1]
 end
---竹刀的选牌
+
+-- 选择要转移的牌
 sgs.ai_skill_cardchosen.zhudao = function(self, who, flags)
-	local source = self.player
+	-- 队友：只处理有害判定牌
+	if self:isFriend(who)
+		and string.find(flags, "j")
+		and not noNeedToRemoveJudgeArea(who) then
 
-	if self:isFriend(who) and who:getJudgingArea():length() > 0 and not noNeedToRemoveJudgeArea(who) then
-		for _,card in sgs.qlist(who:getJudgingArea()) do
-			if not card:isKindOf("Key") then
-				return card
-			elseif who:isWounded() then
-				return card
-			end
-		end
-	end
-
-	if not ((not source:getArmor() and who:getArmor()) or (not source:getTreasure() and who:getTreasure()) or (not source:getDefensiveHorse() and who:getDefensiveHorse()) or (not source:getWeapon() and who:getWeapon()) or (not source:getOffensiveHorse() and who:getOffensiveHorse())) then
-		if self:isEnemy(who) and who:isAlive() and not who:isKongcheng() and #self.enemies==1 then
-			local cards = who:getHandcards()
-			return cards:at(0)
-		end
-	end
-
-	if self:isEnemy(who) and who:isAlive() and who:getArmor() and not who:hasSkills(sgs.lose_equip_skill) then
-		for _,player in ipairs(self.friends) do
-			if player:isAlive() and not player:getArmor() then
-				local card = who:getArmor()
-				return card
-			end
-		end
-	end
-	if self:isEnemy(who) and who:isAlive() and who:getTreasure() and not who:hasSkills(sgs.lose_equip_skill) then
-		for _,player in ipairs(self.friends) do
-			if player:isAlive() and not player:getTreasure() then
-				local card = who:getTreasure()
-				return card
-			end
-		end
-	end
-	if self:isEnemy(who) and who:isAlive() and who:getDefensiveHorse() and not who:hasSkills(sgs.lose_equip_skill) then
-		for _,player in ipairs(self.friends) do
-			if player:isAlive() and not player:getDefensiveHorse() then
-				local card = who:getDefensiveHorse()
-				return card
-			end
-		end
-	end
-	if self:isEnemy(who) and who:isAlive() and who:getWeapon() and not who:hasSkills(sgs.lose_equip_skill) then
-		for _,player in ipairs(self.friends) do
-			if player:isAlive() and not player:getWeapon() then
-				local card = who:getWeapon()
-				return card
-			end
-		end
-	end
-	if self:isEnemy(who) and who:isAlive() and who:getOffensiveHorse() and not who:hasSkills(sgs.lose_equip_skill) then
-		for _,player in ipairs(self.friends) do
-			if player:isAlive() and not player:getOffensiveHorse() then
-				local card = who:getOffensiveHorse()
+		for _, card in sgs.qlist(who:getJudgingArea()) do
+			-- “钥匙”通常应留给受伤队友
+			if not card:isKindOf("Key") or who:isWounded() then
 				return card
 			end
 		end
 	end
 
-	if self:isEnemy(who) and who:isAlive() and not who:isKongcheng() then
-		local cards = who:getHandcards()
-		return cards:at(0)
+	if not self:isEnemy(who) then
+		return nil
 	end
+
+	-- 优先拿可以交给队友的装备
+	if string.find(flags, "e")
+		and not who:hasShownSkills(
+			sgs.lose_equip_skill .. "|zhudao"
+		) then
+
+		for _, card in sgs.qlist(who:getEquips()) do
+			if hasFriendForEquip(self, card) then
+				return card
+			end
+		end
+	end
+
+	-- 没有合适装备时再拿敌方手牌
+	if string.find(flags, "h") and not who:isKongcheng() then
+		local cards = sgs.QList2Table(who:getHandcards())
+		return cards[math.random(1, #cards)]
+	end
+
 	return nil
 end
 
---给予
+-- 思绪直接引用竹刀的选牌AI
+sgs.ai_skill_cardchosen.sixu =
+	sgs.ai_skill_cardchosen.zhudao
+
 sgs.ai_skill_playerchosen.Quxiang = function(self, targets)
-	local source = self.player
 	local from
-	local id = -1
-	for _,p in sgs.qlist(self.room:getAlivePlayers()) do
-		if p:property("zhudao_id"):toInt()>0 then
-			id = p:property("zhudao_id"):toInt() - 1
-			from = p
+	local card
+
+	for _, player in sgs.qlist(
+		self.room:getAlivePlayers()
+	) do
+		local mark = player:property("zhudao_id"):toInt()
+
+		if mark > 0 then
+			from = player
+			card = sgs.Sanguosha:getCard(mark - 1)
 			break
 		end
 	end
-	local card = sgs.Sanguosha:getCard(id)
 
+	if not from or not card then
+		return targets:first()
+	end
+
+	-- 判定牌：有害牌交给敌人，钥匙交给队友
 	if from:getJudgingArea():contains(card) then
 		for _, target in sgs.qlist(targets) do
-			if self:isEnemy(target) and not card:isKindOf("Key") then
+			if card:isKindOf("Key") then
+				if self:isFriend(target) then
+					return target
+				end
+			elseif self:isEnemy(target) then
 				return target
 			end
-			if self:isFriend(target) and card:isKindOf("Key") then
+		end
+	end
+
+	-- 装备牌：优先交给缺少对应装备的队友
+	if card:isKindOf("EquipCard") then
+		for _, target in sgs.qlist(targets) do
+			if self:isFriend(target)
+				and needEquipSlot(target, card) then
 				return target
 			end
 		end
 	end
 
-	if not source:getArmor() then
-		for _,player in sgs.qlist(targets) do
-			if self:isEnemy(player) and player:getArmor() and player:getArmor():getEffectiveId() == id and not player:hasSkills(sgs.lose_equip_skill) then
-				return source
-			end
-		end
-	end
-	if not source:getTreasure() then
-		for _,player in sgs.qlist(targets) do
-			if self:isEnemy(player) and player:getTreasure() and player:getTreasure():getEffectiveId() == id and not player:hasSkills(sgs.lose_equip_skill) then
-				return source
-			end
-		end
-	end
-	if not source:getDefensiveHorse() then
-		for _,player in sgs.qlist(targets) do
-			if self:isEnemy(player) and player:getDefensiveHorse() and player:getDefensiveHorse():getEffectiveId() == id and not player:hasSkills(sgs.lose_equip_skill) then
-				return source
-			end
-		end
-	end
-	if not source:getWeapon() then
-		for _,player in sgs.qlist(targets) do
-			if self:isEnemy(player) and player:getWeapon() and player:getWeapon():getEffectiveId() == id and not player:hasSkills(sgs.lose_equip_skill) then
-				return source
-			end
-		end
-	end
-	if not source:getOffensiveHorse() then
-		for _,player in sgs.qlist(targets) do
-			if self:isEnemy(player) and player:getOffensiveHorse() and player:getOffensiveHorse():getEffectiveId() == id and not player:hasSkills(sgs.lose_equip_skill) then
-				return source
-			end
+	-- 手牌：优先交给手牌最少的队友
+	local friends = {}
+	for _, target in sgs.qlist(targets) do
+		if self:isFriend(target) then
+			table.insert(friends, target)
 		end
 	end
 
-	if #self.enemies == 1 then
-		for _,badpeople in ipairs(self.enemies) do
-			if badpeople:isAlive() and badpeople:getHandcards():contains(card) then
-				return source
-			end
-		end
+	if #friends > 0 then
+		self:sort(friends, "handcard")
+		return friends[1]
 	end
 
-	for _,badpeople in ipairs(self.enemies) do
-		if badpeople:isAlive() and badpeople:getWeapon() and badpeople:getWeapon():getEffectiveId() == id then
-			for _,player in sgs.qlist(targets) do
-				if self:isFriend(player) and not player:getWeapon() then
-					if player:hasSkills(sgs.lose_equip_skill) then
-						return player
-					end
-				end
-			end
-			for _,player in sgs.qlist(targets) do
-				if self:isFriend(player) and not player:getWeapon() then
-					return player
-				end
-			end
-		end
-	end
-
-	for _,badpeople in ipairs(self.enemies) do
-		if badpeople:isAlive() and badpeople:getOffensiveHorse() and badpeople:getOffensiveHorse():getEffectiveId() == id then
-			for _,player in sgs.qlist(targets) do
-				if self:isFriend(player) and not player:getOffensiveHorse() then
-					if player:hasShownSkill(sgs.lose_equip_skill) then
-						return player
-					end
-				end
-			end
-			for _,player in sgs.qlist(targets) do
-				if self:isFriend(player) and not player:getOffensiveHorse() then
-					return player
-				end
-			end
-		end
-	end
-	for _,badpeople in ipairs(self.enemies) do
-		if badpeople:isAlive() and badpeople:getArmor() and badpeople:getArmor():getEffectiveId() == id then
-			for _,player in sgs.qlist(targets) do
-				if self:isFriend(player) and not player:getArmor() then
-					if player:hasShownSkill(sgs.lose_equip_skill) then
-						return player
-					end
-				end
-			end
-			for _,player in sgs.qlist(targets) do
-				if self:isFriend(player) and not player:getArmor() then
-					return player
-				end
-			end
-		end
-	end
-	for _,badpeople in ipairs(self.enemies) do
-		if badpeople:isAlive() and badpeople:getDefensiveHorse() and badpeople:getDefensiveHorse():getEffectiveId() == id then
-			for _,player in sgs.qlist(targets) do
-				if self:isFriend(player) and not player:getDefensiveHorse() then
-					if player:hasShownSkill(sgs.lose_equip_skill) then
-						return player
-					end
-				end
-			end
-			for _,player in sgs.qlist(targets) do
-				if self:isFriend(player) and not player:getDefensiveHorse() then
-					return player
-				end
-			end
-		end
-	end
-
-	local cardNumMin = 100
-	local bestguy = source
-	for _,player in ipairs(self.enemies) do
-		if player:isAlive() and not player:isKongcheng() then
-			for _,goodguy in sgs.qlist(targets) do
-				local cardNum = goodguy:getHandcardNum()
-				if cardNum < cardNumMin and self:isFriend(goodguy) then
-					cardNumMin = cardNum
-					bestguy = goodguy
-				end
-			end
-			return bestguy
-		end
-	end
-	return source
-end
-
---准备复制粘贴就好
-
-sgs.ai_skill_cardchosen.sixu = function(self, who, flags)
-	local source = self.player
-
-	if self:isFriend(who) and who:getJudgingArea():length() > 0 and not noNeedToRemoveJudgeArea(who) then
-		for _,card in sgs.qlist(who:getJudgingArea()) do
-			if not card:isKindOf("Key") then
-				return card
-			elseif who:isWounded() then
-				return card
-			end
-		end
-	end
-
-	if not ((not source:getArmor() and who:getArmor()) or (not source:getTreasure() and who:getTreasure()) or (not source:getDefensiveHorse() and who:getDefensiveHorse()) or (not source:getWeapon() and who:getWeapon()) or (not source:getOffensiveHorse() and who:getOffensiveHorse())) then
-		if self:isEnemy(who) and who:isAlive() and not who:isKongcheng() and #self.enemies==1 then
-			local cards = who:getHandcards()
-			return cards:at(0)
-		end
-	end
-
-	if self:isEnemy(who) and who:isAlive() and who:getArmor() and not who:hasSkills(sgs.lose_equip_skill) then
-		for _,player in ipairs(self.friends) do
-			if player:isAlive() and not player:getArmor() then
-				local card = who:getArmor()
-				return card
-			end
-		end
-	end
-	if self:isEnemy(who) and who:isAlive() and who:getTreasure() and not who:hasSkills(sgs.lose_equip_skill) then
-		for _,player in ipairs(self.friends) do
-			if player:isAlive() and not player:getTreasure() then
-				local card = who:getTreasure()
-				return card
-			end
-		end
-	end
-	if self:isEnemy(who) and who:isAlive() and who:getDefensiveHorse() and not who:hasSkills(sgs.lose_equip_skill) then
-		for _,player in ipairs(self.friends) do
-			if player:isAlive() and not player:getDefensiveHorse() then
-				local card = who:getDefensiveHorse()
-				return card
-			end
-		end
-	end
-	if self:isEnemy(who) and who:isAlive() and who:getWeapon() and not who:hasSkills(sgs.lose_equip_skill) then
-		for _,player in ipairs(self.friends) do
-			if player:isAlive() and not player:getWeapon() then
-				local card = who:getWeapon()
-				return card
-			end
-		end
-	end
-	if self:isEnemy(who) and who:isAlive() and who:getOffensiveHorse() and not who:hasSkills(sgs.lose_equip_skill) then
-		for _,player in ipairs(self.friends) do
-			if player:isAlive() and not player:getOffensiveHorse() then
-				local card = who:getOffensiveHorse()
-				return card
-			end
-		end
-	end
-
-	if self:isEnemy(who) and who:isAlive() and not who:isKongcheng() then
-		local cards = who:getHandcards()
-		return cards:at(0)
-	end
-	return nil
+	return targets:first()
 end
 
 sgs.ai_skill_invoke.sixu = function(self, data)
-	local Can_get_Card_Num = 0
-	local tool = 0
-	if self.player:getWeapon() then
-		tool = tool -1
-	end
-	if self.player:getArmor() then
-		tool = tool -1
-	end
-	if self.player:getOffensiveHorse() then
-		tool = tool -1
-	end
-	if self.player:getDefensiveHorse() then
-		tool = tool -1
-	end
-	if self.player:getTreasure() then
-		tool = tool -1
-	end
-	local tool_s = tool
-	for _,player in ipairs(self.enemies) do
-		if player:isAlive() then
-				if player:getWeapon() then
-					tool = tool +1
-				end
-				if self.player:getArmor() then
-					tool = tool +1
-				end
-				if self.player:getOffensiveHorse() then
-					tool = tool +1
-				end
-				if self.player:getDefensiveHorse() then
-					tool = tool +1
-				end
-				if self.player:getTreasure() then
-		            tool = tool +1
-	            end
-				Can_get_Card_Num = Can_get_Card_Num + player:getHandcardNum() + tool
-				tool = tool_s
+	local useful = 0
+
+	for _, player in sgs.qlist(
+		self.room:getAlivePlayers()
+	) do
+		if player:objectName() ~= self.player:objectName()
+			and isUsefulZhudaoSource(self, player) then
+			useful = useful + 1
 		end
 	end
-	local i = 0
-	for _,player in ipairs(self.friends) do
-		if player:isAlive() then
-			if player:getJudgingArea():length() > 0 and not noNeedToRemoveJudgeArea(player) then
-				Can_get_Card_Num = Can_get_Card_Num + 1
-			end
-		end
+
+	-- 已经背面朝上时，发动后可以翻回正面
+	if not self.player:faceUp() then
+		return useful > 0
 	end
-	local source = self.player
-	if (Can_get_Card_Num >=2 or source:getHp() == 1) and (source:getHandcardNum() > source:getHp() or i>0) then
-		return true
-	end
-	return
+
+	-- 正面发动需要承担翻面的代价，至少应有两个有效来源
+	return useful >= 2
+		and not self:isWeak()
+		and not self:willSkipPlayPhase(self.player)
 end
 
 sgs.Zhudao_keep_value = sgs.xiaoji_keep_value
@@ -729,47 +552,82 @@ sgs.Zhudao_keep_value = sgs.xiaoji_keep_value
 local wangxiang_skill = {}
 wangxiang_skill.name = "wangxiang"
 table.insert(sgs.ai_skills, wangxiang_skill)
-wangxiang_skill.getTurnUseCard = function(self,room,player,data)
-	if self.player:hasUsed("ViewAsSkill_wangxiangCard") or self.player:isKongcheng() or (not self:willShowForAttack() and not self:willShowForDefence()) then return end
-	local usevalue = 0
-	local keepvalue = 0	
-	local id
-	local card1
-	local cards = self.player:getHandcards()
-	cards = sgs.QList2Table(cards)
-	self:sortByKeepValue(cards)
-	for _,card in ipairs(cards) do
-		if card:isBlack() and card:isKindOf("BasicCard") then
-			id = tostring(card:getId())
-			card1 = card
-			usevalue=self:getUseValue(card)
-			keepvalue=self:getKeepValue(card)
-			break
+
+wangxiang_skill.getTurnUseCard = function(self)
+	if self.player:hasUsed("ViewAsSkill_wangxiangCard")
+		or self.player:isKongcheng()
+		or (not self:willShowForAttack()
+			and not self:willShowForDefence()) then
+		return nil
+	end
+
+	-- 收集所有可作为材料的黑色基本牌
+	local materials = {}
+	for _, card in sgs.qlist(
+		self.player:getHandcards()
+	) do
+		if card:isBlack()
+			and card:isKindOf("BasicCard") then
+			table.insert(materials, card)
 		end
 	end
-	if not id then return end
-	local parsed_card = {}
-    table.insert(parsed_card, sgs.Card_Parse("drowning:wangxiang[to_be_decided:"..card1:getNumberString().."]=" .. id .."&wangxiang"))				--水淹七军
-	table.insert(parsed_card, sgs.Card_Parse("threaten_emperor:wangxiang[to_be_decided:"..card1:getNumberString().."]=" .. id .."&wangxiang"))		--挟天子以令诸侯
-	table.insert(parsed_card, sgs.Card_Parse("await_exhausted:wangxiang[to_be_decided:"..card1:getNumberString().."]=" .. id .."&wangxiang"))			--以逸待劳
-	table.insert(parsed_card, sgs.Card_Parse("befriend_attacking:wangxiang[to_be_decided:"..card1:getNumberString().."]=" .. id .."&wangxiang"))		--远交近攻
-	table.insert(parsed_card, sgs.Card_Parse("duel:wangxiang[to_be_decided:"..card1:getNumberString().."]=" .. id .."&wangxiang"))				--决斗
-	table.insert(parsed_card, sgs.Card_Parse("dismantlement:wangxiang[to_be_decided:"..card1:getNumberString().."]=" .. id .."&wangxiang"))		--过河拆桥
-	table.insert(parsed_card, sgs.Card_Parse("slash:wangxiang[to_be_decided:"..card1:getNumberString().."]=" .. id .."&wangxiang"))				--顺手牵羊
-	table.insert(parsed_card, sgs.Card_Parse("ex_nihilo:wangxiang[to_be_decided:"..card1:getNumberString().."]=" .. id .."&wangxiang"))	--无中生有
-	
-	local value = 0
-	local tcard
-	for _, c in ipairs(parsed_card) do
-		assert(c)
-		if self:getUseValue(c) > value and self:getUseValue(c) > keepvalue and self:getUseValue(c) > usevalue then
-			value = self:getUseValue(c)
-			tcard = c
+
+	if #materials == 0 then
+		return nil
+	end
+
+	local best_card
+	local best_score = 0
+	local checked = {}
+
+	-- 遍历游戏中实际存在的全部牌名
+	for id = 0, 997 do
+		local original = sgs.Sanguosha:getCard(id)
+
+		if original
+			and original:isNDTrick()
+			and original:isKindOf("SingleTargetTrick")
+			and not checked[original:objectName()] then
+
+			local name = original:objectName()
+			checked[name] = true
+
+			-- 同时比较所有可用材料
+			for _, material in ipairs(materials) do
+				local card = sgs.Card_Parse(
+					name
+						.. ":wangxiang[to_be_decided:"
+						.. material:getNumberString()
+						.. "]="
+						.. material:getEffectiveId()
+						.. "&wangxiang"
+				)
+
+				if card and card:isAvailable(self.player) then
+					local dummy_use = {
+						isDummy = true,
+						to = sgs.SPlayerList()
+					}
+
+					self:useTrickCard(card, dummy_use)
+
+					-- 只有当前确实能够使用时才参与比较
+					if dummy_use.card then
+						local score =
+							self:getUseValue(card)
+							- self:getKeepValue(material)
+
+						if score > best_score then
+							best_score = score
+							best_card = card
+						end
+					end
+				end
+			end
 		end
 	end
-	if tcard and id then
-		return tcard
-	end
+
+	return best_card
 end
 
 sgs.ai_skill_invoke.baonu = function(self, data)
@@ -2942,58 +2800,121 @@ sgs.ai_skill_invoke.kongyun= function(self, data)
   return not self:isFriend(self.room:getCurrent()) and (self:willShowForAttack() or self:willShowForDefence())
 end
 
-sgs.ai_skill_invoke.laoyue= function(self, data)
-  return self:willShowForDefence()
+-- 捞月：回合外需要基本牌时，声明可以发动
+sgs.ai_cardsview_value.laoyue = function(
+	self, class_name, player
+)
+	if not player
+		or not player:hasSkill("laoyue")
+		or player:getPhase() ~= sgs.Player_NotActive
+		or player:hasFlag("Global_LaoyueFailed")
+		or player:isRemoved() then
+		return nil
+	end
+
+	local patterns = {
+		Slash = "slash",
+		Jink = "jink",
+		Peach = "peach",
+		Analeptic = "analeptic",
+		GuangyuCard = "guangyucard"
+	}
+
+	local pattern = patterns[class_name]
+	if not pattern then
+		return nil
+	end
+
+	if pattern == "peach"
+		and (player:getMark("Global_PreventPeach") > 0
+			or player:hasFlag("Global_PreventPeach")) then
+		return nil
+	end
+
+	return "@LaoyueCard=.:" .. pattern
 end
 
---[[sgs.ai_view_as.laoyue = function(card, player, card_place)
-	local ask = sgs.Sanguosha:getCurrentCardUsePattern()
-	local room = player:getRoom()
-	local can
-	for i = 1 , 998, 1 do
-        local c = sgs.Sanguosha:getCard(i)
-		if c and c:isKindOf("BasicCard") and ask:find(c:objectName(), 1, true) then can = true end
-	end
-	if can and not player:hasFlag("Global_LaoyueFailed") and player:getPhase() == sgs.Player_NotActive then
-       local laoyue_card = sgs.Sanguosha:cloneSkillCard("LaoyueCard")
-	   local c = laoyue_card:validateInResponse(player)
-	   if c then
-           return ("%s:laoyue[%s:%s]=.&laoyue"):format(c:objectName(), c:getSuitString(), c:getNumber())
-	   end
-	end
-	return
-end]]
+sgs.ai_skill_choice.laoyue = function(
+	self, choices, data
+)
+	local items = choices:split("+")
 
---[[sgs.ai_skill_use["@@laoyue"] = function(self, prompt)
-	if not self.player:hasFlag("Global_LaoyueFailed") and self.player:getPhase() == sgs.Player_NotActive then
-	   return ("@LaoyueCard=.&laoyue")
+	-- 出现use说明牌堆底至少有一张符合要求的牌
+	if table.contains(items, "use") then
+		return "use"
 	end
-end]]
 
---[[sgs.ai_cardsview["laoyue"] = function(self, class_name, player)
-	local ask = sgs.Sanguosha:getCurrentCardUsePattern()
-	local room = player:getRoom()
-	local can
-	for i = 1 , 998, 1 do
-        local c = sgs.Sanguosha:getCard(i)
-		if c and c:isKindOf("BasicCard") and ask:find(c:objectName(), 1, true) then can = true end
+	-- 手牌溢出较多时，可以用低价值手牌换牌堆底牌
+	if table.contains(items, "put")
+		and self:getOverflow() >= 2 then
+		return "put"
 	end
-	if sgs.Sanguosha:getCurrentCardUseReason() ~= sgs.CardUseStruct_CARD_USE_REASON_RESPONSE_USE and sgs.Sanguosha:getCurrentCardUseReason() ~= sgs.CardUseStruct_CARD_USE_REASON_RESPONSE then return end
-	if can and not player:hasFlag("Global_LaoyueFailed") and player:getPhase() == sgs.Player_NotActive then
-	    return "@LaoyueCard=.&laoyue"
-	end
-end]]
 
-sgs.ai_skill_choice.laoyue = function(self, choices, data)
-   if table.contains(choices:split("+"), "use")
-      then return "use"
-   else
-      return "replace"
-   end
+	-- 没有可用牌时，优先用牌堆顶刷新牌堆底
+	if table.contains(items, "replace") then
+		return "replace"
+	end
+
+	return "cancel"
 end
 
-sgs.ai_skill_askforag.laoyue = function(self, card_ids)
-  return card_ids[1]
+sgs.ai_skill_askforag.laoyue = function(
+	self, card_ids
+)
+	local best_id = -1
+	local best_value = -100
+
+	for _, id in ipairs(card_ids) do
+		local card = sgs.Sanguosha:getCard(id)
+
+		if card then
+			local value =
+				self:getUseValue(card)
+				+ self:getKeepValue(card) * 0.1
+
+			-- 濒死求桃时优先桃
+			if card:isKindOf("Peach") then
+				value = value + 10
+			elseif card:isKindOf("Jink")
+				and self:isWeak() then
+				value = value + 2
+			end
+
+			if value > best_value then
+				best_value = value
+				best_id = id
+			end
+		end
+	end
+
+	return best_id
+end
+
+sgs.ai_skill_discard.laoyue = function(
+	self, discard_num, min_num,
+	optional, include_equip
+)
+	local cards = sgs.QList2Table(
+		self.player:getHandcards()
+	)
+
+	self:sortByKeepValue(cards)
+
+	local result = {}
+	for _, card in ipairs(cards) do
+		if not self.player:isJilei(card) then
+			table.insert(
+				result,
+				card:getEffectiveId()
+			)
+
+			if #result >= 2 then
+				break
+			end
+		end
+	end
+
+	return result
 end
 
 --Rentarou

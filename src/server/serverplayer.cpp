@@ -1119,6 +1119,20 @@ void ServerPlayer::doCommandForcely(const QString &reason, int index, ServerPlay
 
 void ServerPlayer::turnOver()
 {
+
+    // “终结”：角色由正面朝上变为叠置状态时阻止
+   if (faceUp() && hasSkill("zhongjie")) {
+       if (hasShownSkill("zhongjie")
+           || askForSkillInvoke("zhongjie")) {
+
+           if (!hasShownSkill("zhongjie"))
+               showSkill("zhongjie");
+
+           getRoom()->sendCompulsoryTriggerLog(this, "zhongjie");
+           return;
+       }
+   }
+
     //for zhengchang
     if (this->faceUp() && this->hasSkill("zhengchang")){
         if (this->hasShownSkill("zhengchang") || this->askForSkillInvoke("zhengchang")) {
@@ -1960,44 +1974,46 @@ void ServerPlayer::showGeneral(bool head_general, bool trigger_event, bool sendL
         foreach(ServerPlayer *p, room->getOtherPlayers(this, true))
             room->notifyProperty(p, this, "head_skin_id");
 
-        if (getGeneral()->getKingdom() == "careerist" || getRole() == "careerist") {
-            if (getGeneral()->getKingdom() == "careerist" && property("CareeristFriend").toString().isEmpty())
-                room->setPlayerProperty(this, "kingdom", "careerist");
-                //setKingdom("careerist");
-            room->setPlayerProperty(this, "role", "careerist");
-        }
-        else if (!hasShownGeneral2()) {
-            QString kingdom = getKingdom() != getGeneral()->getKingdom() ? getKingdom() : getGeneral()->getKingdom();
-            room->setPlayerProperty(this, "kingdom", kingdom);
+        if (room->getMode() != "06_3v3") {
+            if (getGeneral()->getKingdom() == "careerist" || getRole() == "careerist") {
+                if (getGeneral()->getKingdom() == "careerist" && property("CareeristFriend").toString().isEmpty())
+                    room->setPlayerProperty(this, "kingdom", "careerist");
+                    //setKingdom("careerist");
+                room->setPlayerProperty(this, "role", "careerist");
+            }
+            else if (!hasShownGeneral2()) {
+                QString kingdom = getKingdom() != getGeneral()->getKingdom() ? getKingdom() : getGeneral()->getKingdom();
+                room->setPlayerProperty(this, "kingdom", kingdom);
 
-            QString role = HegemonyMode::GetMappedRole(kingdom);
-            int i = 1;
-            bool has_lord = isAlive() && getGeneral()->isLord();
-            if (!has_lord) {
-                foreach (ServerPlayer *p, room->getOtherPlayers(this, true)) {
-                    if (p->getKingdom() == kingdom) {
-                        if (p->getGeneral()->isLord()) {
-                            has_lord = true;
-                            break;
+                QString role = HegemonyMode::GetMappedRole(kingdom);
+                int i = 1;
+                bool has_lord = isAlive() && getGeneral()->isLord();
+                if (!has_lord) {
+                    foreach (ServerPlayer *p, room->getOtherPlayers(this, true)) {
+                        if (p->getKingdom() == kingdom) {
+                            if (p->getGeneral()->isLord()) {
+                                has_lord = true;
+                                break;
+                            }
+                            if (p->hasShownOneGeneral() && p->getRole() != "careerist")
+                                ++i;
                         }
-                        if (p->hasShownOneGeneral() && p->getRole() != "careerist")
-                            ++i;
                     }
                 }
+
+                if (((!has_lord && i > (room->getPlayers().length() / 2)) || (has_lord && getLord(true)->isDead()))&& room->getMode()!= "maria_battle")
+                    role = "careerist";
+
+                room->setPlayerProperty(this, "role", role);
             }
 
-            if (((!has_lord && i > (room->getPlayers().length() / 2)) || (has_lord && getLord(true)->isDead()))&& room->getMode()!= "maria_battle")
-                role = "careerist";
-
-            room->setPlayerProperty(this, "role", role);
-        }
-
-        if (isLord()) {
-            QString kingdom = getKingdom();
-            foreach (ServerPlayer *p, room->getPlayers()) {
-                if (p->getKingdom() == kingdom && p->getRole() == "careerist" && p->property("CareeristFriend").toString().isEmpty()) {
-                    room->setPlayerProperty(p, "role", HegemonyMode::GetMappedRole(kingdom));
-                    room->broadcastProperty(p, "kingdom");
+            if (isLord()) {
+                QString kingdom = getKingdom();
+                foreach (ServerPlayer *p, room->getPlayers()) {
+                    if (p->getKingdom() == kingdom && p->getRole() == "careerist" && p->property("CareeristFriend").toString().isEmpty()) {
+                        room->setPlayerProperty(p, "role", HegemonyMode::GetMappedRole(kingdom));
+                        room->broadcastProperty(p, "kingdom");
+                    }
                 }
             }
         }
@@ -2038,33 +2054,35 @@ void ServerPlayer::showGeneral(bool head_general, bool trigger_event, bool sendL
         foreach(ServerPlayer *p, room->getOtherPlayers(this, true))
             room->notifyProperty(p, this, "deputy_skin_id");
 
-        if (getRole() == "careerist") {
-            room->setPlayerProperty(this, "role", "careerist");
-        }else if (!hasShownGeneral1()) {
-            QString kingdom = getKingdom() != getGeneral()->getKingdom() ? getKingdom() : getGeneral()->getKingdom();
-            room->setPlayerProperty(this, "kingdom", kingdom);
+        if (room->getMode() != "06_3v3") {
+            if (getRole() == "careerist") {
+                room->setPlayerProperty(this, "role", "careerist");
+            }else if (!hasShownGeneral1()) {
+                QString kingdom = getKingdom() != getGeneral()->getKingdom() ? getKingdom() : getGeneral()->getKingdom();
+                room->setPlayerProperty(this, "kingdom", kingdom);
 
-            QString role = HegemonyMode::GetMappedRole(kingdom);
-            int i = 1;
-            bool has_lord = isAlive() && getGeneral()->isLord();
-            if (!has_lord) {
-                foreach (ServerPlayer *p, room->getOtherPlayers(this, true)) {
-                    if (p->getKingdom() == kingdom) {
-                        if (p->getGeneral()->isLord()) {
-                            has_lord = true;
-                            break;
+                QString role = HegemonyMode::GetMappedRole(kingdom);
+                int i = 1;
+                bool has_lord = isAlive() && getGeneral()->isLord();
+                if (!has_lord) {
+                    foreach (ServerPlayer *p, room->getOtherPlayers(this, true)) {
+                        if (p->getKingdom() == kingdom) {
+                            if (p->getGeneral()->isLord()) {
+                                has_lord = true;
+                                break;
+                            }
+                            if (p->hasShownOneGeneral() && p->getRole() != "careerist")
+                                ++i;
                         }
-                        if (p->hasShownOneGeneral() && p->getRole() != "careerist")
-                            ++i;
                     }
                 }
-            }
 
-            if (((!has_lord && i > (room->getPlayers().length() / 2)) || (has_lord && getLord(true)->isDead())) && room->getMode()!= "maria_battle"){
-                extra_samekingdom = true;
-                role = "careerist";
+                if (((!has_lord && i > (room->getPlayers().length() / 2)) || (has_lord && getLord(true)->isDead())) && room->getMode()!= "maria_battle"){
+                    extra_samekingdom = true;
+                    role = "careerist";
+                }
+                room->setPlayerProperty(this, "role", role);
             }
-            room->setPlayerProperty(this, "role", role);
         }
     }
 
@@ -2104,6 +2122,15 @@ void ServerPlayer::showGeneral(bool head_general, bool trigger_event, bool sendL
 void ServerPlayer::hideGeneral(bool head_general)
 {
     room->tryPause();
+
+    bool zhongjie_head = inHeadSkills("zhongjie");
+
+    if (hasSkill("zhongjie")
+        && zhongjie_head == head_general
+        && hasShownSkill("zhongjie")) {
+        room->sendCompulsoryTriggerLog(this, "zhongjie");
+        return;
+    }
 
     if (head_general) {
         if (getGeneralName() == "anjiang") return;
@@ -2212,6 +2239,15 @@ void ServerPlayer::hideGeneral(bool head_general)
 void ServerPlayer::hideGeneralWithoutChangingRole(bool head_general)
 {
     room->tryPause();
+
+    bool zhongjie_head = inHeadSkills("zhongjie");
+
+    if (hasSkill("zhongjie")
+        && zhongjie_head == head_general
+        && hasShownSkill("zhongjie")) {
+        room->sendCompulsoryTriggerLog(this, "zhongjie");
+        return;
+    }
 
     if (head_general) {
         if (getGeneralName() == "anjiang") return;

@@ -356,7 +356,19 @@ void Dashboard::killPlayer()
 {
     trusting_item->hide();
     trusting_text->hide();
-    _m_roleComboBox->fix(m_player->getRole() == "careerist" ? "careerist" : m_player->getKingdom());
+    //_m_roleComboBox->fix(m_player->getRole() == "careerist" ? "careerist" : m_player->getKingdom());
+    QString icon_name;
+
+    if (ServerInfo.GameMode == "06_3v3") {
+        icon_name = m_player->getRole();
+    } else {
+        icon_name = m_player->getRole() == "careerist"
+            ? "careerist"
+            : m_player->getKingdom();
+    }
+
+    _m_roleComboBox->fix(icon_name);
+
     _m_roleComboBox->setEnabled(false);
     _updateDeathIcon();
     _m_saveMeIcon->hide();

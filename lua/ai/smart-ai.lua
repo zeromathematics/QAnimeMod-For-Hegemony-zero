@@ -427,9 +427,9 @@ end
 function SmartAI:objectiveLevel(player)
 	if not player then self.room:writeToConsole(debug.traceback()) return 0 end
 	if self.player:objectName() == player:objectName() then return -2 end
-	if self.player:isFriendWith(player) then return -2 end
-	if self.room:alivePlayerCount() == 2 then return 5 end
 
+	-- 3v3等明身份模式必须优先采用身份阵营关系。
+	-- 若先调用ServerPlayer::isFriendWith，AI会把同势力的敌人误判为队友。
 	if sgs.isRoleExpose() then
 		if self.lua_ai:isFriend(player) then return -2
 		elseif self.lua_ai:isEnemy(player) then return 5
@@ -437,6 +437,10 @@ function SmartAI:objectiveLevel(player)
 			if self.lua_ai:getEnemies():isEmpty() then return 4 else return 0 end
 		else return 0 end
 	end
+
+	-- 以下关系才属于国战势力逻辑。
+	if self.player:isFriendWith(player) then return -2 end
+	if self.room:alivePlayerCount() == 2 then return 5 end
 
 	local self_kingdom = self.player:getKingdom()
 	local player_kingdom_evaluate = self:evaluateKingdom(player)
@@ -528,6 +532,13 @@ end
 
 function sgs.gameProcess(update)
 	if not update and sgs.ai_process then return sgs.ai_process end
+
+	-- 3v3的敌我关系由身份阵营直接决定，不应使用国战势力强弱进行推测。
+	-- 返回均势也可避免单将角色进入下方的双将强度计算。
+	if global_room:getMode() == "06_3v3" then
+		sgs.ai_process = "==="
+		return sgs.ai_process
+	end
 
 	local scenario = global_room:getScenario()
 	if scenario and scenario:objectName() == "jiange_defense" then return "science>>>" end
@@ -656,6 +667,35 @@ function sgs.getDynamicPlayerStrength(player, ishuashen)
 		end
 		g1 = sgs.Sanguosha:getGeneral(names[1])
 		g2 = sgs.Sanguosha:getGeneral(names[2])
+	end
+
+	-- 单将模式下general2可以为nil，不能继续执行下方的双将计算。
+	if not g1 then return 0 end
+	if not g2 then
+		local current_value = 3
+		for name, value in pairs(sgs.general_value) do
+			if g1:objectName() == name then
+				current_value = value
+				break
+			end
+		end
+
+		-- 与3v3服务端的单将体力计算保持一致。
+		local general_max_hp = math.max(g1:getMaxHpHead(), g1:getMaxHpDeputy())
+		local hp_ajust = player:getMaxHp() - general_max_hp
+		if hp_ajust > 0 and not player:hasShownSkills("xichou|benghuai") then
+			current_value = current_value - hp_ajust
+		end
+
+		-- 已经消耗的限定技不再计入完整人物强度。
+		for _, skill in sgs.qlist(g1:getVisibleSkillList(true, true)) do
+			if skill:getFrequency() == sgs.Skill_Limited and skill:getLimitMark() ~= ""
+				and player:getMark(skill:getLimitMark()) == 0 then
+				current_value = current_value - 1
+			end
+		end
+
+		return current_value
 	end
 
 	local current_value = 0
@@ -890,7 +930,10 @@ end
 
 function sgs.outputKingdomValues(player, level, sendLog)
 	local logType = 1
-	local name = player:getGeneralName() .. "/" .. player:getGeneral2Name()
+	local name = player:getGeneralName()
+	if player:getGeneral2() then
+		name = name .. "/" .. player:getGeneral2Name()
+	end
 	if name == "anjiang/anjiang" then
 		name = "SEAT" .. player:getSeat()
 		logType = 2
@@ -1782,6 +1825,19 @@ end
 function SmartAI:isFriend(other, another)
 	if not other then self.room:writeToConsole(debug.traceback()) return end
 	if another then
+		-- 双参数调用表示判断other与another之间的关系。
+		-- 3v3只有两个阵营：二者相对当前AI同为友军或同为敌军，即彼此为友军。
+		-- 此写法不依赖other本身是否由AI控制，真人角色同样能够正确判断。
+		if string.lower(self.room:getMode() or "") == "06_3v3" then
+			if other:objectName() == another:objectName() then return true end
+			local both_friend = self.lua_ai:isFriend(other) and self.lua_ai:isFriend(another)
+			local both_enemy = self.lua_ai:isEnemy(other) and self.lua_ai:isEnemy(another)
+			return both_friend or both_enemy
+		elseif sgs.isRoleExpose() then
+			local ai = sgs.ais[other:objectName()]
+			if ai and ai.lua_ai then return ai.lua_ai:isFriend(another) end
+			return false
+		end
 		if other:isFriendWith(another) then return true end
 		if sgs.ais[other:objectName()] then
 			for _, p in ipairs(sgs.ais[other:objectName()].friends) do
@@ -1790,6 +1846,8 @@ function SmartAI:isFriend(other, another)
 		end
 		return false
 	end
+	-- 3v3不允许在底层返回中立时继续回退到国战势力判断。
+	if string.lower(self.room:getMode() or "") == "06_3v3" then return self.lua_ai:isFriend(other) end
 	if sgs.isRoleExpose() and self.lua_ai:relationTo(other) ~= sgs.AI_Neutrality then return self.lua_ai:isFriend(other) end
 	if self.player:objectName() == other:objectName() then return true end
 	if self.player:isFriendWith(other) then return true end
@@ -1802,6 +1860,19 @@ end
 function SmartAI:isEnemy(other, another)
 	if not other then self.room:writeToConsole(debug.traceback()) return end
 	if another then
+		-- 与isFriend的双参数分支保持一致，明身份模式直接按身份阵营判断。
+		if string.lower(self.room:getMode() or "") == "06_3v3" then
+			if other:objectName() == another:objectName() then return false end
+			local other_friend = self.lua_ai:isFriend(other)
+			local another_friend = self.lua_ai:isFriend(another)
+			local other_enemy = self.lua_ai:isEnemy(other)
+			local another_enemy = self.lua_ai:isEnemy(another)
+			return (other_friend and another_enemy) or (other_enemy and another_friend)
+		elseif sgs.isRoleExpose() then
+			local ai = sgs.ais[other:objectName()]
+			if ai and ai.lua_ai then return ai.lua_ai:isEnemy(another) end
+			return false
+		end
 		if sgs.ais[other:objectName()] then
 			for _, p in ipairs(sgs.ais[other:objectName()].enemies) do
 				if p:objectName() == another:objectName() then return true end
@@ -1809,6 +1880,8 @@ function SmartAI:isEnemy(other, another)
 		end
 		return false
 	end
+	-- 3v3不允许在底层返回中立时继续回退到国战势力判断。
+	if string.lower(self.room:getMode() or "") == "06_3v3" then return self.lua_ai:isEnemy(other) end
 	if sgs.isRoleExpose() and self.lua_ai:relationTo(other) ~= sgs.AI_Neutrality then return self.lua_ai:isEnemy(other) end
 	if self.player:objectName() == other:objectName() then return false end
 	local level = self:objectiveLevel(other)
@@ -3138,7 +3211,15 @@ function SmartAI:askForAG(card_ids, refusable, reason)
 		if card:isKindOf("Indulgence") and not (self:isWeak() and self:getCardsNum("Jink") == 0) then return card:getEffectiveId() end
 		if card:isKindOf("AOE") and not (self:isWeak() and self:getCardsNum("Jink") == 0) then return card:getEffectiveId() end
 	end
+	if #cards == 0 then
+		return -1
+	end
+
 	self:sortByCardNeed(cards, true)
+
+	if not cards[1] then
+		return -1
+	end
 
 	return cards[1]:getEffectiveId()
 end
@@ -6487,6 +6568,10 @@ function sgs.hasNullSkill(skill_name, player)
 end
 
 function SmartAI:isFriendWith(player)
+	if not player then return false end
+	-- 3v3等明身份模式中，“友方”由身份阵营决定，与人物势力无关。
+	if sgs.isRoleExpose() then return self.lua_ai:isFriend(player) end
+
 	if self.role == "careerist" then return false end
 	if self.player:isFriendWith(player) then return true end
 	local kingdom = self.player:getKingdom()
@@ -6532,6 +6617,11 @@ function hasNiepanEffect(player)
 end
 
 function sgs.isRoleExpose()
+	local mode = string.lower(global_room:getMode() or "")
+	-- 自制3v3为完全明身份模式。显式判断可避免Scenario::exposeRoles()
+	-- 未正确覆写时，AI错误地回退到国战势力推测流程。
+	if mode == "06_3v3" then return true end
+
 	--local mode = string.lower(global_room:getMode())
 	--if mode:find("0") then return false end
 	--if global_room:getMode() == "jiange_defense" then return true end

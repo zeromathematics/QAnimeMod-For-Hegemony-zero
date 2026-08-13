@@ -66,8 +66,14 @@ void RoleComboBox::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QW
     double scale = G_ROOM_LAYOUT.scale;
     if (!fixed_role.isEmpty()) {
         QPixmap pix;
-        pix.load(QString("image/system/roles/%1.png").arg(fixed_role));
-        painter->drawPixmap(0, 0, (int)(pix.width() * scale),(int)(pix.height() * scale), pix);
+
+        QString icon_name = fixed_role;
+        if (ServerInfo.GameMode == "06_3v3" && fixed_role == "lord")
+            icon_name = "lord-1";
+
+        pix.load(QString("image/system/roles/%1.png").arg(icon_name));
+        painter->drawPixmap(0, 0, (int)(pix.width() * scale),
+                            (int)(pix.height() * scale), pix);
         return;
     }
     QStringList kingdoms = Sanguosha->getKingdoms();

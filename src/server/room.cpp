@@ -5374,22 +5374,55 @@ void Room::startGame()
         QStringList generals = getTag(player->objectName()).toStringList();
         const General *general1 = Sanguosha->getGeneral(generals.first());
         const General *general2 = Sanguosha->getGeneral(generals.last());
-        if (mode == "06_3v3"){
-            const QString general_name = generals.first();
+        if (mode == "06_3v3") {
+            Q_ASSERT(generals.length() == 2);
+            Q_ASSERT(general1 && general2);
 
-            player->setGeneralName(general_name);
-            player->setActualGeneral1Name(general_name);
+            const QString general1_name = generals.at(0);
+            const QString general2_name = generals.at(1);
+
+            player->setGeneralName(general1_name);
+            player->setGeneral2Name(general2_name);
+
+            player->setActualGeneral1Name(general1_name);
+            player->setActualGeneral2Name(general2_name);
+
             player->setGender(general1->getGender());
 
-            handleUsedGeneral(general_name);
-             Q_ASSERT(general1);
+            // 3v3开局双将全部处于明置状态
+            setPlayerProperty(player, "general1_showed", true);
+            setPlayerProperty(player, "general2_showed", true);
 
-            player->setMaxHp(qMax( general1->getMaxHpHead(), general1->getMaxHpDeputy()));
+            // 防止残留普通国战的暗将标记
+            setPlayerMark(player, "HaventShowGeneral", 0);
+            setPlayerMark(player, "HaventShowGeneral2", 0);
+
+            // 两张人物牌都计入已使用人物
+            handleUsedGeneral(general1_name);
+            handleUsedGeneral(general2_name);
+
+            // 3v3开局双将已经明置，直接获得可使用的珠联璧合标记
+            if (general1->isCompanionWith(general2_name))
+                setPlayerMark(player, "@companion", 1);
+
+            int max_hp = general1->getMaxHpHead()
+                       + general2->getMaxHpDeputy();
+
+            // 体力和为奇数时，直接获得可使用的阴阳鱼标记
+            setPlayerMark(player, "@halfmaxhp", max_hp % 2);
+
+            player->setMaxHp(max_hp / 2);
             player->setHp(player->getMaxHp());
-            // setup AI
+
+            // 3v3开局明置，不设置这两个标记
+            // setPlayerMark(player, "HaventShowGeneral", 1);
+            // setPlayerMark(player, "HaventShowGeneral2", 1);
+
+            // 设置AI
             AI *ai = cloneAI(player);
             ais << ai;
             player->setAI(ai);
+
             continue;
         }
         handleUsedGeneral(generals.first());
@@ -5413,14 +5446,28 @@ void Room::startGame()
     }
 
     foreach (ServerPlayer *player, m_players) {
-        if (mode == "06_3v3" || mode == "02_1v1")
+        if (mode == "06_3v3") {
+            // 3v3开局公开主将和副将
+            if (mode == "06_3v3") {
+                broadcastProperty(player, "general");
+                broadcastProperty(player, "general2");
+
+                broadcastProperty(player, "actual_general1");
+                broadcastProperty(player, "actual_general2");
+
+                broadcastProperty(player, "general1_showed");
+                broadcastProperty(player, "general2_showed");
+
+                broadcastProperty(player, "role");
+                broadcastProperty(player, "kingdom");
+                broadcastProperty(player, "gender");
+            }
+        } else if (mode == "02_1v1") {
             broadcastProperty(player, "general");
+        }
 
         broadcastProperty(player, "hp");
         broadcastProperty(player, "maxhp");
-
-        if (mode == "06_3v3")
-            broadcastProperty(player, "role");
     }
 
    preparePlayers();
@@ -6376,19 +6423,57 @@ void Room::preparePlayers()
 {
     foreach (ServerPlayer *player, m_players) {
         QString general1_name = tag[player->objectName()].toStringList().at(0);
-        if (mode == "06_3v3"){
-            const General *general = Sanguosha->getGeneral(general1_name);
-            if (!general)
-                continue;
+        if (mode == "06_3v3") {
+            QStringList generals
+                    = tag[player->objectName()].toStringList();
 
-            player->setGender(general->getGender());
-            if (!player->property("Duanchang").toString().split(",").contains("head")) {
-                foreach (const Skill *skill, Sanguosha->getGeneral(general1_name)->getVisibleSkillList(true, true))
-                    player->addSkill(skill->objectName());
+            Q_ASSERT(generals.length() == 2);
 
-                foreach (const Skill *skill, Sanguosha->getGeneral(general1_name)->getVisibleSkillList(true, false))
+            const QString general1_name = generals.at(0);
+            const QString general2_name = generals.at(1);
+
+            const General *general1
+                    = Sanguosha->getGeneral(general1_name);
+            const General *general2
+                    = Sanguosha->getGeneral(general2_name);
+
+            Q_ASSERT(general1 && general2);
+
+            // 3v3双将开局已经公开，以主将性别为当前性别
+            player->setGender(general1->getGender());
+
+            QStringList duanchang
+                    = player->property("Duanchang")
+                            .toString()
+                            .split(",");
+
+            // 第一名人物仅加载主将技能
+            if (!duanchang.contains("head")) {
+                foreach (const Skill *skill,
+                         general1->getVisibleSkillList(true, true)) {
                     player->addSkill(skill->objectName());
+                }
             }
+
+            // 第二名人物仅加载副将技能
+            if (!duanchang.contains("deputy")) {
+                foreach (const Skill *skill,
+                         general2->getVisibleSkillList(true, false)) {
+                    player->addSkill(skill->objectName(), false);
+                }
+            }
+
+            // 关键：把主副将技能告诉其他玩家客户端
+            player->sendSkillsToOthers(true);
+            player->sendSkillsToOthers(false);
+
+            // 通知客户端重新读取技能信息
+            JsonArray args;
+            args << (int)QSanProtocol::S_GAME_EVENT_UPDATE_SKILL;
+            doNotify(player, QSanProtocol::S_COMMAND_LOG_EVENT, args);
+
+            player->notifyPreshow();
+
             continue;
         }
         if (!player->property("Duanchang").toString().split(",").contains("head")) {

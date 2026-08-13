@@ -39,35 +39,191 @@ QStringList RoomThread3v3::getGeneralsWithoutExtension() const
 void RoomThread3v3::run()
 {
     // initialize the random seed for this thread
-    qsrand(QTime(0, 0, 0).secsTo(QTime::currentTime()));
+    qsrand(
+        QTime(0, 0, 0).secsTo(
+            QTime::currentTime()
+        )
+    );
 
-    QString scheme = Config.value("3v3/RoleChoose", "Normal").toString();
+    QString scheme =
+        Config.value(
+            "3v3/RoleChoose",
+            "Normal"
+        ).toString();
+
     assignRoles(scheme);
     room->adjustSeats();
 
-    foreach (ServerPlayer *player, room->m_players) {
+    warm_leader = NULL;
+    cool_leader = NULL;
+
+    foreach (
+        ServerPlayer *player,
+        room->m_players
+    ) {
         switch (player->getRoleEnum()) {
-        case Player::Lord: warm_leader = player; break;
-        case Player::Renegade: cool_leader = player; break;
+        case Player::Lord:
+            warm_leader = player;
+            break;
+
+        case Player::Renegade:
+            cool_leader = player;
+            break;
+
         default:
             break;
         }
     }
 
-    if (Config.value("3v3/UsingExtension", false).toBool()) {
-        general_names = Config.value("3v3/ExtensionGenerals").toStringList();
-        if (general_names.isEmpty())
-            general_names = getGeneralsWithoutExtension();
-    } else
-        general_names = getGeneralsWithoutExtension();
+    /*
+     * 每次开始3v3选将前清空成员变量，
+     * 防止残留上一次游戏的候选人物。
+     */
+    general_names.clear();
 
+    const bool using_extension =
+        Config.value(
+            "3v3/UsingExtension",
+            false
+        ).toBool();
+
+    const QStringList configured =
+        Config.value(
+            "3v3/ExtensionGenerals"
+        ).toStringList();
+
+    qDebug()
+        << "3v3 UsingExtension ="
+        << using_extension;
+
+    qDebug()
+        << "3v3 ExtensionGenerals ="
+        << configured;
+
+    if (using_extension) {
+        /*
+         * 自定义选将池：
+         * 严格读取用户在设置窗口中勾选的人物。
+         *
+         * 不使用getLimitedGeneralNames()；
+         * 不根据BanPackages过滤；
+         * 不把非空自定义名单替换成全部人物。
+         */
+        foreach (
+            const QString &name,
+            configured
+        ) {
+            const General *general =
+                Sanguosha->getGeneral(name);
+
+            /*
+             * 只排除当前游戏中确实不存在的人物，
+             * 避免错误内部名导致后续闪退。
+             */
+            if (general == NULL) {
+                qWarning()
+                    << "Invalid 3v3 custom general:"
+                    << name;
+
+                continue;
+            }
+
+            if (!general_names.contains(name))
+                general_names << name;
+        }
+
+        qDebug()
+            << "3v3 loaded custom generals ="
+            << general_names;
+
+        /*
+         * 只有玩家没有保存任何自定义人物时，
+         * 才回退至默认人物池。
+         *
+         * configured非空但加载失败时不自动回退，
+         * 避免错误被“所有人物登场”掩盖。
+         */
+        if (configured.isEmpty()) {
+            qWarning()
+                << "3v3 custom pool is not configured;"
+                << "use default pool.";
+
+            general_names =
+                getGeneralsWithoutExtension();
+        }
+
+    } else {
+        /*
+         * 标准选将池。
+         */
+        general_names =
+            getGeneralsWithoutExtension();
+
+        qDebug()
+            << "3v3 uses default general pool.";
+    }
+
+    /*
+     * configured非空却没有任何人物成功载入，
+     * 说明保存的内部名全部无效。
+     *
+     * 测试阶段不静默载入全部人物，
+     * 否则无法观察真实问题。
+     */
+    if (general_names.isEmpty()) {
+        qWarning()
+            << "3v3 general pool is empty."
+            << "UsingExtension ="
+            << using_extension
+            << "Configured ="
+            << configured;
+
+        /*
+         * 为避免空列表直接造成闪退，
+         * 此处仍作最终安全回退。
+         *
+         * 控制台出现上述警告时，
+         * 说明自定义名单中的内部名无法被识别。
+         */
+        general_names =
+            getGeneralsWithoutExtension();
+    }
+
+    /*
+     * 双将3v3每方最终获得8张候选人物牌，
+     * 共需要16张。
+     */
     qShuffle(general_names);
-    general_names = general_names.mid(0, 16);
 
-    room->doBroadcastNotify(S_COMMAND_FILL_GENERAL, JsonUtils::toJsonArray(general_names));
+    general_names =
+        general_names.mid(
+            0,
+            qMin(
+                16,
+                general_names.length()
+            )
+        );
 
-    QString order = room->askForOrder(warm_leader, "warm");
-    ServerPlayer *first, *next;
+    qDebug()
+        << "3v3 final candidate generals ="
+        << general_names;
+
+    room->doBroadcastNotify(
+        S_COMMAND_FILL_GENERAL,
+        JsonUtils::toJsonArray(
+            general_names
+        )
+    );
+
+    QString order =
+        room->askForOrder(
+            warm_leader,
+            "warm"
+        );
+
+    ServerPlayer *first;
+    ServerPlayer *next;
+
     if (order == "warm") {
         first = warm_leader;
         next = cool_leader;
@@ -76,8 +232,15 @@ void RoomThread3v3::run()
         next = warm_leader;
     }
 
+    /*
+     * 先手阵营选择一张。
+     */
     askForTakeGeneral(first);
 
+    /*
+     * 此后双方轮流连续选择两张，
+     * 直到只剩最后一张。
+     */
     while (general_names.length() > 1) {
         qSwap(first, next);
 
@@ -85,9 +248,21 @@ void RoomThread3v3::run()
         askForTakeGeneral(first);
     }
 
-    askForTakeGeneral(next);
+    /*
+     * 最后一张交给另一方。
+     */
+    if (!general_names.isEmpty())
+        askForTakeGeneral(next);
 
-    startArrange(QList<ServerPlayer *>() << first << next);
+    /*
+     * 双方分别从取得的候选人物中，
+     * 为三名角色排列主将与副将。
+     */
+    startArrange(
+        QList<ServerPlayer *>()
+            << first
+            << next
+    );
 }
 
 void RoomThread3v3::askForTakeGeneral(ServerPlayer *player)
@@ -151,7 +326,7 @@ void RoomThread3v3::startArrange(QList<ServerPlayer *> &players)
 
     foreach (ServerPlayer *player, online) {
         JsonArray clientReply = player->getClientReply().value<JsonArray>();
-        if (player->m_isClientResponseReady && clientReply.size() == 3) {
+        if (player->m_isClientResponseReady && clientReply.size() == 6) {
             QStringList arranged;
             JsonUtils::tryParse(clientReply, arranged);
             arrange(player, arranged);
@@ -164,31 +339,51 @@ void RoomThread3v3::startArrange(QList<ServerPlayer *> &players)
 
 void RoomThread3v3::arrange(ServerPlayer *player, const QStringList &arranged)
 {
-    Q_ASSERT(arranged.length() == 3);
+    Q_ASSERT(arranged.length() == 6);
 
     if (player->isLord()) {
-        room->m_players.at(5)->setGeneralName(arranged.at(0));
-        room->m_players.at(0)->setGeneralName(arranged.at(1));
-        room->m_players.at(1)->setGeneralName(arranged.at(2));
-        QList<QString> a,b,c;
-        a << arranged.at(0);
-        b << arranged.at(1);
-        c << arranged.at(2);
-        room->setTag(room->m_players.at(5)->objectName(), QStringList(a));
-        room->setTag(room->m_players.at(0)->objectName(), QStringList(b));
-        room->setTag(room->m_players.at(1)->objectName(), QStringList(c));
+        // 暖色方左先锋
+        ServerPlayer *left = room->m_players.at(5);
+        left->setGeneralName(arranged.at(0));
+        left->setGeneral2Name(arranged.at(1));
+        room->setTag(left->objectName(),
+                     QStringList() << arranged.at(0) << arranged.at(1));
+
+        // 暖色方主帅
+        ServerPlayer *lord = room->m_players.at(0);
+        lord->setGeneralName(arranged.at(2));
+        lord->setGeneral2Name(arranged.at(3));
+        room->setTag(lord->objectName(),
+                     QStringList() << arranged.at(2) << arranged.at(3));
+
+        // 暖色方右先锋
+        ServerPlayer *right = room->m_players.at(1);
+        right->setGeneralName(arranged.at(4));
+        right->setGeneral2Name(arranged.at(5));
+        room->setTag(right->objectName(),
+                     QStringList() << arranged.at(4) << arranged.at(5));
     } else {
-        room->m_players.at(2)->setGeneralName(arranged.at(0));
-        room->m_players.at(3)->setGeneralName(arranged.at(1));
-        room->m_players.at(4)->setGeneralName(arranged.at(2));
-        QList<QString> a,b,c;
-        a << arranged.at(0);
-        b << arranged.at(1);
-        c << arranged.at(2);
-        room->setTag(room->m_players.at(2)->objectName(), QStringList(a));
-        room->setTag(room->m_players.at(3)->objectName(), QStringList(b));
-        room->setTag(room->m_players.at(4)->objectName(), QStringList(c));
-   }
+        // 冷色方左先锋
+        ServerPlayer *left = room->m_players.at(2);
+        left->setGeneralName(arranged.at(0));
+        left->setGeneral2Name(arranged.at(1));
+        room->setTag(left->objectName(),
+                     QStringList() << arranged.at(0) << arranged.at(1));
+
+        // 冷色方主帅
+        ServerPlayer *lord = room->m_players.at(3);
+        lord->setGeneralName(arranged.at(2));
+        lord->setGeneral2Name(arranged.at(3));
+        room->setTag(lord->objectName(),
+                     QStringList() << arranged.at(2) << arranged.at(3));
+
+        // 冷色方右先锋
+        ServerPlayer *right = room->m_players.at(4);
+        right->setGeneralName(arranged.at(4));
+        right->setGeneral2Name(arranged.at(5));
+        room->setTag(right->objectName(),
+                     QStringList() << arranged.at(4) << arranged.at(5));
+    }
 }
 
 void RoomThread3v3::assignRoles(const QStringList &roles, const QString &scheme)

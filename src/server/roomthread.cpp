@@ -165,6 +165,40 @@ void RoomThread::run3v3(QList<ServerPlayer *> &first, QList<ServerPlayer *> &sec
             room->setCurrent(current);
             trigger(TurnStart, room, room->getCurrent());
             room->setPlayerFlag(current, "actioned");
+
+            while (!room->getTag("ExtraTurnList").isNull()) {
+                QStringList extraTurnList
+                        = room->getTag("ExtraTurnList").toStringList();
+
+                if (extraTurnList.isEmpty()) {
+                    room->removeTag("ExtraTurnList");
+                    break;
+                }
+
+                QString extraTurnPlayer = extraTurnList.takeFirst();
+
+                if (extraTurnList.isEmpty())
+                    room->removeTag("ExtraTurnList");
+                else
+                    room->setTag("ExtraTurnList",
+                                 QVariant::fromValue(extraTurnList));
+
+                ServerPlayer *next = room->findPlayer(extraTurnPlayer);
+
+                if (next == NULL || next->isDead())
+                    continue;
+
+                room->setCurrent(next);
+                room->setPlayerFlag(next, "Point_ExtraTurn");
+                trigger(TurnStart, room, next);
+
+                if (room->isFinished())
+                    break;
+            }
+
+            if (room->isFinished())
+                break;
+
             current = find3v3Next(first, second);
         }
     }

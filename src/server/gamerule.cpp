@@ -339,6 +339,42 @@ bool GameRule::effect(TriggerEvent triggerEvent, Room *room, ServerPlayer *playe
     // Handle global events
     if (player == NULL) {
         if (triggerEvent == GameStart) {
+            if (room->getMode() == "06_3v3") {
+                foreach (ServerPlayer *p, room->getAlivePlayers()) {
+                    if (!p->hasShownAllGenerals())
+                        continue;
+
+                    const QString head = p->getGeneralName();
+                    const QString deputy = p->getGeneral2Name();
+
+                    if (head.isEmpty() || deputy.isEmpty())
+                        continue;
+
+                    const QList<const Package *> packages
+                            = Sanguosha->getPackages();
+
+                    foreach (const Package *pack, packages) {
+                        if (pack == NULL)
+                            continue;
+
+                        Package *package = const_cast<Package *>(pack);
+
+                        QString skillNames
+                                = package->getCompanionSkill(head, deputy);
+
+                        if (skillNames.isEmpty())
+                            continue;
+
+                        foreach (const QString &skillName,
+                                 skillNames.split("+",
+                                                  QString::SkipEmptyParts)) {
+                            if (!p->hasSkill(skillName, true))
+                                room->acquireSkill(p, skillName);
+                        }
+                    }
+                }
+            }
+
             /*int n = 0;
             for (int i = 1; i < 1000; i++){
                 if (QFile::exists(QString("audio/system/anime%1.ogg").arg(QString::number(i)))){
@@ -1066,10 +1102,13 @@ bool GameRule::effect(TriggerEvent triggerEvent, Room *room, ServerPlayer *playe
         break;
     }
     case GeneralShown: {
-        QString winner = getWinner(player);
-        if (!winner.isNull()) {
-            room->gameOver(winner); // if all hasShownGenreal, and they are all friend, game over.
-            return true;
+        // 3v3胜负只在死亡事件中判断，不因亮将判断胜负
+        if (room->getMode() != "06_3v3") {
+            QString winner = getWinner(player);
+            if (!winner.isNull()) {
+                room->gameOver(winner);
+                return true;
+            }
         }
         if (player->isAlive() && player->hasShownAllGenerals()) {
             if (player->getMark("CompanionEffect") > 0) {
@@ -1231,6 +1270,19 @@ void GameRule::rewardAndPunish(ServerPlayer *killer, ServerPlayer *victim) const
     Q_ASSERT(killer->getRoom() != NULL);
     Room *room = killer->getRoom();
 
+    // 3v3击杀奖惩完全按照身份阵营判断
+       if (room->getMode() == "06_3v3") {
+           if (killer->isFriendWith(victim)) {
+               // 击杀队友：弃置所有手牌和装备
+               killer->throwAllHandCardsAndEquips();
+           } else {
+               // 击杀敌方：摸三张牌
+               killer->drawCards(3, "kill");
+           }
+
+           return;
+       }
+
     if (!killer->isFriendWith(victim)) {
         if (killer->getRole() == "careerist")
             killer->drawCards(3);
@@ -1250,24 +1302,38 @@ QString GameRule::getWinner(ServerPlayer *victim) const
 {
     Room *room = victim->getRoom();
     QStringList winners;
-    if (room->getMode() == "06_3v3") {
-        switch (victim->getRoleEnum()) {
-        case Player::Lord:
-            foreach (ServerPlayer *p, room->getPlayers()) {
-                if (p->getRole() == "renegade" || p->getRole() == "rebel")
-                    winners << p->objectName();
-            }
-            break;
-        case Player::Renegade:
-            foreach (ServerPlayer *p, room->getPlayers()) {
-                if (p->getRole() == "loyalist" || p->getRole() == "lord")
-                    winners << p->objectName();
-            }
-            break;
-        default:
-            break;
-        }
-    }
+    // 3v3仅在一方主帅死亡时结束游戏
+       if (room->getMode() == "06_3v3") {
+           if (victim->isAlive())
+               return QString();
+
+           if (victim->getRole() == "lord") {
+               // 暖方主帅死亡，冷方全队胜利
+               foreach (ServerPlayer *p, room->getPlayers()) {
+                   if (p->getRole() == "renegade"
+                           || p->getRole() == "rebel") {
+                       winners << p->objectName();
+                   }
+               }
+
+               return winners.join("+");
+           }
+
+           if (victim->getRole() == "renegade") {
+               // 冷方主帅死亡，暖方全队胜利
+               foreach (ServerPlayer *p, room->getPlayers()) {
+                   if (p->getRole() == "lord"
+                           || p->getRole() == "loyalist") {
+                       winners << p->objectName();
+                   }
+               }
+
+               return winners.join("+");
+           }
+
+           // 死亡者只是先锋，不结束游戏
+           return QString();
+       }
     QList<ServerPlayer *> players = room->getAlivePlayers();
     ServerPlayer *win_player = players.first();
     if (players.length() == 1) {

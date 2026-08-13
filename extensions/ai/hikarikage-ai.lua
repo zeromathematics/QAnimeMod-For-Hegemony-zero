@@ -700,3 +700,581 @@ sgs.ai_skill_choice["mowu"] = function(self, choices, data)
 end
 
 sgs.ai_use_priority.MowuCard = 2
+
+--闪光
+
+local function shanguangCanShow(self)
+    return self:willShowForAttack()
+        or self:willShowForDefence()
+end
+
+local function getShanguangPattern(self)
+    local name =
+        self.player:property(
+            "ShanguangName"
+        ):toString()
+
+    local suit =
+        self.player:property(
+            "ShanguangSuit"
+        ):toString()
+
+    return name, suit
+end
+
+local function isShanguangCandidate(
+    self, card, base_name, base_suit
+)
+    if not card then
+        return false
+    end
+
+    if card:isKindOf("EquipCard") then
+        return false
+    end
+
+    --无懈类牌不能在出牌流程中主动使用
+    if card:isKindOf("Nullification") then
+        return false
+    end
+
+    if card:objectName() ~= base_name
+        and card:getSuitString()
+            ~= base_suit then
+        return false
+    end
+
+    return card:isAvailable(
+        self.player
+    )
+end
+
+local function simulateShanguangSlash(
+    self, card
+)
+    local dummy_use = {
+        isDummy = true,
+        to = sgs.SPlayerList(),
+    }
+
+    --参考jilan，无视【杀】的距离限制
+    self.player:setFlags(
+        "slashNoDistanceLimit"
+    )
+
+    self:useBasicCard(
+        card,
+        dummy_use
+    )
+
+    self.player:setFlags(
+        "-slashNoDistanceLimit"
+    )
+
+    if dummy_use.card
+        and dummy_use.to
+        and not dummy_use.to:isEmpty() then
+        return dummy_use
+    end
+
+    --若普通模拟受到使用次数等因素影响，
+    --手动寻找一名无距离限制下可以攻击的敌人
+    local enemies = {}
+
+    for _, enemy in ipairs(
+        self.enemies
+    ) do
+        if enemy:isAlive()
+            and self.player:canSlash(
+                enemy,
+                card,
+                false
+            )
+            and self:slashIsEffective(
+                card,
+                enemy,
+                self.player
+            ) then
+
+            table.insert(
+                enemies,
+                enemy
+            )
+        end
+    end
+
+    if #enemies == 0 then
+        return nil
+    end
+
+    self:sort(
+        enemies,
+        "defense"
+    )
+
+    dummy_use.card = card
+    dummy_use.to:append(
+        enemies[1]
+    )
+
+    return dummy_use
+end
+
+local function simulateShanguangCard(
+    self, card
+)
+    if card:isKindOf("Slash") then
+        return simulateShanguangSlash(
+            self,
+            card
+        )
+    end
+
+    local dummy_use = {
+        isDummy = true,
+        to = sgs.SPlayerList(),
+    }
+
+    if card:isKindOf("BasicCard") then
+        self:useBasicCard(
+            card,
+            dummy_use
+        )
+
+    elseif card:isKindOf("TrickCard") then
+        self:useTrickCard(
+            card,
+            dummy_use
+        )
+
+    else
+        return nil
+    end
+
+    if not dummy_use.card then
+        return nil
+    end
+
+    if not card:targetFixed()
+        and (
+            not dummy_use.to
+            or dummy_use.to:isEmpty()
+        ) then
+        return nil
+    end
+
+    return dummy_use
+end
+
+local function getShanguangScore(
+    self, card, dummy_use
+)
+    local score =
+        self:getUseValue(card)
+
+    score =
+        score
+        - self:getKeepValue(card)
+            * 0.15
+
+    if card:isKindOf("Peach") then
+        if self.player:isWounded() then
+            score = score + 6
+        else
+            return -1000
+        end
+    end
+
+    if card:isKindOf("Analeptic") then
+        if self.player:isWounded() then
+            score = score + 2
+        end
+    end
+
+    if card:isKindOf("Slash") then
+        score = score + 2
+    end
+
+    if dummy_use.to then
+        for _, target in sgs.qlist(
+            dummy_use.to
+        ) do
+            if self:isEnemy(target) then
+                score = score + 3
+
+                if target:getHp() <= 1 then
+                    score = score + 4
+                elseif self:isWeak(target) then
+                    score = score + 2
+                end
+
+            elseif self:isFriend(target) then
+                --通常的用牌函数不会主动伤害友方，
+                --这里仍作额外保护
+                if card:isKindOf("Peach") then
+                    score = score + 4
+                else
+                    score = score - 5
+                end
+            end
+        end
+    end
+
+    --连锁阶段适当提高低保留价值牌的收益
+    if self:getKeepValue(card) <= 3 then
+        score = score + 1
+    end
+
+    return score
+end
+
+local function findBestShanguangCard(
+    self, base_name, base_suit
+)
+    if base_name == ""
+        and base_suit == "" then
+        return nil, nil, -1000
+    end
+
+    local cards =
+        sgs.QList2Table(
+            self.player:getHandcards()
+        )
+
+    local best_card = nil
+    local best_use = nil
+    local best_score = -1000
+
+    for _, card in ipairs(cards) do
+        if isShanguangCandidate(
+                self,
+                card,
+                base_name,
+                base_suit
+            ) then
+
+            local dummy_use =
+                simulateShanguangCard(
+                    self,
+                    card
+                )
+
+            if dummy_use then
+                local score =
+                    getShanguangScore(
+                        self,
+                        card,
+                        dummy_use
+                    )
+
+                if score > best_score then
+                    best_card = card
+                    best_use = dummy_use
+                    best_score = score
+                end
+            end
+        end
+    end
+
+    return best_card,
+        best_use,
+        best_score
+end
+
+--首次是否发动闪光
+sgs.ai_skill_invoke.shanguang =
+function(self, data)
+    if not shanguangCanShow(self) then
+        return false
+    end
+
+    local use = data:toCardUse()
+
+    if not use.card then
+        return false
+    end
+
+    local card, dummy_use, score =
+        findBestShanguangCard(
+            self,
+            use.card:objectName(),
+            use.card:getSuitString()
+        )
+
+    if not card
+        or not dummy_use then
+        return false
+    end
+
+    return score > 0
+end
+
+--实际响应闪光
+sgs.ai_skill_use["@@shanguang"] =
+function(self, prompt)
+    if self.player:isRemoved() then
+        return "."
+    end
+
+    local base_name, base_suit =
+        getShanguangPattern(self)
+
+    local card, dummy_use, score =
+        findBestShanguangCard(
+            self,
+            base_name,
+            base_suit
+        )
+
+    --没有足够收益时允许停止连续流程
+    if not card
+        or not dummy_use
+        or score <= 0 then
+        return "."
+    end
+
+    --只在最终确定使用后复制一次
+    local shanguang_card =
+        sgs.Sanguosha:cloneCard(
+            card:objectName(),
+            card:getSuit(),
+            card:getNumber()
+        )
+
+    if not shanguang_card then
+        return "."
+    end
+
+    shanguang_card:addSubcard(
+        card:getEffectiveId()
+    )
+
+    shanguang_card:setSkillName(
+        "shanguang"
+    )
+
+    shanguang_card:setShowSkill(
+        "shanguang"
+    )
+
+    local card_string =
+        shanguang_card:toString()
+
+    if shanguang_card:targetFixed() then
+        return card_string
+    end
+
+    local targets = {}
+
+    if dummy_use.to then
+        for _, target in sgs.qlist(
+            dummy_use.to
+        ) do
+            table.insert(
+                targets,
+                target:objectName()
+            )
+        end
+    end
+
+    if #targets == 0 then
+        return "."
+    end
+
+    return card_string
+        .. "->"
+        .. table.concat(
+            targets,
+            "+"
+        )
+end
+
+--水妖
+
+local shuiyao_skill = {}
+shuiyao_skill.name = "shuiyao"
+table.insert(sgs.ai_skills, shuiyao_skill)
+
+local function getShuiyaoChoice(self)
+    local suit_cards = {
+        spade = {},
+        club = {},
+        heart = {},
+        diamond = {},
+    }
+
+    --只从手牌中选择，暂时不处理装备区
+    local cards =
+        sgs.QList2Table(
+            self.player:getHandcards()
+        )
+
+    self:sortByKeepValue(cards)
+
+    for _, card in ipairs(cards) do
+        local suit =
+            card:getSuitString()
+
+        if suit_cards[suit]
+            and not card:isKindOf("Peach") then
+
+            --体力较低时至少保留一张闪
+            if not (
+                card:isKindOf("Jink")
+                and self.player:getHp() <= 2
+                and self:getCardsNum("Jink") <= 1
+            ) then
+                table.insert(
+                    suit_cards[suit],
+                    card
+                )
+            end
+        end
+    end
+
+    local wounded = false
+
+    for _, friend in ipairs(self.friends) do
+        if friend:isWounded() then
+            wounded = true
+            break
+        end
+    end
+
+    local best_cards = {}
+    local best_count = 0
+    local best_value = 1000
+
+    for _, same_suit in pairs(
+        suit_cards
+    ) do
+        if #same_suit > 0 then
+            local chosen = {}
+            local total_value = 0
+
+            for _, card in ipairs(
+                same_suit
+            ) do
+                local value =
+                    self:getKeepValue(card)
+
+                --有人受伤时可投入保留价值稍高的牌
+                local limit =
+                    wounded and 5 or 3
+
+                if value <= limit
+                    and #chosen < 3 then
+
+                    table.insert(
+                        chosen,
+                        card
+                    )
+
+                    total_value =
+                        total_value + value
+                end
+            end
+
+            if #chosen > 0 then
+                if #chosen > best_count
+                    or (
+                        #chosen == best_count
+                        and total_value
+                            < best_value
+                    ) then
+
+                    best_cards = chosen
+                    best_count = #chosen
+                    best_value = total_value
+                end
+            end
+        end
+    end
+
+    return best_cards
+end
+
+shuiyao_skill.getTurnUseCard =
+function(self, inclusive)
+    if not self:willShowForAttack()
+        and not self:willShowForDefence() then
+        return
+    end
+
+    if self.player:hasUsed(
+        "ViewAsSkill_shuiyaoCard"
+    ) then
+        return
+    end
+
+    if self.player:isKongcheng() then
+        return
+    end
+
+    local cards =
+        getShuiyaoChoice(self)
+
+    if #cards == 0 then
+        return
+    end
+
+    local ids = {}
+
+    for _, card in ipairs(cards) do
+        table.insert(
+            ids,
+            card:getEffectiveId()
+        )
+    end
+
+    --直接返回带有子牌的技能牌
+    --不再先生成空技能牌后重新构造
+    return sgs.Card_Parse(
+        "#ShuiyaoCard:"
+        .. table.concat(ids, "+")
+        .. ":&shuiyao"
+    )
+end
+
+sgs.ai_skill_use_func["#ShuiyaoCard"] =
+function(card, use, self)
+    --getTurnUseCard返回的card已经包含子牌
+    if not card then
+        return
+    end
+
+    if card:subcardsLength() <= 0 then
+        return
+    end
+
+    use.card = card
+end
+
+sgs.ai_skill_playerchosen.shuiyao =
+function(self, targets)
+    local friends = {}
+
+    for _, target in sgs.qlist(
+        targets
+    ) do
+        if self:isFriend(target)
+            and target:isWounded() then
+
+            table.insert(
+                friends,
+                target
+            )
+        end
+    end
+
+    if #friends == 0 then
+        return nil
+    end
+
+    self:sort(friends, "hp")
+
+    return friends[1]
+end
+
+sgs.ai_use_priority.ShuiyaoCard = 6
+sgs.ai_use_value.ShuiyaoCard = 6

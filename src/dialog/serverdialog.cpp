@@ -595,8 +595,8 @@ QGroupBox *ServerDialog::create3v3Box()
     connect(extend, SIGNAL(toggled(bool)), extend_edit_button, SLOT(setEnabled(bool)));
     connect(extend_edit_button, SIGNAL(clicked()), this, SLOT(select3v3Generals()));
 
-    exclude_disaster_checkbox = new QCheckBox(tr("Exclude disasters"));
-    exclude_disaster_checkbox->setChecked(Config.value("3v3/ExcludeDisasters", true).toBool());
+    //exclude_disaster_checkbox = new QCheckBox(tr("Exclude disasters"));
+    //exclude_disaster_checkbox->setChecked(Config.value("3v3/ExcludeDisasters", true).toBool());
 
     QComboBox *roleChooseComboBox = new QComboBox;
     roleChooseComboBox->addItem(tr("Normal"), "Normal");
@@ -613,7 +613,7 @@ QGroupBox *ServerDialog::create3v3Box()
 
     vlayout->addLayout(HLay(official_3v3_radiobutton, official_3v3_ComboBox));
     vlayout->addLayout(HLay(extend, extend_edit_button));
-    vlayout->addWidget(exclude_disaster_checkbox);
+    //vlayout->addWidget(exclude_disaster_checkbox);
     vlayout->addLayout(HLay(new QLabel(tr("Role choose")), role_choose_ComboBox));
     box->setLayout(vlayout);
 
@@ -847,7 +847,7 @@ bool ServerDialog::config()
     Config.beginGroup("3v3");
     Config.setValue("UsingExtension", !official_3v3_radiobutton->isChecked());
     Config.setValue("RoleChoose", role_choose_ComboBox->itemData(role_choose_ComboBox->currentIndex()).toString());
-    Config.setValue("ExcludeDisaster", exclude_disaster_checkbox->isChecked());
+    //Config.setValue("ExcludeDisaster", exclude_disaster_checkbox->isChecked());
     Config.setValue("OfficialRule", official_3v3_ComboBox->itemData(official_3v3_ComboBox->currentIndex()).toString());
     Config.endGroup();
 
@@ -905,16 +905,50 @@ Select3v3GeneralDialog::Select3v3GeneralDialog(QDialog *parent)
 
 void Select3v3GeneralDialog::fillTabWidget()
 {
-    QList<const Package *> packages = Sanguosha->findChildren<const Package *>();
-    foreach (const Package *package, packages) {
-        if (package->getType() == Package::GeneralPack) {
-            QListWidget *list = new QListWidget;
-            list->setViewMode(QListView::IconMode);
-            list->setDragDropMode(QListView::NoDragDrop);
-            fillListWidget(list, package);
+    QList<const Package *> packages =
+        Sanguosha->findChildren<
+            const Package *
+        >();
 
-            tab_widget->addTab(list, Sanguosha->translate(package->objectName()));
+    foreach (
+        const Package *package,
+        packages
+    ) {
+        if (package == NULL)
+            continue;
+
+        if (package->getType()
+            != Package::GeneralPack) {
+            continue;
         }
+
+        QListWidget *list =
+            new QListWidget;
+
+        list->setViewMode(
+            QListView::IconMode
+        );
+
+        list->setDragDropMode(
+            QListView::NoDragDrop
+        );
+
+        fillListWidget(
+            list,
+            package
+        );
+
+        if (list->count() == 0) {
+            delete list;
+            continue;
+        }
+
+        tab_widget->addTab(
+            list,
+            Sanguosha->translate(
+                package->objectName()
+            )
+        );
     }
 }
 

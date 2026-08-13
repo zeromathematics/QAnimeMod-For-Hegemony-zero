@@ -2064,15 +2064,56 @@ void RoomScene::getCards(int moveId, QList<CardsMoveStruct> card_moves)
                     && movement.to_place != Player::PlaceEquip && movement.to_place != Player::PlaceDelayedTrick) {
                 ClientPlayer *target = ClientInstance->getPlayer(movement.from->objectName());
                 if (!reason.m_playerId.isEmpty() && reason.m_playerId != movement.from->objectName()) target = ClientInstance->getPlayer(reason.m_playerId);
-                if (!reason.m_eventName.isEmpty() && reason.m_eventName == target->getActualGeneral1Name()
-                        || reason.m_eventName == target->getActualGeneral2Name())
-                    card->showAvatar(reason.m_eventName == target->getActualGeneral1Name() ? target->getActualGeneral1() : target->getActualGeneral2(), reason.m_skillName);
-                else if (target->hasSkill(reason.m_skillName) && !target->getSkillList().contains(Sanguosha->getSkill(reason.m_skillName)))
-                    card->showAvatar(target->hasShownGeneral1() ? target->getGeneral() : target->getGeneral2(), reason.m_skillName);
-                else if (target->inHeadSkills(reason.m_skillName) || (target->getActualGeneral1() ? target->getActualGeneral1()->hasSkill(reason.m_skillName) : NULL))
-                    card->showAvatar(target->getActualGeneral1(), reason.m_skillName);
-                else if (target->inDeputySkills(reason.m_skillName) || (target->getActualGeneral2() ? target->getActualGeneral2()->hasSkill(reason.m_skillName) : NULL))
-                    card->showAvatar(target->getActualGeneral2(), reason.m_skillName);
+                if (!reason.m_eventName.isEmpty()
+                        && (reason.m_eventName == target->getActualGeneral1Name()
+                            || (target->getActualGeneral2()
+                                && reason.m_eventName == target->getActualGeneral2Name()))) {
+
+                    const General *general =
+                        reason.m_eventName == target->getActualGeneral1Name()
+                            ? target->getActualGeneral1()
+                            : target->getActualGeneral2();
+
+                    if (general)
+                        card->showAvatar(general, reason.m_skillName);
+                }
+                else if (target->hasSkill(reason.m_skillName)
+                        && !target->getSkillList().contains(
+                            Sanguosha->getSkill(reason.m_skillName))) {
+
+                    const General *general =
+                        target->hasShownGeneral1()
+                            ? target->getGeneral()
+                            : target->getGeneral2();
+
+                    if (!general)
+                        general = target->getGeneral();
+
+                    if (general)
+                        card->showAvatar(general, reason.m_skillName);
+                }
+                else if (target->inHeadSkills(reason.m_skillName)
+                        || (target->getActualGeneral1()
+                            && target->getActualGeneral1()->hasSkill(
+                                reason.m_skillName))) {
+
+                    if (target->getActualGeneral1())
+                        card->showAvatar(
+                            target->getActualGeneral1(),
+                            reason.m_skillName
+                        );
+                }
+                else if (target->inDeputySkills(reason.m_skillName)
+                        || (target->getActualGeneral2()
+                            && target->getActualGeneral2()->hasSkill(
+                                reason.m_skillName))) {
+
+                    if (target->getActualGeneral2())
+                        card->showAvatar(
+                            target->getActualGeneral2(),
+                            reason.m_skillName
+                        );
+                }
             }
 
             int card_id = card->getId();
@@ -5087,9 +5128,14 @@ void RoomScene::startArrange(const QString &)
     QList<QPointF> positions;
 
     QString suffix = (mode == "1v1" && down_generals.length() == 6) ? "2" : QString();
-    if (mode == "06_3v3"){
+    if (mode == "06_3v3") {
         mode = "3v3";
-        positions << QPointF(279, 356) << QPointF(407, 356) << QPointF(535, 356);
+        positions << QPointF(194, 356)   // 左先锋主将
+                  << QPointF(279, 356)   // 左先锋副将
+                  << QPointF(364, 356)   // 主帅主将
+                  << QPointF(449, 356)   // 主帅副将
+                  << QPointF(534, 356)   // 右先锋主将
+                  << QPointF(619, 356);  // 右先锋副将
     }
     QString path = QString("image/system/%1/arrange%2.png").arg(mode).arg(suffix);
     selector_box->load(path);
@@ -5110,9 +5156,15 @@ void RoomScene::startArrange(const QString &)
         arrange_rects << rect_item;
     }
 
-    arrange_button = new Button(tr("Complete"), 0.8);
-    arrange_button->setParentItem(selector_box);
-    arrange_button->setPos(600, 330);
+    if (Config.GameMode == "06_3v3") {
+        arrange_button = new Button(tr("Complete"), QSizeF(90, 30));
+        arrange_button->setParentItem(selector_box);
+        arrange_button->setPos(680, 335);
+    } else {
+        arrange_button = new Button(tr("Complete"), 0.8);
+        arrange_button->setParentItem(selector_box);
+        arrange_button->setPos(600, 330);
+    }
     connect(arrange_button, &Button::clicked, this, &RoomScene::finishArrange);
 }
 
@@ -5123,7 +5175,7 @@ void RoomScene::toggleArrange()
 
     QGraphicsItem *arrange_rect = NULL;
     int index = -1;
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 6; i++) {
         QGraphicsItem *rect = arrange_rects.at(i);
         if (item->collidesWithItem(rect)) {
             arrange_rect = rect;
@@ -5142,7 +5194,7 @@ void RoomScene::toggleArrange()
         arrange_items.insert(index, item);
     }
 
-    int n = qMin(arrange_items.length(), 3);
+    int n = qMin(arrange_items.length(), 6);
     for (int i = 0; i < n; i++) {
         QPointF pos = arrange_rects.at(i)->pos();
         CardItem *item = arrange_items.at(i);
@@ -5150,7 +5202,7 @@ void RoomScene::toggleArrange()
         item->goBack(true);
     }
 
-    while (arrange_items.length() > 3) {
+    while (arrange_items.length() > 6) {
         CardItem *last = arrange_items.takeLast();
         down_generals << last;
     }
@@ -5171,7 +5223,7 @@ void RoomScene::toggleArrange()
 
 void RoomScene::finishArrange()
 {
-    if (arrange_items.length() != 3) return;
+    if (arrange_items.length() != 6) return;
 
     arrange_button->deleteLater();
     arrange_button = NULL;

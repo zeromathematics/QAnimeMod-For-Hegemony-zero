@@ -954,7 +954,18 @@ void PlayerCardContainer::setPlayer(ClientPlayer *player)
         connect(player, &ClientPlayer::count_changed, this, &PlayerCardContainer::updateCount);
         connect(player, &ClientPlayer::tip_changed, this, &PlayerCardContainer::updateTip);
 
-        connect(player, &ClientPlayer::kingdom_changed, _m_roleComboBox, &RoleComboBox::fix);
+        //connect(player, &ClientPlayer::kingdom_changed, _m_roleComboBox, &RoleComboBox::fix);
+        if (ServerInfo.GameMode == "06_3v3") {
+            connect(player, &ClientPlayer::role_changed,
+                    _m_roleComboBox, &RoleComboBox::fix);
+
+            // setPlayer发生时身份可能已经设置完毕，需要主动刷新一次
+            _m_roleComboBox->fix(player->getRole());
+        } else {
+            connect(player, &ClientPlayer::kingdom_changed,
+                    _m_roleComboBox, &RoleComboBox::fix);
+        }
+
         connect(player, &ClientPlayer::hp_changed, this, &PlayerCardContainer::updateHp);
         connect(player, &ClientPlayer::disable_show_changed, this, &PlayerCardContainer::refresh);
         connect(player, &ClientPlayer::removedChanged, this, &PlayerCardContainer::onRemovedChanged);
@@ -1421,7 +1432,19 @@ void PlayerCardContainer::_updateDeathIcon()
 
 void PlayerCardContainer::killPlayer()
 {
-    _m_roleComboBox->fix(m_player->getRole() == "careerist" ? "careerist" : m_player->getKingdom());
+    //_m_roleComboBox->fix(m_player->getRole() == "careerist" ? "careerist" : m_player->getKingdom());
+    QString icon_name;
+
+    if (ServerInfo.GameMode == "06_3v3") {
+        icon_name = m_player->getRole();
+    } else {
+        icon_name = m_player->getRole() == "careerist"
+            ? "careerist"
+            : m_player->getKingdom();
+    }
+
+    _m_roleComboBox->fix(icon_name);
+
     _m_roleComboBox->setEnabled(false);
     _updateDeathIcon();
     _m_saveMeIcon->hide();

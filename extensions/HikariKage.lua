@@ -34,6 +34,64 @@ ALO_Asuna:addCompanion("Yuuki")
 extension:insertConvertPairs("SE_Asuna", "ALO_Asuna")
 extension:insertConvertPairs("SE_Eren", "lord_SE_Eren")
 
+ArmorSkill = sgs.CreateTriggerSkill{
+    name = "#armor",
+    frequency = sgs.Skill_Compulsory,
+    global = true,
+    events = {sgs.DamageInflicted},
+
+    can_trigger = function(self, event, room, player, data)
+        if not player or not player:isAlive() then
+            return ""
+        end
+
+        local damage = data:toDamage()
+        if damage.damage > 0 and player:getMark("@armor") > 0 then
+            return self:objectName()
+        end
+
+        return ""
+    end,
+
+    on_cost = function(self, event, room, player, data)
+        return true
+    end,
+
+    on_effect = function(self, event, room, player, data)
+        local damage = data:toDamage()
+        local armor = player:getMark("@armor")
+
+        -- X为伤害值与护甲数中的较小值
+        local x = math.min(damage.damage, armor)
+        if x <= 0 then
+            return false
+        end
+
+        room:sendCompulsoryTriggerLog(player, self:objectName(), true)
+
+        local log = sgs.LogMessage()
+        log.type = "#ArmorReduce"
+        log.from = player
+        log.arg = tostring(x)
+        log.arg2 = tostring(damage.damage)
+        room:sendLog(log)
+
+        -- 消耗X点护甲
+        room:setPlayerMark(player, "@armor", armor - x)
+
+        -- 令伤害-X
+        damage.damage = damage.damage - x
+
+        if damage.damage <= 0 then
+            -- 返回true，阻止此次伤害继续结算
+            return true
+        end
+
+        data:setValue(damage)
+        return false
+    end
+}
+
 GlobalzhuzhenCard = sgs.CreateSkillCard{
     name = "GlobalzhuzhenCard",
     target_fixed = true,
@@ -1880,9 +1938,19 @@ Hongquan = sgs.CreateTriggerSkill{
 
 EhuanshenCard = sgs.CreateSkillCard{
 	name = "EhuanshenCard",
-	filter = function(self,targets, to_select, player) 
-                return #targets < 1 and to_select:objectName() ~= player:objectName() and player:distanceTo(to_select) == 1
-	end,
+	filter = function(self, targets, to_select, player)
+        local actual = player:inHeadSkills("ehuanshen")
+            and player:getActualGeneral1()
+            or player:getActualGeneral2()
+
+        if not actual or actual:objectName() ~= "Ellen" then
+            return false
+        end
+
+        return #targets < 1
+            and to_select:objectName() ~= player:objectName()
+            and player:distanceTo(to_select) == 1
+    end,
 	on_use = function(self,room,source,targets)
 		local dest = targets[1]
 		dest:showGeneral(false)
@@ -2668,28 +2736,67 @@ end
 ShanguangVS = sgs.CreateViewAsSkill{
     name = "shanguang",
     n = 1,
+
     view_filter = function(self, selected, to_select)
-        if #selected > 0 or to_select:isEquipped() then return false end
-        local suit = sgs.Self:property("ShanguangSuit"):toString()
-        local name = sgs.Self:property("ShanguangName"):toString()
-        return to_select:objectName() == name
-            or to_select:getSuitString() == suit
+        if #selected > 0 then
+            return false
+        end
+
+        if to_select:isEquipped() then
+            return false
+        end
+
+        local suit =
+            sgs.Self:property(
+                "ShanguangSuit"
+            ):toString()
+
+        local name =
+            sgs.Self:property(
+                "ShanguangName"
+            ):toString()
+
+        if to_select:objectName() ~= name
+            and to_select:getSuitString() ~= suit then
+            return false
+        end
+
+        return to_select:isAvailable(sgs.Self)
     end,
+
     view_as = function(self, cards)
-        if #cards ~= 1 then return nil end
+        if #cards ~= 1 then
+            return nil
+        end
+
         local original = cards[1]
+
+        --必须构造虚拟牌。
+        --直接修改并返回original无法保留skillName。
         local card = sgs.Sanguosha:cloneCard(
-            original:objectName(), original:getSuit(), original:getNumber()
+            original:objectName(),
+            original:getSuit(),
+            original:getNumber()
         )
+
+        if not card then
+            return nil
+        end
+
         card:addSubcard(original)
         card:setSkillName(self:objectName())
         card:setShowSkill(self:objectName())
+
         return card
     end,
+
     enabled_at_play = function(self, player)
         return false
     end,
-    enabled_at_response = function(self, player, pattern)
+
+    enabled_at_response = function(
+        self, player, pattern
+    )
         return pattern == "@@shanguang"
     end,
 }
@@ -2711,109 +2818,325 @@ Shanguang = sgs.CreateTriggerSkill{
     name = "shanguang",
     can_preshow = true,
     view_as_skill = ShanguangVS,
+
     events = {
         sgs.PreCardUsed,
         sgs.Damage,
         sgs.CardFinished,
         sgs.EventPhaseChanging,
     },
+
     on_record = function(self, event, room, player, data)
         if event == sgs.PreCardUsed then
             local use = data:toCardUse()
-            if use.card and use.card:getSkillName() == self:objectName() then
-                room:setCardFlag(use.card, "shanguang_no_damage")
+
+            if use.from
+                and use.card
+                and use.card:getSkillName()
+                    == self:objectName() then
+
+                --记录此次由“闪光”使用的实体牌ID。
+                --加1是为了避免实体牌ID为0时与默认mark混淆。
+                room:setPlayerMark(
+                    use.from,
+                    "shanguang_card_id",
+                    use.card:getEffectiveId() + 1
+                )
+
+                --先假定此牌没有造成伤害。
+                room:setPlayerMark(
+                    use.from,
+                    "shanguang_no_damage",
+                    1
+                )
             end
+
         elseif event == sgs.Damage then
             local damage = data:toDamage()
-            if damage.card and damage.card:hasFlag("shanguang_no_damage") then
-                room:setCardFlag(damage.card, "-shanguang_no_damage")
+
+            if damage.from
+                and damage.card
+                and damage.from:getMark(
+                    "shanguang_card_id"
+                ) == damage.card:getEffectiveId() + 1
+                and damage.from:getMark(
+                    "shanguang_no_damage"
+                ) > 0 then
+
+                --对应的“闪光”牌已经造成伤害。
+                room:setPlayerMark(
+                    damage.from,
+                    "shanguang_no_damage",
+                    0
+                )
             end
+
         elseif event == sgs.CardFinished then
             local use = data:toCardUse()
-            if use.from and use.card
-                and use.card:getSkillName() == self:objectName()
-                and not use.card:hasFlag("shanguang_no_damage") then
-                clearShanguangPattern(room, use.from)
+
+            if use.from
+                and use.card
+                and use.from:getMark(
+                    "shanguang_card_id"
+                ) == use.card:getEffectiveId() + 1 then
+
+                if use.from:getMark(
+                    "shanguang_no_damage"
+                ) == 0 then
+
+                    --此牌已经造成伤害，终止连续流程。
+                    clearShanguangPattern(
+                        room,
+                        use.from
+                    )
+
+                    room:setPlayerMark(
+                        use.from,
+                        "shanguang_card_id",
+                        0
+                    )
+                end
             end
+
         elseif event == sgs.EventPhaseChanging then
             local change = data:toPhaseChange()
+
             if change.to == sgs.Player_NotActive then
-                for _, p in sgs.qlist(room:getAllPlayers(true)) do
-                    room:setPlayerMark(p, "shanguang_used", 0)
-                    room:setPlayerMark(p, "shanguang_extra", 0)
+                for _, p in sgs.qlist(
+                    room:getAllPlayers(true)
+                ) do
+                    room:setPlayerMark(
+                        p,
+                        "shanguang_used",
+                        0
+                    )
+
+                    room:setPlayerMark(
+                        p,
+                        "shanguang_extra",
+                        0
+                    )
+
+                    room:setPlayerMark(
+                        p,
+                        "shanguang_no_damage",
+                        0
+                    )
+
+                    room:setPlayerMark(
+                        p,
+                        "shanguang_card_id",
+                        0
+                    )
+
+                    room:setPlayerFlag(
+                        p,
+                        "-shanguang_followup"
+                    )
+
                     clearShanguangPattern(room, p)
                 end
             end
         end
     end,
-    can_trigger = function(self, event, room, player, data)
-        if event ~= sgs.CardFinished then return "" end
+
+    can_trigger = function(
+        self, event, room, player, data
+    )
+        if event ~= sgs.CardFinished then
+            return ""
+        end
+
         local use = data:toCardUse()
         local owner = use.from
-        if not owner or owner:isDead()
-            or not owner:hasSkill(self:objectName()) then
+
+        if not owner
+            or owner:isDead()
+            or not use.card
+            or not owner:hasSkill(
+                self:objectName()
+            ) then
             return ""
         end
 
-        if use.card:getSkillName() == self:objectName() then
-            if use.card:hasFlag("shanguang_no_damage") then
+        --不依赖可能被复原的skillName，
+        --直接比较PreCardUsed中保存的实体牌ID。
+        local is_shanguang_card =
+            owner:getMark("shanguang_card_id")
+                == use.card:getEffectiveId() + 1
+
+        if is_shanguang_card then
+
+            if owner:getMark(
+                "shanguang_no_damage"
+            ) > 0 then
+
                 return self:objectName(), owner
             end
+
             return ""
         end
 
-        if not room:getCurrent() then return "" end
+        --不是闪光使用的牌，则判断能否首次发动闪光。
         if use.card:isKindOf("SkillCard")
             or use.card:isKindOf("EquipCard") then
             return ""
         end
 
-        local limit = 1 + owner:getMark("shanguang_extra")
-        if owner:getMark("shanguang_used") < limit then
+        local limit =
+            1 + owner:getMark("shanguang_extra")
+
+        if owner:getMark("shanguang_used")
+            < limit then
             return self:objectName(), owner
         end
+
         return ""
     end,
-    on_cost = function(self, event, room, player, data, ask_who)
+
+    on_cost = function(
+        self, event, room, player, data, ask_who
+    )
         local use = data:toCardUse()
-        if use.card:getSkillName() == self:objectName() then
+
+        --后续“闪光”牌未造成伤害的分支。
+        if use.card
+            and ask_who:getMark(
+                "shanguang_card_id"
+            ) == use.card:getEffectiveId() + 1 then
+
+            --传递给on_effect，表明这是后续摸牌分支。
+            room:setPlayerFlag(
+                ask_who,
+                "shanguang_followup"
+            )
+
+            --消费本张闪光牌的记录。
+            --下一张牌会在PreCardUsed中重新建立记录。
+            room:setPlayerMark(
+                ask_who,
+                "shanguang_no_damage",
+                0
+            )
+
+            room:setPlayerMark(
+                ask_who,
+                "shanguang_card_id",
+                0
+            )
+
             return true
         end
-        return ask_who:askForSkillInvoke(self, data)
+
+        return ask_who:askForSkillInvoke(
+            self,
+            data
+        )
     end,
-    on_effect = function(self, event, room, player, data, ask_who)
+
+    on_effect = function(
+        self, event, room, player, data, ask_who
+    )
         local use = data:toCardUse()
         local owner = ask_who
 
-        if use.card:getSkillName() == self:objectName() then
-            owner:drawCards(1, self:objectName())
-            if owner:isDead() then return false end
-            setShanguangPattern(room, owner, use.card)
-            local next_card = room:askForUseCard(
-                owner, "@@shanguang", "@shanguang", -1,
-                sgs.Card_MethodUse, false
-            )
-            if not next_card then clearShanguangPattern(room, owner) end
+        if not owner
+            or owner:isDead()
+            or not use.card then
             return false
         end
 
-        setShanguangPattern(room, owner, use.card)
+        --“闪光”使用的牌未造成伤害。
+        if owner:hasFlag(
+            "shanguang_followup"
+        ) then
+
+            room:setPlayerFlag(
+                owner,
+                "-shanguang_followup"
+            )
+
+            owner:drawCards(
+                1,
+                self:objectName()
+            )
+
+            if owner:isDead() then
+                clearShanguangPattern(
+                    room,
+                    owner
+                )
+                return false
+            end
+
+            --以此次使用的牌为新的基础。
+            setShanguangPattern(
+                room,
+                owner,
+                use.card
+            )
+
+            local next_card =
+                room:askForUseCard(
+                    owner,
+                    "@@shanguang",
+                    "@shanguang",
+                    -1,
+                    sgs.Card_MethodUse,
+                    false
+                )
+
+            if not next_card then
+                clearShanguangPattern(
+                    room,
+                    owner
+                )
+            end
+
+            return false
+        end
+
+        --首次发动“闪光”。
+        setShanguangPattern(
+            room,
+            owner,
+            use.card
+        )
+
         room:setPlayerMark(
-            owner, "shanguang_used",
+            owner,
+            "shanguang_used",
             owner:getMark("shanguang_used") + 1
         )
 
         local card = room:askForUseCard(
-            owner, "@@shanguang", "@shanguang", -1,
-            sgs.Card_MethodUse, false
+            owner,
+            "@@shanguang",
+            "@shanguang",
+            -1,
+            sgs.Card_MethodUse,
+            false
         )
+
+        --取消时，本次不计入发动次数。
         if not card then
             room:setPlayerMark(
-                owner, "shanguang_used",
-                math.max(0, owner:getMark("shanguang_used") - 1)
+                owner,
+                "shanguang_used",
+                math.max(
+                    0,
+                    owner:getMark(
+                        "shanguang_used"
+                    ) - 1
+                )
             )
-            clearShanguangPattern(room, owner)
+
+            clearShanguangPattern(
+                room,
+                owner
+            )
         end
+
         return false
     end,
 }
@@ -3463,7 +3786,283 @@ Mieshi = sgs.CreateTriggerSkill{
         player:showGeneral(true)
         room:transformHeadGeneralTo(player, "Founding_Titan")
         player:removeGeneral(false)
+
+        room:setPlayerMark(
+            player,
+            "qixinlord_source",
+            1
+        )
+
+        --寻找其他存活的“科学”势力角色
+        local candidates =
+            sgs.SPlayerList()
+
+        for _, p in sgs.qlist(
+            room:getOtherPlayers(player)
+        ) do
+            if p:isAlive()
+                and p:getKingdom()
+                    == "science" then
+
+                candidates:append(p)
+            end
+        end
+
+        --若场上存在符合条件的角色，则须选择一名
+        if not candidates:isEmpty() then
+            local target =
+                room:askForPlayerChosen(
+                    player,
+                    candidates,
+                    self:objectName(),
+                    "@mieshi-qixinlord",
+                    false,
+                    true
+                )
+
+            if target then
+                room:acquireSkill(
+                    target,
+                    "qixinlord",
+                    true
+                )
+            end
+        end
+
     end
+}
+
+--齐心·主
+Qixinlord = sgs.CreateTriggerSkill{
+    name = "qixinlord",
+
+    events = {
+        sgs.TargetConfirming,
+    },
+
+    can_preshow = true,
+
+    can_trigger = function(
+        self, event, room, player, data
+    )
+        if event ~= sgs.TargetConfirming then
+            return ""
+        end
+
+        --在TargetConfirming中，player是当前确认目标
+        --此处应当是被标记为固定来源的始祖巨人
+        if not player
+            or not player:isAlive() then
+            return ""
+        end
+
+        --当前目标必须是“齐心·主”的永久来源
+        if player:getMark(
+                "qixinlord_source"
+            ) <= 0 then
+            return ""
+        end
+
+        --防止技能结算中使用的杀再次触发
+        if player:getMark(
+                "qixinlord_resolving"
+            ) > 0 then
+            return ""
+        end
+
+        local use =
+            data:toCardUse()
+
+        if not use.card
+            or not use.from
+            or not use.from:isAlive() then
+            return ""
+        end
+
+        --确认固定来源仍是此牌的目标
+        if not use.to:contains(player) then
+            return ""
+        end
+
+        --使用者必须拥有“齐心·主”
+        if not use.from:hasSkill(
+                self:objectName()
+            ) then
+            return ""
+        end
+
+        --不能是来源对自己使用牌
+        if use.from == player then
+            return ""
+        end
+
+        --只处理【杀】或【相爱相杀】
+        --当前项目中【相爱相杀】属于Duel
+        if not use.card:isKindOf("Slash")
+            and not use.card:isKindOf("Duel") then
+            return ""
+        end
+
+        --ask_who为use.from，即技能发动者
+        return self:objectName(), use.from
+    end,
+
+    on_cost = function(
+        self, event, room, player, data, ask_who
+    )
+        if not ask_who
+            or not ask_who:isAlive() then
+            return false
+        end
+
+        if not ask_who:askForSkillInvoke(
+                self,
+                data
+            ) then
+            return false
+        end
+
+        room:broadcastSkillInvoke(
+            self:objectName(),
+            ask_who
+        )
+
+        return true
+    end,
+
+    on_effect = function(
+        self, event, room, player, data, ask_who
+    )
+        --source：固定来源，即始祖巨人
+        --invoker：use.from，即“齐心·主”发动者
+        --p：依次选择选项的其他角色
+        local source = player
+        local invoker = ask_who
+
+        if not source
+            or source:isDead()
+            or not invoker
+            or invoker:isDead() then
+            return false
+        end
+
+        --临时防止技能中的杀再次触发
+        --使用普通mark，并在技能结束时主动清除
+        room:setPlayerMark(
+            source,
+            "qixinlord_resolving",
+            1
+        )
+
+        --除发动者外的其他角色依次选择
+        local others =
+            room:getOtherPlayers(invoker)
+
+        for _, p in sgs.qlist(others) do
+            if p:isAlive()
+                and source:isAlive()
+                and invoker:isAlive() then
+
+                local choices = {
+                    "qixinlord_draw",
+                }
+
+                --固定来源不能对自己使用杀
+                --其他角色能合法对来源使用杀时，
+                --才显示第一项
+                if p ~= source
+                    and p:canSlash(
+                        source,
+                        nil,
+                        true
+                    ) then
+
+                    table.insert(
+                        choices,
+                        1,
+                        "qixinlord_slash"
+                    )
+                end
+
+                local choice =
+                    room:askForChoice(
+                        p,
+                        self:objectName(),
+                        table.concat(
+                            choices,
+                            "+"
+                        ),
+                        data
+                    )
+
+                if choice
+                    == "qixinlord_slash" then
+
+                    local prompt =
+                        "@qixinlord-slash:"
+                        .. source:objectName()
+
+                    local used =
+                        room:askForUseSlashTo(
+                            p,
+                            source,
+                            prompt,
+                            false
+                        )
+
+                    --选择第一项后没有使用杀，
+                    --则改为执行第二项
+                    if not used
+                        and invoker:isAlive() then
+
+                        --第二项中的“你”始终是use.from
+                        local draw_target =
+                            room:askForPlayerChosen(
+                                invoker,
+                                room:getAlivePlayers(),
+                                self:objectName(),
+                                "@qixinlord-draw",
+                                false,
+                                true
+                            )
+
+                        if draw_target then
+                            draw_target:drawCards(
+                                1,
+                                self:objectName()
+                            )
+                        end
+                    end
+                else
+                    --第二项由invoker/use.from选择角色
+                    local draw_target =
+                        room:askForPlayerChosen(
+                            invoker,
+                            room:getAlivePlayers(),
+                            self:objectName(),
+                            "@qixinlord-draw",
+                            false,
+                            true
+                        )
+
+                    if draw_target then
+                        draw_target:drawCards(
+                            1,
+                            self:objectName()
+                        )
+                    end
+                end
+            end
+        end
+
+        room:setPlayerMark(
+            source,
+            "qixinlord_resolving",
+            0
+        )
+
+        return false
+    end,
 }
 
 -- 地鸣
@@ -3648,7 +4247,7 @@ Zhongjie = sgs.CreateTriggerSkill{
                 --and move.from_pile_names:contains("roads") 
                 and move.from_places:contains(sgs.Player_PlaceSpecial) then
 
-                local owner = room:findPlayerByObjectName(
+                local owner = findPlayerByObjectName(
                     move.from:objectName()
                 )
 
@@ -3738,6 +4337,10 @@ end
 if not sgs.Sanguosha:getSkill("shengyong") then
     skills:append(Shengyong)
 end
+if not sgs.Sanguosha:getSkill("#armor") then
+    skills:append(ArmorSkill)
+end
+if not sgs.Sanguosha:getSkill("qixinlord") then skills:append(Qixinlord) end
 sgs.Sanguosha:addSkills(skills)
 
 Ruri:addSkill(Shengli)
@@ -3793,6 +4396,7 @@ Yuyuko:addSkill(Yiling)
 lord_SE_Eren:addSkill(Jinji)
 lord_SE_Eren:addSkill(Shizu)
 lord_SE_Eren:addSkill(Mieshi)
+lord_SE_Eren:addRelateSkill("qixinlord")
 
 Founding_Titan:addSkill(Rumbling)
 Founding_Titan:addSkill(Zhongjie)
@@ -3813,6 +4417,10 @@ sgs.LoadTranslationTable{
     ["globalzhuzhengeneralcard"] = "助阵卡",
     ["globalzhuzhen"] = "发起助阵",
     [":globalzhuzhen"] = "出牌阶段限一次，弃置一张手牌，获得一张助阵卡的一项技能",
+
+    ["#armor"] = "护甲",
+    ["@armor"] = "护甲",
+    ["#ArmorReduce"] = "%from 的“护甲”抵消了 %arg 点伤害，原伤害值为 %arg2",
 
     ["Ruri"] = "五更琉璃",
     ["@Ruri"] = "我的妹妹不可能这么可爱！",
@@ -4045,7 +4653,7 @@ sgs.LoadTranslationTable{
     ["cv:Ellen"] = "",
     ["%Ellen"] = "“我依然没有彻底绝望，因为我一心一意想要获得值得被爱的身体”",
 	["ehuanshen"] = "换身",
-	[":ehuanshen"] ="出牌阶段，你可以指定一名与你距离为1的其他角色，你移除此人物牌，该角色将副将替换为“艾琳”且移除此技能，然后你与该角色交换体力值。若该角色与你势力相同，你将势力修改为“黑幕”。",
+	[":ehuanshen"] ="出牌阶段，若此人物牌是“艾琳”，你可以指定一名与你距离为1的其他角色，你移除此人物牌，该角色将副将替换为“艾琳”且移除此技能，然后你与该角色交换体力值。若该角色与你势力相同，你将势力修改为“黑幕”。",
 	["mowu"] = "魔屋",
 	[":mowu"] = "出牌阶段限一次，你可以将一张手牌当做任意属性【杀】对距离1以内的一名角色使用；当你成为其他角色【杀】的目标后，你可以将一张手牌当做任意属性【杀】对其使用",
 	["@mowu"] = "魔屋",

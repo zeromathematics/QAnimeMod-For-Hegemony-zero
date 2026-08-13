@@ -97,6 +97,14 @@
     </message>
 </context>
 <context>
+    <name>Select3v3GeneralDialog</name>
+    <message>
+        <location filename="../src/dialog/serverdialog.cpp" line="886"/>
+        <source>Select generals in extend 3v3 mode</source>
+        <translation>选择3v3模式的可用人物</translation>
+    </message>
+</context>
+<context>
     <name>BroadcastBox</name>
     <message>
         <location filename="../src/dialog/mainwindow.cpp" line="986"/>
@@ -1725,6 +1733,11 @@
         <location filename="../src/core/engine.cpp" line="116"/>
         <source>6 players</source>
         <translation>6 人局</translation>
+    </message>
+    <message>
+        <location filename="../src/core/engine.cpp" line="116"/>
+        <source>6 players (3v3)</source>
+        <translation>6 人局 （3v3）</translation>
     </message>
     <message>
         <location filename="../src/core/engine.cpp" line="117"/>
@@ -3591,6 +3604,117 @@
         <source>Dead</source>
         <translation>阵亡</translation>
     </message>
+    <message>
+        <location filename="../src/ui/roomscene.cpp" line="1874"/>
+        <source>The order who first choose general</source>
+        <translation>决定率先选将的一方</translation>
+    </message>
+
+    <message>
+        <location filename="../src/ui/roomscene.cpp" line="1876"/>
+        <source>The order who first in turn</source>
+        <translation>决定率先行动的一方</translation>
+    </message>
+
+    <message>
+        <location filename="../src/ui/roomscene.cpp" line="1878"/>
+        <source>Please select the order</source>
+        <translation>请选择取得先手的一方</translation>
+    </message>
+
+    <message>
+        <location filename="../src/ui/roomscene.cpp" line="1879"/>
+        <source>Warm</source>
+        <translation>暖色方</translation>
+    </message>
+
+    <message>
+        <location filename="../src/ui/roomscene.cpp" line="1881"/>
+        <source>Cool</source>
+        <translation>冷色方</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/roomscene.cpp" line="1904"/>
+        <source>Select role in 3v3 mode</source>
+        <translation>选择3v3身份</translation>
+    </message>
+
+    <message>
+        <location filename="../src/ui/roomscene.cpp" line="1906"/>
+        <source>Please select a role</source>
+        <translation>请选择你在队伍中的位置</translation>
+    </message>
+
+    <message>
+        <location filename="../src/ui/roomscene.cpp" line="1913"/>
+        <source>Warm leader</source>
+        <translation>暖方主帅</translation>
+    </message>
+
+    <message>
+        <location filename="../src/ui/roomscene.cpp" line="1914"/>
+        <source>Warm guard</source>
+        <translation>暖方前锋</translation>
+    </message>
+
+    <message>
+        <location filename="../src/ui/roomscene.cpp" line="1915"/>
+        <source>Cool leader</source>
+        <translation>冷方主帅</translation>
+    </message>
+
+    <message>
+        <location filename="../src/ui/roomscene.cpp" line="1916"/>
+        <source>Cool guard</source>
+        <translation>冷方前锋</translation>
+    </message>
+
+    <message>
+        <location filename="../src/ui/roomscene.cpp" line="1918"/>
+        <source>Leader of Team 1</source>
+        <translation>第一队主帅</translation>
+    </message>
+
+    <message>
+        <location filename="../src/ui/roomscene.cpp" line="1919"/>
+        <source>Guard of Team 1</source>
+        <translation>第一队前锋</translation>
+    </message>
+
+    <message>
+        <location filename="../src/ui/roomscene.cpp" line="1920"/>
+        <source>Leader of Team 2</source>
+        <translation>第二队主帅</translation>
+    </message>
+
+    <message>
+        <location filename="../src/ui/roomscene.cpp" line="1921"/>
+        <source>Guard of Team 2</source>
+        <translation>第二队前锋</translation>
+    </message>
+
+    <message>
+        <location filename="../src/ui/roomscene.cpp" line="1927"/>
+        <source>Abstain</source>
+        <translation>放弃选择，随机分配</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/roomscene.cpp" line="1948"/>
+        <source>Please select the direction</source>
+        <translation>请选择结算方向</translation>
+    </message>
+
+    <message>
+        <location filename="../src/ui/roomscene.cpp" line="1952"/>
+        <source>CW</source>
+        <translation>顺时针</translation>
+    </message>
+
+    <message>
+        <location filename="../src/ui/roomscene.cpp" line="1955"/>
+        <source>CCW</source>
+        <translation>逆时针</translation>
+    </message>
 </context>
 <context>
     <name>RuleSummary</name>
@@ -3960,6 +4084,53 @@ P = 你自己, R = 你所在的房间</translation>
         <location filename="../src/dialog/serverdialog.cpp" line="119"/>
         <source>Operation timeout</source>
         <translation>操作时间</translation>
+    </message>
+    <message>
+        <location filename="../src/dialog/serverdialog.cpp" line="568"/>
+        <source>3v3 options</source>
+        <translation>3v3模式设置</translation>
+    </message>
+
+    <message>
+        <location filename="../src/dialog/serverdialog.cpp" line="574"/>
+        <source>Official mode</source>
+        <translation>标准选将池</translation>
+    </message>
+
+    <message>
+        <location filename="../src/dialog/serverdialog.cpp" line="592"/>
+        <source>Extension mode</source>
+        <translation>自定义选将池</translation>
+    </message>
+
+    <message>
+        <location filename="../src/dialog/serverdialog.cpp" line="593"/>
+        <source>General selection ...</source>
+        <translation>选择可用人物……</translation>
+    </message>
+
+    <message>
+        <location filename="../src/dialog/serverdialog.cpp" line="597"/>
+        <source>Exclude disasters</source>
+        <translation>不加入天灾牌</translation>
+    </message>
+
+    <message>
+        <location filename="../src/dialog/serverdialog.cpp" line="602"/>
+        <source>Normal</source>
+        <translation>由玩家依次选择身份</translation>
+    </message>
+
+    <message>
+        <location filename="../src/dialog/serverdialog.cpp" line="604"/>
+        <source>All roles</source>
+        <translation>直接选择全部身份</translation>
+    </message>
+
+    <message>
+        <location filename="../src/dialog/serverdialog.cpp" line="617"/>
+        <source>Role choose</source>
+        <translation>身份分配方式</translation>
     </message>
 </context>
 <context>
