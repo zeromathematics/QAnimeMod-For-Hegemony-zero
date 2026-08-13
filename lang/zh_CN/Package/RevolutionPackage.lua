@@ -649,6 +649,8 @@ return {
 	[":zhongjie"] = "锁定技，此人物牌无法被暗置，叠置；你的装备牌，锦囊牌视为【杀】；你使用【杀】无距离限制；你使用【杀】结算后弃置一张“道路”；当你失去所有“道路”时，你死亡。",
 	["rumbling1$"] = "image=image/animate/rumbling1.png",
 	["rumbling2$"] = "image=image/animate/rumbling2.png",
+	["$rumbling1"] = "城墙里的所有的巨人将踏碎岛外的所有的土地，直到岛外所有的人从这个世界上，驱逐殆尽为止",
+	["$rumbling2"] = "我将为了得到自由，从世界夺走自由",
 
 	--双势力
 	["Rika"] = "古手梨花",
