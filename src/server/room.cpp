@@ -4388,85 +4388,136 @@ void Room::chooseGenerals(QList<ServerPlayer *> &to_assign, bool has_assign, boo
 
     foreach (ServerPlayer *player, m_players) {
         QStringList names;
+
         if (player->getGeneral()) {
-            QString name = player->getGeneralName();
-            QString kingdom = player->getGeneral()->getKingdom();
-            if (player->getGeneral()->getKingdom() == "careerist" && player->getGeneral2() && !player->getGeneral2()->getKingdom().contains("|"))
-                kingdom = player->getGeneral2()->getKingdom();
-            if (kingdom.contains("|") && !player->getGeneral2()->getKingdom().contains("|"))
-                kingdom = player->getGeneral2()->getKingdom();
+            const QString name = player->getGeneralName();
 
-            setPlayerMark(player, "globalkingdom_"+kingdom,1);
-
-            names.append(name);
+            names << name;
             player->setActualGeneral1Name(name);
             player->setGeneralName("anjiang");
+
             notifyProperty(player, player, "actual_general1");
+
             foreach (ServerPlayer *p, getOtherPlayers(player))
                 notifyProperty(p, player, "general");
+
             notifyProperty(player, player, "general", name);
         }
+
         if (player->getGeneral2()) {
-            QString name = player->getGeneral2Name();
-            names.append(name);
+            const QString name = player->getGeneral2Name();
+
+            names << name;
             player->setActualGeneral2Name(name);
             player->setGeneral2Name("anjiang");
 
             notifyProperty(player, player, "actual_general2");
+
             foreach (ServerPlayer *p, getOtherPlayers(player))
                 notifyProperty(p, player, "general2");
+
             notifyProperty(player, player, "general2", name);
         }
-        this->setTag(player->objectName(), QVariant::fromValue(names));
 
-        if (player->getActualGeneral1()->getKingdom().contains("|") && player->getActualGeneral2()->getKingdom().contains("|")){
-            QStringList list;
-            foreach(auto v, player->getActualGeneral2()->getKingdom().split("|")){
-                if (player->getActualGeneral1()->getKingdom().split("|").contains(v)){
-                    list << v;
+        setTag(player->objectName(), QVariant::fromValue(names));
+
+        const General *head = player->getActualGeneral1();
+        const General *deputy = player->getActualGeneral2();
+
+        QStringList choices;
+
+        if (head != NULL && deputy != NULL) {
+            const QStringList head_kingdoms
+                = head->getKingdom().split("|");
+            const QStringList deputy_kingdoms
+                = deputy->getKingdom().split("|");
+
+            if (head->getKingdom() == "careerist") {
+                // 野心家尚未明置时，以副将的可选势力作为初始势力
+                choices = deputy_kingdoms;
+            } else {
+                // 普通双势力组合只能选择两张人物牌共有的势力
+                foreach (const QString &kingdom, head_kingdoms) {
+                    if (deputy_kingdoms.contains(kingdom)
+                            && !choices.contains(kingdom)) {
+                        choices << kingdom;
+                    }
                 }
             }
-            JsonArray arr;
-            arr << "Revolution_AskForKingdom" << list.join("+") ;
-            player->m_commandArgs = arr;
         }
-        else{
-            QString kingdom;
-            foreach(auto v, Sanguosha->getKingdoms()){
-                if (player->getMark("globalkingdom_"+v)>0){
-                     kingdom = v;
-                     break;
-                }
-            }
 
-            JsonArray arr;
-            arr << "Revolution_AskForKingdom" << kingdom;
-            player->m_commandArgs = arr;
-        }
+        // 理论上合法组合不会为空，保留容错
+        if (choices.isEmpty() && deputy != NULL)
+            choices = deputy->getKingdom().split("|");
+
+        if (choices.isEmpty() && head != NULL)
+            choices = head->getKingdom().split("|");
+
+        // 野心家不能作为尚未明置时的初始势力
+        choices.removeAll("careerist");
+        choices.removeDuplicates();
+
+        if (choices.isEmpty())
+            choices << "science";
+
+        setTag(
+            player->objectName() + "_initial_kingdoms",
+            QVariant::fromValue(choices)
+        );
+
+        JsonArray arr;
+        arr << "Revolution_AskForKingdom"
+            << choices.join("+");
+
+        player->m_commandArgs = arr;
     }
-    doBroadcastRequest(to_assign, S_COMMAND_MULTIPLE_CHOICE);
+
+    doBroadcastRequest(
+        to_assign,
+        S_COMMAND_MULTIPLE_CHOICE
+    );
 
     foreach (ServerPlayer *player, to_assign) {
+        QStringList choices = getTag(
+            player->objectName() + "_initial_kingdoms"
+        ).toStringList();
+
+        removeTag(
+            player->objectName() + "_initial_kingdoms"
+        );
+
         QString kingdom;
-        const QVariant &kingdomName = player->getClientReply();
-        if (player->m_isClientResponseReady && JsonUtils::isString(kingdomName) && kingdomName.toString() != "cancel") {
-            kingdom = kingdomName.toString();
+
+        const QVariant &reply = player->getClientReply();
+
+        if (player->m_isClientResponseReady
+                && JsonUtils::isString(reply)
+                && choices.contains(reply.toString())) {
+            kingdom = reply.toString();
         } else {
-            foreach(auto v, Sanguosha->getKingdoms()){
-                if (player->getMark("globalkingdom_"+v)>0){
-                     kingdom = v;
-                     break;
-                }
-            }
+            // AI未回复、超时或非法回复时选择第一个合法势力
+            kingdom = choices.isEmpty()
+                ? QString("science")
+                : choices.first();
         }
 
-        setPlayerMark(player, "globalkingdom_"+kingdom,1); // reset for multi-kingdom players
+        // 清理旧记录，只保留最终选择
+        foreach (const QString &name, Sanguosha->getKingdoms())
+            setPlayerMark(player, "globalkingdom_" + name, 0);
+
+        setPlayerMark(
+            player,
+            "globalkingdom_" + kingdom,
+            1
+        );
 
         QString role = HegemonyMode::GetMappedRole(kingdom);
         if (role.isEmpty())
             role = kingdom;
+
         player->setKingdom(kingdom);
         notifyProperty(player, player, "kingdom", kingdom);
+
         player->setRole(role);
         notifyProperty(player, player, "role", role);
     }

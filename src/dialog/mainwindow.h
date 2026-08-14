@@ -39,6 +39,7 @@ class QNetworkReply;
 class ConnectionDialog;
 class ConfigDialog;
 class Window;
+class AutoUpdateDialog;
 
 class BroadcastBox : public QDialog
 {
@@ -103,10 +104,10 @@ private:
     Ui::MainWindow *ui;
     ConnectionDialog *connection_dialog;
     ConfigDialog *config_dialog;
+    AutoUpdateDialog *autoUpdateDialog;
     QSystemTrayIcon *systray;
     Server *server;
     Window *about_window;
-    UpdateInfoStruct updateInfomation;
 
     QPushButton *minButton;
     QPushButton *maxButton;
@@ -114,12 +115,8 @@ private:
     QPushButton *closeButton;
     QPushButton *menu;
 
-    QNetworkReply *versionInfomationReply;
-    QNetworkReply *changeLogReply;
-
     void restoreFromConfig();
     void region(const QPoint &cursorGlobalPoint);
-    void fetchUpdateInformation();
     void roundCorners();
 
 public slots:
@@ -157,9 +154,6 @@ private slots:
     void startGameInAnotherInstance();
     void changeBackground();
     void on_actionManage_Ban_IP_triggered();
-
-    void onVersionInfomationGotten();
-    void onChangeLogGotten();
 
     void onMaxButtonClicked();
     void onNormalButtonClicked();

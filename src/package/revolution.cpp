@@ -859,10 +859,10 @@ void ShashouCard::use(Room *room, ServerPlayer *player, QList<ServerPlayer *> &t
 {
     ServerPlayer *p = targets.at(0);
     QStringList choices;
-    if (p->hasShownGeneral1() && !(p->getActualGeneral1()->objectName()!="sujiang" || p->getActualGeneral1()->objectName()!="sujiangf")){
+    if (p->hasShownGeneral1() && !(p->getActualGeneral1()->objectName()!="sujiang" && p->getActualGeneral1()->objectName()!="sujiangf")){
         choices << p->getActualGeneral1Name();
     }
-    if (p->hasShownGeneral2() && !(p->getActualGeneral2()->objectName()!="sujiang" || p->getActualGeneral2()->objectName()!="sujiangf")){
+    if (p->hasShownGeneral2() && !(p->getActualGeneral2()->objectName()!="sujiang" && p->getActualGeneral2()->objectName()!="sujiangf")){
         choices << p->getActualGeneral2Name();
     }
     QString general="";
@@ -5175,7 +5175,7 @@ public:
 
     virtual int getFixed(const Player *target, bool include_weapon) const
     {
-        if (target->hasSkill("leiqe") || target->hasSkill("huocheqie") || target->hasSkill("tongziqie") || target->hasSkill("paoqie") || target->hasSkill("huocheqie") || target->hasSkill("xiaowuwan")) {
+        if (target->hasSkill("leiqie") || target->hasSkill("huocheqie") || target->hasSkill("tongziqie") || target->hasSkill("paoqie") || target->hasSkill("huocheqie") || target->hasSkill("xiaowuwan")) {
             return 2;
         }
         return -1;

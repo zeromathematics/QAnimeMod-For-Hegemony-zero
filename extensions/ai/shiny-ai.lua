@@ -1365,7 +1365,7 @@ sgs.ai_skill_playerchosen.xinxing = function(self)
 		local NoNeed = false
 		if #result < self.player:getMark("xinxingCount") and p:getJudgingArea():length() > 0 then
 			for _, judge in sgs.qlist(p:getJudgingArea()) do
-				if judge:isKindOf("Key") and not who:isWounded() and p:getJudgingArea():length() == 1 then
+				if judge:isKindOf("Key") and not p:isWounded() and p:getJudgingArea():length() == 1 then
 					NoNeed = true
 				end
 			end			

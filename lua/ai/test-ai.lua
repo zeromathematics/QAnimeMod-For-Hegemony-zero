@@ -350,32 +350,25 @@ end
 
 -- 竹刀发动判断
 sgs.ai_skill_invoke.zhudao = function(self, data)
-	if not (
-		self:willShowForAttack()
-		or self:willShowForDefence()
-	) then
-		return false
-	end
+    if not (
+        self:willShowForAttack()
+        or self:willShowForDefence()
+    ) then
+        return false
+    end
 
-	local targets = data:toPlayerList()
-	if targets and not targets:isEmpty() then
-		for _, player in sgs.qlist(targets) do
-			if isUsefulZhudaoSource(self, player) then
-				return true
-			end
-		end
-	end
+    -- C++的triggerable已经确认：
+    -- 触发者确实失去了装备区里的牌。
+    -- 此处只判断场上是否存在有价值的转移方案。
+    for _, player in sgs.qlist(
+        self.room:getAlivePlayers()
+    ) do
+        if isUsefulZhudaoSource(self, player) then
+            return true
+        end
+    end
 
-	-- 兼容未通过data传递候选人的版本
-	for _, player in sgs.qlist(
-		self.room:getAlivePlayers()
-	) do
-		if isUsefulZhudaoSource(self, player) then
-			return true
-		end
-	end
-
-	return false
+    return false
 end
 
 -- 选择牌的来源

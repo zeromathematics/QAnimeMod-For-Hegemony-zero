@@ -560,34 +560,51 @@ void ChooseGeneralBox::adjustItems()
     }
 
     if (selected.length() == 2) {
-        foreach(GeneralCardItem *card, items)
+        foreach (GeneralCardItem *card, items)
             card->setFrozen(true);
-        bool can = false;
-        if (Sanguosha->getGeneral(selected.first()->objectName())->getKingdom()
-                == Sanguosha->getGeneral(selected.last()->objectName())->getKingdom()){
-            can = true;
-        }
-        if (Sanguosha->getGeneral(selected.first()->objectName())->getKingdom().split("|")
-                .contains(Sanguosha->getGeneral(selected.last()->objectName())->getKingdom())){
-            can = true;
-        }
-        if (Sanguosha->getGeneral(selected.last()->objectName())->getKingdom().split("|")
-                .contains(Sanguosha->getGeneral(selected.first()->objectName())->getKingdom())){
-            can = true;
-        }
-        foreach(auto p, Sanguosha->getGeneral(selected.first()->objectName())->getKingdom().split("|")){
-            foreach(auto q, Sanguosha->getGeneral(selected.last()->objectName())->getKingdom().split("|")){
-                if (p == q){
-                    can = true;
-                }
-            }
-        }
-        if (Sanguosha->getGeneral(selected.first()->objectName())->getKingdom() == "careerist"){
-            can = true;
-        }
-        if (Sanguosha->getGeneral(selected.last()->objectName())->getKingdom() == "careerist"){
+
+        const General *head
+            = Sanguosha->getGeneral(selected.first()->objectName());
+        const General *deputy
+            = Sanguosha->getGeneral(selected.last()->objectName());
+
+        bool can = head != NULL && deputy != NULL;
+
+        // 副将不能是主角人物或野心家人物
+        if (can && (deputy->isLord()
+                || deputy->getKingdom() == "careerist")) {
             can = false;
         }
+
+        // 禁止组合
+        if (can && BanPair::isBanned(
+                head->objectName(), deputy->objectName())) {
+            can = false;
+        }
+
+        if (can) {
+            bool same_kingdom = false;
+
+            // 野心家仅允许位于主将，且可搭配任意合法副将
+            if (head->getKingdom() == "careerist") {
+                same_kingdom = true;
+            } else {
+                const QStringList head_kingdoms
+                    = head->getKingdom().split("|");
+                const QStringList deputy_kingdoms
+                    = deputy->getKingdom().split("|");
+
+                foreach (const QString &kingdom, head_kingdoms) {
+                    if (deputy_kingdoms.contains(kingdom)) {
+                        same_kingdom = true;
+                        break;
+                    }
+                }
+            }
+
+            can = same_kingdom;
+        }
+
         confirm->setEnabled(can);
     } else if (selected.length() == 1) {
         selected.first()->hideCompanion();
@@ -807,22 +824,30 @@ void ChooseGeneralBox::_onConvertButtonClicked()
 
 void ChooseGeneralBox::_onConvertClicked()
 {
-    GeneralCardItem *source_item = qobject_cast<GeneralCardItem *>(sender());
-    foreach (GeneralCardItem *item, items) {
-        if (item->property("source").toString() == source_item->property("source").toString()) {
-            item->changeGeneral(source_item->objectName());
-            break;
-        }
-    }
-    foreach (GeneralCardItem *item, selected) {
-        if (item->property("source").toString() == source_item->property("source").toString()) {
-            item->changeGeneral(source_item->objectName());
-            break;
-        }
-    }
-    if (source_item->data(1).toBool()){ //test
-        convertContainer->clear();
+    GeneralCardItem *source_item
+        = qobject_cast<GeneralCardItem *>(sender());
+    if (source_item == NULL)
         return;
+
+    foreach (GeneralCardItem *item, items) {
+        if (item->property("source").toString()
+                == source_item->property("source").toString()) {
+            item->changeGeneral(source_item->objectName());
+            break;
+        }
     }
+
+    foreach (GeneralCardItem *item, selected) {
+        if (item->property("source").toString()
+                == source_item->property("source").toString()) {
+            item->changeGeneral(source_item->objectName());
+            break;
+        }
+    }
+
+    convertContainer->clear();
+
+    // 人物转换可能改变主公、野心家、势力等合法性，
+    // 必须重新计算“确定”按钮状态。
     adjustItems();
 }

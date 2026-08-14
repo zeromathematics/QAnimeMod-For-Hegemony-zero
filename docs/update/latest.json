@@ -1,0 +1,15 @@
+{
+    "version": "2.1.0",
+    "version_code": 210,
+    "mandatory": false,
+    "title": "HikariKage v2.1.0",
+    "summary": [
+        "在这里填写第一项主要更新",
+        "在这里填写第二项主要更新",
+        "修复已知问题"
+    ],
+    "package_url": "https://github.com/zeromathematics/QAnimeMod-For-Hegemony-zero/releases/download/v2.1.0/QAnimeMod_Update_2.1.0.zip",
+    "backup_url": "",
+    "sha256": "请替换为64位小写SHA256",
+    "size": 0
+}

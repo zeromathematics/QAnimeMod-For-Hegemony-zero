@@ -3,6 +3,7 @@
 # -------------------------------------------------
 TARGET = QAnimeMod
 QT += network widgets
+INCLUDEPATH += src/update
 !winrt:QT += declarative
 TEMPLATE = app
 CONFIG += audio
@@ -129,7 +130,8 @@ SOURCES += \
     src/scenario/maria-battle-scenario.cpp \
     src/package/maria-battle.cpp \
     src/package/specialcards.cpp \
-    src/server/roomthread3v3.cpp
+    src/server/roomthread3v3.cpp \
+    src/dialog/autoupdatedialog.cpp
 
 HEADERS += \
     src/client/aux-skills.h \
@@ -250,7 +252,9 @@ HEADERS += \
     src/scenario/maria-battle-scenario.h \
     src/package/maria-battle.h \
     src/package/specialcards.h \
-    src/server/roomthread3v3.h
+    src/server/roomthread3v3.h \
+    src/dialog/autoupdatedialog.h \
+    src/update/updateconfig.h
 
 FORMS += \
     src/dialog/cardoverview.ui \

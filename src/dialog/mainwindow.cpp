@@ -38,7 +38,7 @@
 #include "pixmapanimation.h"
 #include "record-analysis.h"
 #include "aboutus.h"
-#include "updatechecker.h"
+#include "autoupdatedialog.h"
 #include "recorder.h"
 #include "audio.h"
 #include "stylehelper.h"
@@ -65,6 +65,7 @@
 #include <QNetworkReply>
 #include <QDesktopWidget>
 #include <QApplication>
+#include <QTimer>
 
 #if !defined(QT_NO_OPENGL) && defined(USING_OPENGL)
 #if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
@@ -158,10 +159,9 @@ void MainWindow::onNormalButtonClicked() {
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), isLeftPressDown(false),
     scene(NULL), ui(new Ui::MainWindow), server(NULL), about_window(NULL),
-    minButton(NULL), maxButton(NULL), normalButton(NULL), closeButton(NULL),
-    versionInfomationReply(NULL), changeLogReply(NULL)
+    autoUpdateDialog(NULL),
+    minButton(NULL), maxButton(NULL), normalButton(NULL), closeButton(NULL)
 {
-
     int n = 0;
     for (int i = 1; i < 1000; i++){
         if (QFile::exists(QString("audio/system/main%1.ogg").arg(QString::number(i))) && QFile::exists(QString("image/backdrop/main%1.jpg").arg(QString::number(i)))){
@@ -175,6 +175,7 @@ MainWindow::MainWindow(QWidget *parent)
     Config.TableBgImage = QString("image/backdrop/main%1.jpg").arg(QString::number(x));
 
     ui->setupUi(this);
+    ui->actionCheckUpdate->setEnabled(true);
     setWindowTitle(tr("QSanguosha-Hegemony") + " " + Sanguosha->getVersion());
 #if defined(Q_OS_WIN) || (defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID))
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowSystemMenuHint | Qt::WindowMinMaxButtonsHint);
@@ -188,7 +189,6 @@ MainWindow::MainWindow(QWidget *parent)
 #ifdef Q_OS_ANDROID
     setFixedSize(qApp->desktop()->width(), qApp->desktop()->height());
 #endif
-    fetchUpdateInformation();
 
     connection_dialog = new ConnectionDialog(this);
     connect(ui->actionStart_Game, &QAction::triggered, connection_dialog, &ConnectionDialog::exec);
@@ -333,6 +333,19 @@ MainWindow::MainWindow(QWidget *parent)
     start_scene->showOrganization();
 
     systray = NULL;
+
+    autoUpdateDialog = new AutoUpdateDialog(this);
+
+    // 更新安装后的第一次启动显示更新说明
+    QTimer::singleShot(500, this, [this]() {
+        AutoUpdateDialog::showPostUpdateNotes(this);
+    });
+
+    // 启动后异步检查更新；断网时静默失败
+    QTimer::singleShot(1500, this, [this]() {
+        if (autoUpdateDialog != NULL)
+            autoUpdateDialog->checkForUpdate(false);
+    });
 }
 
 #if defined(Q_OS_WIN) || (defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID))
@@ -549,24 +562,6 @@ void MainWindow::region(const QPoint &cursorGlobalPoint)
         isZoomReady = true;
     else
         isZoomReady = false;
-}
-
-void MainWindow::fetchUpdateInformation()
-{
-    static QNetworkAccessManager *mgr = new QNetworkAccessManager(this);
-#ifdef QT_DEBUG
-    QString URL1 = "http://ver.qsanguosha.org/test/UpdateInfo";
-    QString URL2 = "http://ver.qsanguosha.org/test/whatsnew.html";
-#else
-    QString URL1 = "http://ver.qsanguosha.org/UpdateInfo";
-    QString URL2 = "http://ver.qsanguosha.org/whatsnew.html";
-#endif
-
-    versionInfomationReply = mgr->get(QNetworkRequest(QUrl(URL1)));
-    changeLogReply = mgr->get(QNetworkRequest(QUrl(URL2)));
-
-    connect(versionInfomationReply, &QNetworkReply::finished, this, &MainWindow::onVersionInfomationGotten);
-    connect(changeLogReply, &QNetworkReply::finished, this, &MainWindow::onChangeLogGotten);
 }
 
 void MainWindow::roundCorners()
@@ -1415,72 +1410,11 @@ void MainWindow::on_actionManage_Ban_IP_triggered()
     dlg->show();
 }
 
-void MainWindow::onVersionInfomationGotten()
-{
-    while (!versionInfomationReply->atEnd()) {
-        QString line = versionInfomationReply->readLine();
-        line.remove('\n');
-
-        QStringList texts = line.split('|', QString::SkipEmptyParts);
-
-        if (texts.size() != 2)
-            return;
-
-        QString key = texts.at(0);
-        QString value = texts.at(1);
-        if ("VersionNumber" == key) {
-            QString v = value;
-            if (value.contains("Patch")) {
-                updateInfomation.is_patch = true;
-                v.chop(6);
-            } else {
-                updateInfomation.is_patch = false;
-            }
-
-            QSanVersionNumber latest_version = Sanguosha->getVersionNumber();
-            if (!v.isNull() && latest_version.tryParse(v))
-                v = latest_version;
-
-            updateInfomation.version_number = v;
-            if (Sanguosha->getVersionNumber() < latest_version)
-                setWindowTitle(tr("New Version Available") + "  " + windowTitle());
-        } else if ("Address" == key) {
-            updateInfomation.address = value;
-        }
-        if (!updateInfomation.address.isNull() && !updateInfomation.version_number.isNull())
-            ui->actionCheckUpdate->setEnabled(true);
-    }
-    versionInfomationReply->deleteLater();
-}
-
-void MainWindow::onChangeLogGotten()
-{
-    QString fileName = "info.html";
-    QFile file(fileName);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
-        qDebug() << "Cannot open the file: " << fileName;
-        return;
-    }
-    QByteArray codeContent = changeLogReply->readAll();
-    file.write(codeContent);
-    file.close();
-    changeLogReply->deleteLater();
-}
-
 void MainWindow::on_actionCheckUpdate_triggered()
 {
-    FlatDialog *dialog = new FlatDialog(this);
-    dialog->setWindowTitle(tr("Check Update"));
-
-    UpdateChecker *widget = new UpdateChecker;
-    widget->fill(updateInfomation);
-    dialog->mainLayout()->addWidget(widget);
-
-    dialog->addCloseButton();
-
-    dialog->show();
+    if (autoUpdateDialog != NULL)
+        autoUpdateDialog->checkForUpdate(true);
 }
-
 
 void MainWindow::on_actionCard_editor_triggered()
 {

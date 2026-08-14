@@ -388,7 +388,7 @@ sgs.ai_skill_playerchosen.xuerui = function(self, targets)
 	local enemies = self.enemies
 	self:sort(enemies, "defense")
 	for _,p in ipairs(enemies)do
-	    if self.player:inMyAttackRange(p) and p~= data:toPlayer() then
+	    if self.player:inMyAttackRange(p) and targets:contains(p) then
 		  return p 		
 		end  
 	end

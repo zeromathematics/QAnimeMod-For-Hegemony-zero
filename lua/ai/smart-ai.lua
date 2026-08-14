@@ -443,8 +443,21 @@ function SmartAI:objectiveLevel(player)
 	if self.room:alivePlayerCount() == 2 then return 5 end
 
 	local self_kingdom = self.player:getKingdom()
-	local player_kingdom_evaluate = self:evaluateKingdom(player)
+	local self_shown_count =
+		self_shown_count or 0
+
+	local player_kingdom_evaluate =
+		self:evaluateKingdom(player)
 	local player_kingdom_explicit = sgs.ai_explicit[player:objectName()]
+
+    -- 前两轮不主动把身份不明的暗将认定为敌人
+	if sgs.turncount <= 1
+		and not player:hasShownOneGeneral()
+		and player_kingdom_explicit == "unknown"
+		and player:getMark("KnownBothEnemy" .. self.player:objectName()) == 0 then
+		return 0
+	end
+
 	if player_kingdom_explicit == "unknown" then
 		local mark = string.format("KnownBoth_%s_%s", self.player:objectName(), player:objectName())
 		if player:getMark(mark) > 0 then
@@ -453,32 +466,32 @@ function SmartAI:objectiveLevel(player)
 	end
 
 	local upperlimit = self.player:getLord() and 99 or math.floor(self.room:getPlayers():length() / 2)
-	if (not sgs.isAnjiang(self.player) or sgs.shown_kingdom[self_kingdom] < upperlimit) and self.role ~= "careerist" and self_kingdom == player_kingdom_explicit then return -2 end
+	if (not sgs.isAnjiang(self.player) or self_shown_count < upperlimit) and self.role ~= "careerist" and self_kingdom == player_kingdom_explicit then return -2 end
 	if self:getKingdomCount() <= 2 then return 5 end
 
-	local selfIsCareerist = self.role == "careerist" or sgs.shown_kingdom[self_kingdom] >= upperlimit and not self.player:hasShownOneGeneral()
+	local selfIsCareerist = self.role == "careerist" or self_shown_count >= upperlimit and not self.player:hasShownOneGeneral()
 
 	local gameProcess = sgs.gameProcess()
 	if gameProcess == "===" then
 		if player:getMark("KnownBothEnemy" .. self.player:objectName()) > 0 then return 5 end
-		if not selfIsCareerist and sgs.shown_kingdom[self_kingdom] < upperlimit then
+		if not selfIsCareerist and self_shown_count < upperlimit then
 			if sgs.isAnjiang(player) and player_kingdom_explicit == "unknown" then
 				if player_kingdom_evaluate == self_kingdom then return -1
 				elseif string.find(player_kingdom_evaluate, self_kingdom) then return 0
 				elseif player_kingdom_evaluate == "unknown" and player:getHp() <= 1 then return 0
 				else
-					return self:getOverflow() > 0 and 3.5 or 0
+					return self:getOverflow() > 0 and 1 or 0
 				end
 			else
 				return 5
 			end
-		else return self:getOverflow() > 0 and 4 or 0
+		else return self:getOverflow() > 0 and 1 or 0
 		end
 	elseif string.find(gameProcess, ">") then
 		local kingdom = gameProcess:split(">")[1]
 		if string.find(gameProcess, ">>>") then
 			if self_kingdom == kingdom and not selfIsCareerist then
-				if sgs.shown_kingdom[self_kingdom] < upperlimit and sgs.isAnjiang(player)
+				if self_shown_count < upperlimit and sgs.isAnjiang(player)
 					and (player_kingdom_evaluate == self_kingdom or string.find(player_kingdom_evaluate, self_kingdom)) then return 0
 				elseif player_kingdom_evaluate == "unknown" and sgs.turncount <= 0 then return 0
 				else return 5
@@ -493,7 +506,7 @@ function SmartAI:objectiveLevel(player)
 			end
 		elseif string.find(gameProcess, ">>") then
 			if self_kingdom == kingdom and not selfIsCareerist then
-				if sgs.shown_kingdom[self_kingdom] < upperlimit and sgs.isAnjiang(player) then
+				if self_shown_count < upperlimit and sgs.isAnjiang(player) then
 					if player_kingdom_evaluate == self_kingdom then return -1
 					elseif string.find(player_kingdom_evaluate, self_kingdom) then return 0
 					elseif player_kingdom_evaluate == "unknown" and sgs.turncount <= 0 then return 0
@@ -508,7 +521,7 @@ function SmartAI:objectiveLevel(player)
 			end
 		else
 			if self_kingdom == kingdom and not selfIsCareerist then
-				if sgs.shown_kingdom[self_kingdom] < upperlimit and sgs.isAnjiang(player) then
+				if self_shown_count < upperlimit and sgs.isAnjiang(player) then
 					if player_kingdom_evaluate == self_kingdom then return -1
 					elseif string.find(player_kingdom_evaluate, self_kingdom) then return 0
 					elseif player_kingdom_evaluate == "unknown" and sgs.turncount <= 0 then return 0
@@ -831,13 +844,32 @@ function SmartAI:evaluateKingdom(player, other)
 	end
 	if sgs.ai_explicit[player:objectName()] ~= "unknown" then return sgs.ai_explicit[player:objectName()] end
 	if player:getMark(string.format("KnownBoth_%s_%s", other:objectName(), player:objectName())) > 0 then
-		local upperlimit = player:getLord() and 99 or math.floor( self.room:getPlayers():length() / 2)
-		return sgs.shown_kingdom[player:getKingdom()] < upperlimit and player:getKingdom() or "careerist"
+		local upperlimit =
+		player:getLord()
+		and 99
+		or math.floor(self.room:getPlayers():length() / 2)
+
+	    local kingdom = player:getKingdom()
+	    local shown_count =
+		sgs.shown_kingdom[kingdom] or 0
+
+	    return shown_count < upperlimit
+		and kingdom
+		or "careerist"
 	end
 
 	if player:getMark("KnownBothFriend" .. other:objectName()) > 0 then
-		local upperlimit = self.player:getLord() and 99 or math.floor(self.room:getPlayers():length() / 2)
-		return sgs.shown_kingdom[player:getKingdom()] < upperlimit and other:getKingdom() or "careerist"
+		local upperlimit =
+			player:getLord()
+			and 99
+			or math.floor(self.room:getPlayers():length() / 2)
+
+		local kingdom = player:getKingdom()
+		local shown_count = sgs.shown_kingdom[kingdom] or 0
+
+		return shown_count < upperlimit
+			and kingdom
+			or "careerist"
 	end
 
 	local max_value, max_kingdom = 0, {}
@@ -995,7 +1027,7 @@ function SmartAI:updatePlayers(update, resetAI)
 
 		self.retain = 2
 		self.harsh_retain = false
-		if #self.enemies == 0 then
+		--[[if #self.enemies == 0 then
 			local neutrality = {}
 			for _, aplayer in sgs.qlist(self.room:getOtherPlayers(self.player)) do
 				if self.lua_ai:relationTo(aplayer) == sgs.AI_Neutrality and not aplayer:isDead() then table.insert(neutrality, aplayer) end
@@ -1009,7 +1041,7 @@ function SmartAI:updatePlayers(update, resetAI)
 			end
 			table.sort(neutrality, compare_func)
 			table.insert(self.enemies, neutrality[1])
-		end
+		end]]
 		return
 	end
 
@@ -1067,11 +1099,25 @@ function SmartAI:updatePlayerKingdom(player, data)
 	end
 
 	for _, p in sgs.qlist(self.room:getPlayers()) do
-		if sgs.ai_explicit[p:objectName()] ~= "unknown" then
-			sgs.ai_explicit[p:objectName()] = p:getRole() == "careerist" and "careerist" or p:getKingdom()
+		local name = p:objectName()
+
+		if sgs.ai_explicit[name] ~= "unknown" then
+			sgs.ai_explicit[name] =
+				p:getRole() == "careerist"
+				and "careerist"
+				or p:getKingdom()
 		end
-		if sgs.ai_explicit[p:objectName()] == "careerist" or sgs.ai_explicit[p:objectName()] == "unknown" then continue end
-		sgs.shown_kingdom[sgs.ai_explicit[p:objectName()]] = sgs.shown_kingdom[sgs.ai_explicit[p:objectName()]] + 1
+
+		local kingdom = sgs.ai_explicit[name]
+
+		if kingdom ~= nil
+			and kingdom ~= ""
+			and kingdom ~= "careerist"
+			and kingdom ~= "unknown" then
+
+			sgs.shown_kingdom[kingdom] =
+				(sgs.shown_kingdom[kingdom] or 0) + 1
+		end
 	end
 
 	if data then
