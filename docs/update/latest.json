@@ -2,14 +2,12 @@
     "version": "3.0.1",
     "version_code": 301,
     "mandatory": false,
-    "title": "HikariKage v3.0.1 自动更新测试",
+    "title": "HikariKage v3.0.1",
     "summary": [
-        "测试自动检查更新功能",
-        "测试更新包下载、覆盖与自动重启",
-        "测试更新说明仅显示一次"
+        "本次更新内容"
     ],
-    "package_url": "https://github.com/user-attachments/files/31068269/QAnimeMod_Update_3.0.1.zip",
+    "package_url": "https://github.com/zeromathematics/QAnimeMod-For-Hegemony-zero/releases/download/v3.0.1/QAnimeMod_Update_3.0.1.zip",
     "backup_url": "",
-    "sha256": "C7F10C5ABA8E941403CB1D76E58EE57D2F31DB8251800E64E8AE28A3CBF3B8BE",
+    "sha256": "57163ADA59EF79416971A36E353CAA38E2E61E96CFDCD5602621125219C958BF",
     "size": 0
 }
