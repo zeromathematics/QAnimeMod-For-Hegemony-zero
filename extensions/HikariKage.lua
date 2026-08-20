@@ -4455,7 +4455,7 @@ sgs.LoadTranslationTable{
     ["@Ayanokoji"] = "欢迎来到实力至上主义的教室",
     ["#Ayanokoji"] = "实力至上",
     ["~Ayanokoji"] = "一切都结束了。",
-    ["designer:Ayanokoji"] = "花宫瑞业&光临长夜",
+    ["designer:Ayanokoji"] = "瑞业&光临长夜",
     ["cv:Ayanokoji"] = "千叶翔也",
     ["%Ayanokoji"] = "“要付出多少牺牲都无所谓，只要最后我胜出那就行了”",
     ["ance"] = "暗策",

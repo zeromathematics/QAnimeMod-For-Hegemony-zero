@@ -91,11 +91,9 @@ Penlight = sgs.CreateTreasure{
     class_name = "Penlight",
     suit = sgs.Card_Heart,
     number = 9,
-    on_install=function(self,player)
-
+    on_install = function(self,player)
     end,
     on_uninstall = function(self, player)
-
     end,
 }
 
@@ -107,7 +105,7 @@ PenlightEffect = sgs.CreateTriggerSkill{
         if event == sgs.Damage or event == sgs.Damaged then
             for _,sp in sgs.qlist(room:getAlivePlayers()) do
                 if room:getCurrent():hasFlag(sp:objectName().."penlight_used") then continue end
-                if sp and sp:getTreasure() and sp:getTreasure():objectName() == "penlight" and (sp:objectName() == player:getLastAlive():objectName() or sp:objectName() == player:getNextAlive():objectName()) then
+                if sp and sp:getTreasure() and sp:getTreasure():objectName() == "penlight" and (sp:objectName() == player:getLastAlive():objectName() or sp:objectName() == player:getNextAlive():objectName()) and sp:isAlive() and player:isAlive() then
                     return self:objectName(), sp
                 end
             end
@@ -156,7 +154,7 @@ sgs.LoadTranslationTable{
     ["@zenith_discard"] = "弃置一张此次未弃置过的花色的牌（无法弃置则展示手牌），点取消则随机弃置一张符合条件的牌",
 
     ["penlight"] = "应援棒",
-	[":penlight"] = "装备牌·宝物\n\n技能：每回合限一次，一名与你相邻的角色受到或造成伤害后，你可以与其各摸一张牌。",
+	[":penlight"] = "装备牌·宝物\n\n技能：<font color=\"green\"><b>每回合限一次，</b></font>一名与你相邻的角色受到或造成伤害后，你可以与其各摸一张牌。",
 }
    
 return extension
